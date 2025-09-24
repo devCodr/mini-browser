@@ -10,6 +10,8 @@ npm i
 npm start
 ```
 
+Default PIN: `123456`
+
 ### 🚀 Build
 
 ```
