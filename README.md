@@ -2,10 +2,13 @@ Instrucciones rápidas
 
 Crea una carpeta vacía y pega estos archivos.
 
+### Install
+
 ```
 npm i
 ```
 
+### Start Dev
 ```
 npm start
 ```
