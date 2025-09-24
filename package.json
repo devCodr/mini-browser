@@ -1,0 +1,38 @@
+{
+  "name": "mini-browser",
+  "version": "1.0.0",
+  "main": "main.js",
+  "description": "Custom Mini Browser to private sessions",
+  "author": {
+    "name": "Chris Larico",
+    "email": "chris@larico.dev",
+    "url": "https://larico.dev",
+    "github": "https://github.com/devCodr/mini-browser"
+  },
+  "type": "module",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "dependencies": {
+    "node-fetch": "3.3.2"
+  },
+  "devDependencies": {
+    "electron": "38.1.2",
+    "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "com.larico.minibrowser",
+    "productName": "Custom Mini Browser",
+    "copyright": "© 2025 Chris Larico (MIT License)",
+    "linux": {
+      "target": [
+        "deb"
+      ],
+      "icon": "icon.png",
+      "category": "Utility",
+      "maintainer": "Chris Larico <chris@larico.dev>",
+      "synopsis": "Custom Mini Browser"
+    }
+  }
+}
