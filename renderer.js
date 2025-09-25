@@ -1,233 +1,214 @@
-let state = { settings: null, bookmarks: [], pinnedTabs: [] };
-let tabs = [];
-let activeTabId = null;
+let state = { settings: null, bookmarks: [] };
+let activeFavPartition = null;
 
-const tabsEl = document.getElementById("tabs");
 const webviewsEl = document.getElementById("webviews");
 const urlEl = document.getElementById("url");
 const backEl = document.getElementById("back");
 const fwdEl = document.getElementById("fwd");
 const reloadEl = document.getElementById("reload");
-const newtabEl = document.getElementById("newtab");
-const pinTabEl = document.getElementById("pinTab");
-const starEl = document.getElementById("star");
-const sessionSel = document.getElementById("sessionSel");
+const newFavEl = document.getElementById("newFav"); // botón ➕
+const bookmarksEl = document.getElementById("bookmarks");
 
-function uuid() {
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+// === Helpers ===
+function domainSlugFromUrl(url) {
+  try {
+    return new URL(url).hostname.replace(/\W+/g, "_");
+  } catch {
+    return "site";
+  }
 }
 
-function renderTabs() {
-  tabsEl.innerHTML = "";
-  const sorted = [...tabs].sort((a, b) => Number(b.pinned) - Number(a.pinned));
-  sorted.forEach((t) => {
-    const d = document.createElement("div");
-    d.className = "tab" + (t.id === activeTabId ? " active" : "");
-    d.dataset.id = t.id;
+// encuentra el siguiente partition libre: persist:dominio, persist:dominio2, ...
+function nextPartitionForDomain(domain) {
+  // persist:domain, persist:domain2, persist:domain3...
+  let max = 0;
+  const rx = new RegExp(`^persist:${domain}(\\d+)?$`);
+  for (const b of state.bookmarks) {
+    const m = b.partition && b.partition.match(rx);
+    if (m) {
+      const n = m[1] ? parseInt(m[1], 10) : 1; // sin sufijo = 1
+      if (!isNaN(n) && n > max) max = n;
+    }
+  }
+  // si max==0 => ninguno, devolvemos persist:domain
+  // si max>=1 => devolvemos persist:domain{max+1}
+  return `persist:${domain}${max >= 1 ? max + 1 : ""}`;
+}
 
-    const p = document.createElement("span");
-    p.className = "pin";
-    p.textContent = t.pinned ? "📌" : "";
+// === Core ===
+function activateFavorite(partition) {
+  activeFavPartition = partition;
+  document.querySelectorAll("webview").forEach((w) => {
+    if (w.getAttribute("partition") === partition) {
+      w.classList.add("active");
+      urlEl.value = w.getURL(); // mostrar URL del favorito
+      urlEl.setAttribute("readonly", "true"); // bloquear edición
+      urlEl.style.display = "block"; // visible pero de solo lectura
+      document.title = w.getTitle() || "Mini Browser";
+    } else {
+      w.classList.remove("active");
+    }
+  });
+  renderBookmarks();
+}
 
-    const title = document.createElement("span");
-    title.textContent = t.title || "New Tab";
+async function createWebview(fav) {
+  // 🔹 garantizar sesión del partition (evita pantalla negra)
+  await api.ensureSession(fav.partition);
 
-    const x = document.createElement("button");
-    x.textContent = "×";
-    x.addEventListener("click", (e) => {
+  const w = document.createElement("webview");
+  w.setAttribute("partition", fav.partition);
+  w.setAttribute("allowpopups", "true");
+  w.setAttribute("preload", "");
+  w.src = fav.url;
+  w.className = fav.partition === activeFavPartition ? "active" : "";
+
+  w.addEventListener("page-title-updated", () => {
+    if (fav.partition === activeFavPartition) {
+      document.title = w.getTitle() || "Mini Browser";
+    }
+  });
+  w.addEventListener("did-navigate", () => {
+    if (fav.partition === activeFavPartition) urlEl.value = w.getURL();
+    api.signalActivity();
+  });
+  w.addEventListener("did-navigate-in-page", () => api.signalActivity());
+  w.addEventListener("dom-ready", () => api.signalActivity());
+  w.addEventListener("ipc-message", () => api.signalActivity());
+
+  webviewsEl.appendChild(w);
+  fav.webview = w;
+}
+
+function renderBookmarks() {
+  bookmarksEl.innerHTML = "";
+  (state.bookmarks || []).forEach((b) => {
+    const wrapper = document.createElement("div");
+
+    const btn = document.createElement("button");
+    btn.textContent = b.title || b.url;
+    btn.title = b.partition; // tooltip con persist:xxx
+    if (b.partition === activeFavPartition) {
+      btn.style.outline = "2px solid #2a7fde";
+    }
+    btn.addEventListener("click", () => activateFavorite(b.partition));
+
+    const del = document.createElement("button");
+    del.textContent = "×";
+    del.title = "Eliminar favorito";
+    del.addEventListener("click", async (e) => {
       e.stopPropagation();
-      closeTab(t.id);
+
+      // 🔹 borrar por partition (no por URL) para no afectar duplicados del mismo dominio
+      const updated = await api.removeBookmark({
+        partition: b.partition,
+        url: b.url,
+      });
+      state.bookmarks = updated;
+      renderBookmarks();
+
+      // cerrar su webview
+      const w = document.querySelector(`webview[partition="${b.partition}"]`);
+      if (w) w.remove();
+
+      if (activeFavPartition === b.partition) {
+        const next = state.bookmarks[0];
+        if (next) activateFavorite(next.partition);
+        else {
+          activeFavPartition = null;
+          document.title = "Mini Browser";
+          urlEl.value = "";
+          urlEl.style.display = "none";
+        }
+      }
     });
 
-    d.appendChild(p);
-    d.appendChild(title);
-    d.appendChild(x);
-    d.addEventListener("click", () => activateTab(t.id));
-
-    tabsEl.appendChild(d);
+    wrapper.appendChild(btn);
+    wrapper.appendChild(del);
+    bookmarksEl.appendChild(wrapper);
   });
 }
 
-function renderWebviews() {
-  webviewsEl.querySelectorAll("webview").forEach((w) => w.remove());
-  tabs.forEach((t) => {
-    let w = document.createElement("webview");
-    w.setAttribute("partition", t.partition);
-    w.setAttribute("allowpopups", "true");
-    w.setAttribute("preload", "");
-    w.className = t.id === activeTabId ? "active" : "";
-    w.src = t.url || "https://www.google.com";
-
-    w.addEventListener("page-title-updated", (e) => {
-      t.title = e.title;
-      if (t.id === activeTabId) document.title = e.title;
-      renderTabs();
-    });
-
-    w.addEventListener("did-navigate", (e) => {
-      if (t.id === activeTabId) urlEl.value = e.url;
-      t.url = e.url;
-      api.signalActivity();
-    });
-
-    w.addEventListener("did-navigate-in-page", () => api.signalActivity());
-    w.addEventListener("dom-ready", () => api.signalActivity());
-    w.addEventListener("ipc-message", () => api.signalActivity());
-
-    webviewsEl.appendChild(w);
-    t.webview = w;
-  });
-}
-
-function activateTab(id) {
-  activeTabId = id;
-  document
-    .querySelectorAll("webview")
-    .forEach((w) => w.classList.remove("active"));
-  const t = tabs.find((x) => x.id === id);
-  if (t && t.webview) {
-    t.webview.classList.add("active");
-    urlEl.value = t.url || "";
-    document.title = t.title || "Mini Browser";
-  }
-  renderTabs();
-}
-
-function closeTab(id) {
-  const idx = tabs.findIndex((t) => t.id === id);
-  if (idx < 0) return;
-  const t = tabs[idx];
-  if (t.webview) {
-    t.webview.remove();
-  }
-  tabs.splice(idx, 1);
-  if (activeTabId === id) {
-    activeTabId = tabs[0] ? tabs[0].id : null;
-    if (activeTabId) activateTab(activeTabId);
-  }
-  renderTabs();
-}
-
-function newTab(partition, url) {
-  const id = uuid();
-  const t = {
-    id,
-    partition,
-    url: url || "https://www.google.com",
-    title: "New Tab",
-    pinned: false,
-    webview: null,
-  };
-  tabs.push(t);
-  renderTabs();
-  renderWebviews();
-  activateTab(id);
-}
-
-function togglePinActive() {
-  const t = tabs.find((x) => x.id === activeTabId);
-  if (!t) return;
-  t.pinned = !t.pinned;
-  persistPinned();
-  renderTabs();
-}
-
-function persistPinned() {
-  const arr = tabs
-    .filter((t) => t.pinned)
-    .map((t) => ({
-      url: t.url,
-      title: t.title || "",
-      partition: t.partition,
-    }));
-  state.pinnedTabs = arr;
-  api.setPinned(arr);
-}
-
-function restorePinned() {
-  const arr = state.pinnedTabs || [];
-  arr.forEach((p) => {
-    newTab(p.partition, p.url);
-    const t = tabs[tabs.length - 1];
-    t.pinned = true;
-  });
-  renderTabs();
-}
-
-function navigateActive(url) {
-  const t = tabs.find((x) => x.id === activeTabId);
-  if (!t) return;
+// Crear favorito desde URL (solo cuando aparece el input)
+async function addBookmarkFromUrl(rawUrl) {
+  let url = rawUrl.trim();
+  if (!url) return;
   if (!/^https?:\/\//i.test(url)) url = "https://" + url;
-  t.webview.loadURL(url);
-}
 
-function goBack() {
-  const t = tabs.find((x) => x.id === activeTabId);
-  if (t && t.webview.canGoBack()) t.webview.goBack();
-}
+  const domain = domainSlugFromUrl(url);
+  const partition = nextPartitionForDomain(domain);
 
-function goFwd() {
-  const t = tabs.find((x) => x.id === activeTabId);
-  if (t && t.webview.canGoForward()) t.webview.goForward();
-}
-
-function reload() {
-  const t = tabs.find((x) => x.id === activeTabId);
-  if (t) t.webview.reload();
-}
-
-async function addBookmarkFromActive() {
-  const t = tabs.find((x) => x.id === activeTabId);
-  if (!t) return;
-  const b = await api.addBookmark({
-    title: t.title || t.url || "Page",
-    url: t.url,
+  const list = await api.addBookmark({
+    title: url, // puedes cambiar a un nombre más friendly si quieres
+    url,
+    partition,
   });
-  state.bookmarks = b;
+  state.bookmarks = list;
+  renderBookmarks();
+
+  // crear webview y activar
+  await createWebview({ url, partition });
+  activateFavorite(partition);
 }
 
-function attachActivityListeners() {
-  const reset = () => api.signalActivity();
-  window.addEventListener("mousemove", reset);
-  window.addEventListener("keydown", reset);
-  window.addEventListener("mousedown", reset);
-  window.addEventListener("wheel", reset);
-  window.addEventListener("focus", reset);
+// Controles de navegación (del webview activo)
+function currentWebview() {
+  return document.querySelector(`webview[partition="${activeFavPartition}"]`);
+}
+function goBack() {
+  const w = currentWebview();
+  if (w && w.canGoBack()) w.goBack();
+}
+function goFwd() {
+  const w = currentWebview();
+  if (w && w.canGoForward()) w.goForward();
+}
+function reload() {
+  const w = currentWebview();
+  if (w) w.reload();
 }
 
+// Init
 async function init() {
   state = await api.getState();
-  restorePinned();
-  if (tabs.length === 0) newTab("persist:web1", "https://www.google.com");
+
+  // montar webviews existentes
+  for (const b of state.bookmarks || []) {
+    await createWebview(b);
+  }
+
+  if (state.bookmarks.length > 0) {
+    activateFavorite(state.bookmarks[0].partition);
+  } else {
+    // sin favoritos: ocultar URL (se mostrará solo al crear)
+    urlEl.value = "";
+    urlEl.style.display = "none";
+  }
+
+  renderBookmarks();
 }
 
+// Eventos UI
 backEl.addEventListener("click", goBack);
 fwdEl.addEventListener("click", goFwd);
 reloadEl.addEventListener("click", reload);
 
-newtabEl.addEventListener("click", async () => {
-  const p = sessionSel.value;
-  await api.ensureSession(p);
-  newTab(p, "https://www.google.com");
+// Mostrar input para crear nuevo favorito
+newFavEl.addEventListener("click", () => {
+  urlEl.style.display = "block";
+  urlEl.removeAttribute("readonly"); // permitir escribir SOLO en este modo
+  urlEl.value = "";
+  urlEl.focus();
 });
 
-pinTabEl.addEventListener("click", () => togglePinActive());
-starEl.addEventListener("click", () => addBookmarkFromActive());
-
-urlEl.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") navigateActive(urlEl.value);
-});
-
-tabsEl.addEventListener("dblclick", () => newtabEl.click());
-
-attachActivityListeners();
-init();
-
-// 🔹 escuchar navegación desde el menú de favoritos
-api.onNavigateTo((url) => {
-  if (!activeTabId) {
-    newTab("persist:web1", url);
-  } else {
-    navigateActive(url);
+// Crear favorito al presionar Enter (solo cuando NO está readonly)
+urlEl.addEventListener("keydown", async (e) => {
+  if (e.key === "Enter" && !urlEl.hasAttribute("readonly")) {
+    await addBookmarkFromUrl(urlEl.value);
+    urlEl.value = "";
+    urlEl.setAttribute("readonly", "true");
+    urlEl.style.display = "none";
   }
 });
+
+init();

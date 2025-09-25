@@ -4,11 +4,9 @@ import fs from "fs";
 import crypto from "crypto";
 import { fileURLToPath } from "url";
 
-// === Fix para __dirname en ESM ===
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// === Configuración ===
 const INACTIVITY_DEFAULT_MS = 5 * 60 * 1000;
 let mainWindow;
 let overlayWindow;
@@ -22,7 +20,6 @@ const settingsPath = path.join(userDataDir, "settings.json");
 const bookmarksPath = path.join(userDataDir, "bookmarks.json");
 const pinnedPath = path.join(userDataDir, "pinned.json");
 
-// === Helpers ===
 function readJson(p, fallback) {
   try {
     if (!fs.existsSync(p)) return fallback;
@@ -45,15 +42,21 @@ function loadAllState() {
     pinHash: null,
   });
 
-  // Forzar lock habilitado
+  // siempre habilitado
   settings.lockEnabled = true;
 
-  // Si no hay PIN configurado, setear "123456"
+  // PIN por defecto si no hay
   if (!settings.pinHash || !settings.pinSalt) {
     setPin("123456");
   }
 
   bookmarks = readJson(bookmarksPath, []);
+  // 🔹 Migración: quedarnos SOLO con favoritos que tengan partition persistente
+  bookmarks = bookmarks.filter(
+    (b) =>
+      b && typeof b === "object" && b.partition && /^persist:/.test(b.partition)
+  );
+
   pinnedTabs = readJson(pinnedPath, []);
 }
 function saveSettings() {
@@ -81,17 +84,7 @@ function verifyPin(pin) {
   return h === settings.pinHash;
 }
 
-// === Menú principal ===
 function createMainMenu() {
-  const bookmarksMenu = bookmarks.map((b) => ({
-    label: b.title || b.url,
-    click: () => {
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send("navigate-to", b.url);
-      }
-    },
-  }));
-
   const template = [
     {
       label: app.name,
@@ -106,12 +99,6 @@ function createMainMenu() {
         { type: "separator" },
         { role: "quit" },
       ],
-    },
-    {
-      label: "Bookmarks",
-      submenu: bookmarksMenu.length
-        ? bookmarksMenu
-        : [{ label: "No bookmarks" }],
     },
     {
       label: "View",
@@ -131,7 +118,6 @@ function createMainMenu() {
   Menu.setApplicationMenu(menu);
 }
 
-// === Lock ===
 function toggleLockEnabled() {
   settings.lockEnabled = !settings.lockEnabled;
   saveSettings();
@@ -194,7 +180,6 @@ function showOverlayLock() {
     resetInactivityTimer();
   });
 }
-
 function closeOverlay() {
   if (overlayWindow && !overlayWindow.isDestroyed()) {
     overlayWindow.close();
@@ -202,7 +187,6 @@ function closeOverlay() {
   }
 }
 
-// === Ventana principal ===
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -221,14 +205,12 @@ function createWindow() {
   mainWindow.on("hide", () => resetInactivityTimer());
 }
 
-// === Ciclo de vida de la app ===
 app.whenReady().then(() => {
   loadAllState();
   createWindow();
   createMainMenu();
   resetInactivityTimer();
 
-  // 🔹 Forzar que arranque bloqueado
   setTimeout(() => {
     showOverlayLock();
   }, 300);
@@ -247,19 +229,29 @@ ipcMain.handle("state:get", () => {
 });
 
 ipcMain.handle("bookmarks:add", (e, payload) => {
-  const exists = bookmarks.find((b) => b.url === payload.url);
+  // payload debe incluir: {title, url, partition}
+  const exists = bookmarks.find((b) => b.partition === payload.partition);
   if (!exists) {
-    bookmarks.push(payload);
+    bookmarks.push({
+      title: payload.title || payload.url || "Page",
+      url: payload.url,
+      partition: payload.partition,
+    });
     saveBookmarks();
-    createMainMenu(); // 🔹 refrescar menú al agregar
+    createMainMenu();
   }
   return bookmarks;
 });
 
-ipcMain.handle("bookmarks:remove", (e, url) => {
-  bookmarks = bookmarks.filter((b) => b.url !== url);
+// 🔹 Remover por partition (si viene objeto) o por URL (legacy)
+ipcMain.handle("bookmarks:remove", (e, key) => {
+  if (typeof key === "string") {
+    bookmarks = bookmarks.filter((b) => b.url !== key);
+  } else if (key && key.partition) {
+    bookmarks = bookmarks.filter((b) => b.partition !== key.partition);
+  }
   saveBookmarks();
-  createMainMenu(); // 🔹 refrescar menú al eliminar
+  createMainMenu();
   return bookmarks;
 });
 

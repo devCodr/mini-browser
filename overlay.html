@@ -1,49 +1,126 @@
 <!doctype html>
 <html>
+
 <head>
-<meta charset="utf-8">
-<title>Locked</title>
-<style>
-html,body{margin:0;height:100%}
-body{background:#111;display:flex;align-items:center;justify-content:center;font-family:sans-serif;color:#eee}
-.card{width:360px;padding:24px;background:#1d1d1d;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.6)}
-h1{margin:0 0 12px 0;font-size:18px;text-align:center}
-.input{width:100%;padding:12px;border-radius:8px;border:1px solid #333;background:#0f0f0f;color:#eee;font-size:16px;outline:none}
-.btn{width:100%;padding:12px;border:none;border-radius:8px;background:#2a7fde;color:#fff;font-size:16px;margin-top:12px;cursor:pointer}
-.small{margin-top:8px;text-align:center;font-size:12px;color:#aaa}
-.hidden{display:none}
-</style>
+  <meta charset="utf-8">
+  <title>Locked</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      height: 100%
+    }
+
+    body {
+      background: #111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: sans-serif;
+      color: #eee
+    }
+
+    .card {
+      width: 360px;
+      padding: 24px;
+      background: #1d1d1d;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .6)
+    }
+
+    h1 {
+      margin: 0 0 12px 0;
+      font-size: 18px;
+      text-align: center
+    }
+
+    .input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #0f0f0f;
+      color: #eee;
+      font-size: 16px;
+      outline: none
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: #2a7fde;
+      color: #fff;
+      font-size: 16px;
+      margin-top: 12px;
+      cursor: pointer
+    }
+
+    .small {
+      margin-top: 8px;
+      text-align: center;
+      font-size: 12px;
+      color: #aaa
+    }
+
+    .hidden {
+      display: none
+    }
+  </style>
 </head>
+
 <body>
-<div class="card">
-<h1 id="title">Enter PIN</h1>
-<input id="pin" class="input" type="password" placeholder="PIN">
-<button id="ok" class="btn">Unlock</button>
-<div class="small"><a id="setup" href="#">Set PIN</a></div>
-</div>
-<script>
-const pinEl=document.getElementById('pin')
-const ok=document.getElementById('ok')
-const setup=document.getElementById('setup')
-const title=document.getElementById('title')
-async function init(){
-  const state=await overlay.getState()
-  const needs=!(state.settings.pinHash&&state.settings.pinSalt)
-  if(needs){title.textContent='Set a new PIN';ok.textContent='Save';setup.classList.add('hidden')}
-}
-ok.addEventListener('click',async()=>{
-  const state=await overlay.getState()
-  const needs=!(state.settings.pinHash&&state.settings.pinSalt)
-  if(needs){if(pinEl.value.length<4)return;await overlay.setPin(pinEl.value);return}
-  const r=await overlay.verify(pinEl.value)
-  if(!r.ok){pinEl.value=''}
-})
-setup.addEventListener('click',async(e)=>{
-  e.preventDefault()
-  title.textContent='Set a new PIN'
-  ok.textContent='Save'
-})
-init()
-</script>
+  <div class="card">
+    <h1 id="title">Enter PIN</h1>
+    <input id="pin" class="input" type="password" value="123456" placeholder="PIN" autofocus>
+    <button id="ok" class="btn">Unlock</button>
+    <div class="small"><a id="setup" href="#">Set PIN</a></div>
+  </div>
+  <script>
+    const pinEl = document.getElementById('pin')
+    const ok = document.getElementById('ok')
+    const setup = document.getElementById('setup')
+    const title = document.getElementById('title')
+
+    async function init() {
+      const state = await overlay.getState()
+      const needs = !(state.settings.pinHash && state.settings.pinSalt)
+      if (needs) {
+        title.textContent = 'Set a new PIN'
+        ok.textContent = 'Save'
+        setup.classList.add('hidden')
+      }
+      pinEl.focus() // 🔹 asegura autofocus
+    }
+
+    ok.addEventListener('click', async () => {
+      const state = await overlay.getState()
+      const needs = !(state.settings.pinHash && state.settings.pinSalt)
+      if (needs) {
+        if (pinEl.value.length < 4) return;
+        await overlay.setPin(pinEl.value);
+        return
+      }
+      const r = await overlay.verify(pinEl.value)
+      if (!r.ok) { pinEl.value = '' }
+    })
+
+    // 🔹 también aceptar tecla Enter
+    pinEl.addEventListener("keydown", async (e) => {
+      if (e.key === "Enter") {
+        ok.click();
+      }
+    });
+
+    setup.addEventListener('click', async (e) => {
+      e.preventDefault()
+      title.textContent = 'Set a new PIN'
+      ok.textContent = 'Save'
+    })
+
+    init()
+  </script>
 </body>
+
 </html>
