@@ -251,12 +251,17 @@ app.whenReady().then(() => {
     showOverlayLock();
   }, 300);
 
+  // ✅ Forzar user-agent moderno para que sitios como WhatsApp funcionen
+  app.userAgentFallback =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+    "AppleWebKit/537.36 (KHTML, like Gecko) " +
+    "Chrome/120.0.0.0 Safari/537.36";
+
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
-// ✅ Enganchar menú contextual a cada webview
 app.on("web-contents-created", (event, contents) => {
   if (contents.getType() === "webview") {
     contents.on("context-menu", (event, params) => {
