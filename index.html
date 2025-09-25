@@ -14,8 +14,7 @@
             display: flex;
             flex-direction: column;
             font-family: sans-serif;
-            background: #0e0e0f;
-            color: #e6e6e6;
+
         }
 
         #toolbar {
@@ -82,23 +81,53 @@
             align-items: center;
             margin-left: auto;
 
-            div {
+            button {
+                display: grid;
+                place-content: center;
+
+                &:nth-child(1) {
+                    padding: 3px;
+                    width: 30px;
+                    height: 30px;
+                }
+
+                &:nth-child(2) {
+                    position: absolute;
+                    top: 100%;
+                    display: none;
+                    background-color: red;
+                    width: 12px;
+                    height: 12px;
+                    padding: 0;
+                    left: 0;
+                    width: 100%;
+                    border-radius: 0 0 4px 4px;
+                }
+
+                img {
+                    border-radius: 4px;
+                    display: block;
+                    width: 100%;
+                    height: auto;
+                }
+            }
+
+            .bookmark {
                 display: inline-flex;
                 align-items: center;
                 gap: 2px;
-            }
+                position: relative;
 
-            button {
-                padding: 4px 8px;
-                font-size: 12px;
+                &:hover {
+                    button:nth-child(2) {
+                        display: block;
 
-                img {
-                    width: 16px;
-                    height: 16px;
-                    border-radius: 4px;
-                    display: block;
+                    }
+
                 }
             }
+
+
         }
     </style>
 </head>
@@ -108,7 +137,7 @@
         <button id="back">⟵</button>
         <button id="fwd">⟶</button>
         <button id="reload">⟳</button>
-        <button id="newFav">➕</button>
+        <button id="newFav" title="Add Favorite">➕</button>
         <input id="url" type="text" placeholder="Enter URL to create new favorite" readonly style="display:none;">
 
 

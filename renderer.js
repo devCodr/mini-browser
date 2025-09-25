@@ -21,6 +21,13 @@ function domainSlugFromUrl(url) {
 function updateUrlInput(url) {
   urlEl.value = url;
 }
+function safeGetURL(w) {
+  try {
+    return w.getURL();
+  } catch {
+    return w?.src || "";
+  }
+}
 
 function nextPartitionForDomain(domain) {
   let max = 0;
@@ -60,10 +67,14 @@ function activateFavorite(partition) {
   document.querySelectorAll("webview").forEach((w) => {
     if (w.getAttribute("partition") === partition) {
       w.classList.add("active");
-      urlEl.value = w.getURL();
+      urlEl.value = safeGetURL(w);
       urlEl.setAttribute("readonly", "true");
       urlEl.style.display = "block";
-      document.title = w.getTitle() || "MiniBrowser";
+      try {
+        document.title = w.getTitle() || "MiniBrowser";
+      } catch {
+        document.title = "MiniBrowser";
+      }
     } else {
       w.classList.remove("active");
     }
@@ -81,11 +92,15 @@ async function createWebview(fav) {
   w.className = fav.partition === activeFavPartition ? "active" : "";
 
   w.addEventListener("page-title-updated", () => {
-    if (fav.partition === activeFavPartition) updateUrlInput(w.getURL());
+    if (fav.partition === activeFavPartition) updateUrlInput(safeGetURL(w));
   });
 
   w.addEventListener("did-navigate", () => {
-    if (fav.partition === activeFavPartition) updateUrlInput(w.getURL());
+    if (fav.partition === activeFavPartition) updateUrlInput(safeGetURL(w));
+  });
+
+  w.addEventListener("dom-ready", () => {
+    if (fav.partition === activeFavPartition) updateUrlInput(safeGetURL(w));
   });
 
   webviewsEl.appendChild(w);
@@ -104,6 +119,7 @@ function renderBookmarks() {
 
   (state.bookmarks || []).forEach((b) => {
     const wrapper = document.createElement("div");
+    wrapper.className = "bookmark";
 
     const btn = document.createElement("button");
 
@@ -114,8 +130,8 @@ function renderBookmarks() {
     const img = document.createElement("img");
     img.src = faviconUrl;
     img.alt = domain;
-    img.width = 16;
-    img.height = 16;
+    img.width = 32;
+    img.height = 32;
 
     btn.appendChild(img);
 
