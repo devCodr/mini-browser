@@ -288,3 +288,8 @@ electronAPI.onZoom((dir) => {
     } catch {}
   }
 });
+
+// === Reload desde el menú ===
+electronAPI.onTabReload(() => {
+  reload(); // recarga solo el webview activo; no cambia de favorito
+});

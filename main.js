@@ -126,7 +126,15 @@ function createMainMenu() {
     {
       label: "View",
       submenu: [
-        { role: "reload" },
+        {
+          label: "Reload Active Tab",
+          accelerator: "CmdOrCtrl+R",
+          click: () => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send("tab:reload");
+            }
+          },
+        },
         { role: "toggleDevTools" },
         { type: "separator" },
         {
@@ -277,7 +285,10 @@ app.on("web-contents-created", (event, contents) => {
         { type: "separator" },
         { role: "selectAll" },
         { type: "separator" },
-        { role: "reload" }
+        {
+          label: "Reload this tab",
+          click: () => contents.reload(),
+        }
       );
 
       Menu.buildFromTemplate(menuTemplate).popup({ window: mainWindow });
