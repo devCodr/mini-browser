@@ -294,6 +294,21 @@ app.on("window-all-closed", () => {
 });
 
 // === IPC ===
+
+ipcMain.handle("bookmarks:reorder", (e, newOrder) => {
+  if (Array.isArray(newOrder)) {
+    bookmarks = newOrder.filter(
+      (b) =>
+        b &&
+        typeof b === "object" &&
+        b.partition &&
+        /^persist:/.test(b.partition)
+    );
+    saveBookmarks();
+  }
+  return bookmarks;
+});
+
 ipcMain.handle("state:get", () => {
   return { settings, bookmarks };
 });

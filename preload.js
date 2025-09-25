@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   toggleLock: () => ipcRenderer.invoke("lock:toggle"),
   setInactivityMs: (ms) => ipcRenderer.invoke("settings:setInactivity", ms),
 
+  reorderBookmarks: (list) => ipcRenderer.invoke("bookmarks:reorder", list),
+
   onNavigateTo: (callback) =>
     ipcRenderer.on("navigate-to", (e, url) => callback(url)),
 

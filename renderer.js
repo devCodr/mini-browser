@@ -127,13 +127,48 @@ function getDomainFromUrl(url) {
 function renderBookmarks() {
   bookmarksEl.innerHTML = "";
 
-  (state.bookmarks || []).forEach((b) => {
+  (state.bookmarks || []).forEach((b, idx) => {
     const wrapper = document.createElement("div");
     wrapper.className = "bookmark";
+    wrapper.draggable = true; // 🔹 habilitar arrastrar
+    wrapper.dataset.index = idx;
 
+    // drag start
+    wrapper.addEventListener("dragstart", (e) => {
+      e.dataTransfer.setData("text/plain", idx);
+      wrapper.classList.add("dragging");
+    });
+    wrapper.addEventListener("dragend", () => {
+      wrapper.classList.remove("dragging");
+    });
+
+    // drag over
+    wrapper.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      const draggingEl = bookmarksEl.querySelector(".dragging");
+      if (!draggingEl) return;
+      const bounding = wrapper.getBoundingClientRect();
+      const offset = e.clientX - bounding.left;
+      const before = offset < bounding.width / 2;
+      if (before) {
+        bookmarksEl.insertBefore(draggingEl, wrapper);
+      } else {
+        bookmarksEl.insertBefore(draggingEl, wrapper.nextSibling);
+      }
+    });
+
+    // drop
+    wrapper.addEventListener("drop", async () => {
+      const newOrder = Array.from(bookmarksEl.children).map((el) => {
+        const i = el.dataset.index;
+        return state.bookmarks[i];
+      });
+      state.bookmarks = await electronAPI.reorderBookmarks(newOrder);
+      renderBookmarks();
+    });
+
+    // === Botón principal con favicon ===
     const btn = document.createElement("button");
-
-    // obtener dominio y favicon
     const domain = getDomainFromUrl(b.url);
     const faviconUrl = `https://www.google.com/s2/favicons?sz=32&domain=${domain}`;
 
@@ -144,14 +179,8 @@ function renderBookmarks() {
     img.height = 32;
 
     btn.appendChild(img);
-
-    // tooltip: dominio | partition
     btn.title = `${domain} | ${b.partition}`;
-
-    if (b.partition === activeFavPartition) {
-      btn.classList.add("active");
-    }
-
+    if (b.partition === activeFavPartition) btn.classList.add("active");
     btn.addEventListener("click", () => activateFavorite(b.partition));
 
     const del = document.createElement("button");
@@ -159,17 +188,14 @@ function renderBookmarks() {
     del.title = "Eliminar favorito";
     del.addEventListener("click", async (e) => {
       e.stopPropagation();
-
       const updated = await electronAPI.removeBookmark({
         partition: b.partition,
         url: b.url,
       });
       state.bookmarks = updated;
       renderBookmarks();
-
       const w = document.querySelector(`webview[partition="${b.partition}"]`);
       if (w) w.remove();
-
       if (activeFavPartition === b.partition) {
         const next = state.bookmarks[0];
         if (next) activateFavorite(next.partition);
