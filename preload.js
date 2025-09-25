@@ -17,4 +17,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   onNavigateTo: (callback) =>
     ipcRenderer.on("navigate-to", (e, url) => callback(url)),
+
+  onZoom: (callback) => ipcRenderer.on("zoom", (_e, dir) => callback(dir)),
 });

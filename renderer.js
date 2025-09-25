@@ -1,6 +1,7 @@
 let state = { settings: null, bookmarks: [] };
 let activeFavPartition = null;
 
+const zoomByPartition = {};
 const webviewsEl = document.getElementById("webviews");
 const urlEl = document.getElementById("url");
 const backEl = document.getElementById("back");
@@ -75,6 +76,11 @@ function activateFavorite(partition) {
       } catch {
         document.title = "MiniBrowser";
       }
+
+      const z = zoomByPartition[partition] ?? 1;
+      try {
+        w.setZoomFactor(z);
+      } catch {}
     } else {
       w.classList.remove("active");
     }
@@ -101,6 +107,10 @@ async function createWebview(fav) {
 
   w.addEventListener("dom-ready", () => {
     if (fav.partition === activeFavPartition) updateUrlInput(safeGetURL(w));
+    const z = zoomByPartition[fav.partition] ?? 1;
+    try {
+      w.setZoomFactor(z);
+    } catch {}
   });
 
   webviewsEl.appendChild(w);
@@ -252,3 +262,24 @@ urlEl.addEventListener("keydown", async (e) => {
 });
 
 init();
+
+// === Zoom desde el menú ===
+electronAPI.onZoom((dir) => {
+  if (!activeFavPartition) return;
+
+  let z = zoomByPartition[activeFavPartition] ?? 1;
+  if (dir === "in") z = Math.min(3, +(z + 0.1).toFixed(2));
+  if (dir === "out") z = Math.max(0.25, +(z - 0.1).toFixed(2));
+  if (dir === "reset") z = 1;
+
+  zoomByPartition[activeFavPartition] = z;
+
+  const w = document.querySelector(
+    `webview[partition="${activeFavPartition}"]`
+  );
+  if (w) {
+    try {
+      w.setZoomFactor(z);
+    } catch {}
+  }
+});
