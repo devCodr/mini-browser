@@ -1,4 +1,13 @@
-import { app, BrowserWindow, ipcMain, session, Menu, shell } from "electron";
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  session,
+  Menu,
+  shell,
+  dialog,
+} from "electron";
+
 import path, { dirname } from "path";
 import fs from "fs";
 import crypto from "crypto";
@@ -86,7 +95,24 @@ function createMainMenu() {
     {
       label: "MiniBrowser",
       submenu: [
-        { role: "about" },
+        {
+          label: "About",
+          click: () => {
+            dialog.showMessageBox({
+              type: "info",
+              title: "About MiniBrowser",
+              message:
+                `MiniBrowser v${app.getVersion()}\n\n` +
+                "Proyecto creado con Electron\n" +
+                "Crafted by: Chris Larico\n" +
+                "Website: https://larico.dev\n\n" +
+                "© 2025 MIT License",
+              icon: path.join(__dirname, "icon.png"),
+              buttons: ["Close"],
+            });
+          },
+        },
+
         { type: "separator" },
         { label: "Lock now", click: () => showOverlayLock() },
         {
