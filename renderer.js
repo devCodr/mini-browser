@@ -149,7 +149,7 @@ function renderBookmarks() {
     btn.title = `${domain} | ${b.partition}`;
 
     if (b.partition === activeFavPartition) {
-      btn.style.outline = "2px solid #2a7fde";
+      btn.classList.add("active");
     }
 
     btn.addEventListener("click", () => activateFavorite(b.partition));
