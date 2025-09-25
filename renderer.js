@@ -175,9 +175,11 @@ function renderBookmarks() {
         if (next) activateFavorite(next.partition);
         else {
           activeFavPartition = null;
-          document.title = "MiniBrowser";
-          urlEl.value = "";
-          urlEl.style.display = "none";
+          const partition = "persist:welcome";
+          createWebview({ url: "welcome.html", partition }).then(() => {
+            activateFavorite(partition);
+            urlEl.style.display = "none";
+          });
         }
       }
     });
@@ -234,7 +236,10 @@ async function init() {
   if (state.bookmarks.length > 0) {
     activateFavorite(state.bookmarks[0].partition);
   } else {
-    urlEl.value = "";
+    // mostrar bienvenida en un webview no listado en bookmarks
+    const partition = "persist:welcome";
+    await createWebview({ url: "welcome.html", partition });
+    activateFavorite(partition);
     urlEl.style.display = "none";
   }
 
