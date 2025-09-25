@@ -35,6 +35,25 @@ function nextPartitionForDomain(domain) {
   return `persist:${domain}${max >= 1 ? max + 1 : ""}`;
 }
 
+// 🔹 Generar etiqueta corta de 2 letras + numeración
+function shortLabelFromUrl(url, existingLabels) {
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./, "");
+    const parts = hostname.split(".");
+    let base = parts[0].substring(0, 2).toLowerCase();
+
+    let label = base;
+    let counter = 2;
+    while (existingLabels.includes(label)) {
+      label = base + counter;
+      counter++;
+    }
+    return label;
+  } catch {
+    return "??";
+  }
+}
+
 // === Core ===
 function activateFavorite(partition) {
   activeFavPartition = partition;
@@ -72,18 +91,41 @@ async function createWebview(fav) {
   webviewsEl.appendChild(w);
   fav.webview = w;
 }
+function getDomainFromUrl(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
 
 function renderBookmarks() {
   bookmarksEl.innerHTML = "";
+
   (state.bookmarks || []).forEach((b) => {
     const wrapper = document.createElement("div");
 
     const btn = document.createElement("button");
-    btn.textContent = b.title || b.url;
-    btn.title = b.partition;
+
+    // obtener dominio y favicon
+    const domain = getDomainFromUrl(b.url);
+    const faviconUrl = `https://www.google.com/s2/favicons?sz=32&domain=${domain}`;
+
+    const img = document.createElement("img");
+    img.src = faviconUrl;
+    img.alt = domain;
+    img.width = 16;
+    img.height = 16;
+
+    btn.appendChild(img);
+
+    // tooltip: dominio | partition
+    btn.title = `${domain} | ${b.partition}`;
+
     if (b.partition === activeFavPartition) {
       btn.style.outline = "2px solid #2a7fde";
     }
+
     btn.addEventListener("click", () => activateFavorite(b.partition));
 
     const del = document.createElement("button");
