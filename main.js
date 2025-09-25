@@ -22,12 +22,10 @@ let overlayWindow;
 let inactivityTimer = null;
 let settings = null;
 let bookmarks = [];
-let pinnedTabs = [];
 
 const userDataDir = app.getPath("userData");
 const settingsPath = path.join(userDataDir, "settings.json");
 const bookmarksPath = path.join(userDataDir, "bookmarks.json");
-const pinnedPath = path.join(userDataDir, "pinned.json");
 
 function readJson(p, fallback) {
   try {
@@ -62,17 +60,12 @@ function loadAllState() {
     (b) =>
       b && typeof b === "object" && b.partition && /^persist:/.test(b.partition)
   );
-
-  pinnedTabs = readJson(pinnedPath, []);
 }
 function saveSettings() {
   writeJson(settingsPath, settings);
 }
 function saveBookmarks() {
   writeJson(bookmarksPath, bookmarks);
-}
-function savePinned() {
-  writeJson(pinnedPath, pinnedTabs);
 }
 
 function sha256(s) {
@@ -302,7 +295,7 @@ app.on("window-all-closed", () => {
 
 // === IPC ===
 ipcMain.handle("state:get", () => {
-  return { settings, bookmarks, pinnedTabs };
+  return { settings, bookmarks };
 });
 
 ipcMain.handle("bookmarks:add", (e, payload) => {
@@ -332,12 +325,6 @@ ipcMain.handle("bookmarks:remove", (e, key) => {
 
 ipcMain.handle("bookmarks:list", () => bookmarks);
 
-ipcMain.handle("pinned:set", (e, arr) => {
-  pinnedTabs = Array.isArray(arr) ? arr : [];
-  savePinned();
-  return pinnedTabs;
-});
-
 ipcMain.handle("session:create", (e, partitionName) => {
   session.fromPartition(partitionName);
   return true;
@@ -360,7 +347,6 @@ ipcMain.handle("lock:verify", (e, pin) => {
 });
 
 ipcMain.handle("lock:check", (e, pin) => {
-  // Igual que verify, pero NO cierra el overlay
   if (!settings.pinHash || !settings.pinSalt)
     return { ok: false, needsSetup: true };
   const ok = verifyPin(pin);
@@ -370,30 +356,14 @@ ipcMain.handle("lock:check", (e, pin) => {
 ipcMain.handle("lock:setpin", (e, pin) => {
   setPin(pin);
   closeOverlay();
+  dialog.showMessageBox({
+    type: "warning",
+    title: "Importante",
+    message:
+      "Has cambiado tu PIN.\n\n⚠️ Si lo olvidas, no hay manera de recuperarlo.\nLa única opción será desinstalar y volver a instalar la aplicación.",
+    buttons: ["Entendido"],
+  });
   return { ok: true };
-});
-
-ipcMain.handle("lock:reset", () => {
-  try {
-    if (fs.existsSync(settingsPath)) fs.unlinkSync(settingsPath);
-    if (fs.existsSync(bookmarksPath)) fs.unlinkSync(bookmarksPath);
-    if (fs.existsSync(pinnedPath)) fs.unlinkSync(pinnedPath);
-
-    // limpiar estado en memoria
-    bookmarks = [];
-    pinnedTabs = [];
-    settings = null;
-
-    // recrear estado con PIN por defecto
-    loadAllState();
-    saveSettings();
-    saveBookmarks();
-    savePinned();
-
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e.message };
-  }
 });
 
 ipcMain.handle("lock:toggle", () => {

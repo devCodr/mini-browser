@@ -6,7 +6,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
   addBookmark: (b) => ipcRenderer.invoke("bookmarks:add", b),
   removeBookmark: (key) => ipcRenderer.invoke("bookmarks:remove", key),
   listBookmarks: () => ipcRenderer.invoke("bookmarks:list"),
-  setPinned: (arr) => ipcRenderer.invoke("pinned:set", arr),
   ensureSession: (p) => ipcRenderer.invoke("session:create", p),
   signalActivity: () => ipcRenderer.invoke("lock:activity"),
   showLock: () => ipcRenderer.invoke("lock:show"),

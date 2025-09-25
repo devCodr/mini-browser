@@ -95,8 +95,7 @@
 
     <div class="small">
       <a class="link" id="set" href="#">Set PIN</a> •
-      <a class="link" id="change" href="#">Change PIN</a> •
-      <a class="link" id="reset" href="#">Reset PIN</a>
+      <a class="link" id="change" href="#">Change PIN</a>
     </div>
   </div>
 
@@ -200,7 +199,7 @@
         const r = await overlay.verify(pin)
         if (!r.ok) {
           pinLogin.value = ''
-          errorEl.textContent = 'Incorrect PIN'
+          errorEl.textContent = 'Incorrect PIN (Default PIN: 123456)'
           errorEl.style.display = 'block'
         }
         return
@@ -243,7 +242,7 @@
         // Verificación que NO cierra el overlay
         const chk = await overlay.check(curr)
         if (!chk.ok) {
-          errorEl.textContent = 'Incorrect current PIN'
+          errorEl.textContent = 'Incorrect current PIN (PIN Default: 123456)'
           errorEl.style.display = 'block'
           pinCurrent.value = ''
           pinCurrent.focus()
@@ -272,18 +271,7 @@
       setModeChangePin()
     })
 
-    resetLink.addEventListener('click', async (e) => {
-      e.preventDefault()
-      if (confirm("⚠️ Esto borrará todos tus favoritos y sesiones.\n\n¿Continuar?")) {
-        const r = await overlay.reset()
-        if (r.ok) {
-          alert("PIN reseteado a 123456.\nFavoritos eliminados.")
-          location.reload()
-        } else {
-          alert("Error al resetear: " + r.error)
-        }
-      }
-    })
+
 
     init()
   </script>
