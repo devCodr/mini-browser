@@ -358,11 +358,44 @@ ipcMain.handle("lock:verify", (e, pin) => {
   if (ok) closeOverlay();
   return { ok, needsSetup: false };
 });
+
+ipcMain.handle("lock:check", (e, pin) => {
+  // Igual que verify, pero NO cierra el overlay
+  if (!settings.pinHash || !settings.pinSalt)
+    return { ok: false, needsSetup: true };
+  const ok = verifyPin(pin);
+  return { ok, needsSetup: false };
+});
+
 ipcMain.handle("lock:setpin", (e, pin) => {
   setPin(pin);
   closeOverlay();
   return { ok: true };
 });
+
+ipcMain.handle("lock:reset", () => {
+  try {
+    if (fs.existsSync(settingsPath)) fs.unlinkSync(settingsPath);
+    if (fs.existsSync(bookmarksPath)) fs.unlinkSync(bookmarksPath);
+    if (fs.existsSync(pinnedPath)) fs.unlinkSync(pinnedPath);
+
+    // limpiar estado en memoria
+    bookmarks = [];
+    pinnedTabs = [];
+    settings = null;
+
+    // recrear estado con PIN por defecto
+    loadAllState();
+    saveSettings();
+    saveBookmarks();
+    savePinned();
+
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
 ipcMain.handle("lock:toggle", () => {
   toggleLockEnabled();
   return settings.lockEnabled;

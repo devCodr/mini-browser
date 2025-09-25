@@ -46,7 +46,8 @@
       background: #0f0f0f;
       color: #eee;
       font-size: 16px;
-      outline: none
+      outline: none;
+      margin-top: 8px;
     }
 
     .btn {
@@ -59,6 +60,11 @@
       font-size: 16px;
       margin-top: 12px;
       cursor: pointer
+    }
+
+    .link {
+      color: #fff;
+      cursor: pointer;
     }
 
     .small {
@@ -77,50 +83,206 @@
 <body>
   <div class="card">
     <h1 id="title">Enter PIN</h1>
-    <input id="pin" class="input" type="password" value="123456" placeholder="PIN" autofocus>
+
+    <!-- Login input -->
+    <input id="pin-login" class="input" type="password" placeholder="PIN" inputmode="numeric" autofocus>
+
+    <!-- Change / Set inputs -->
+    <input id="pin-current" class="input hidden" type="password" placeholder="Current PIN" inputmode="numeric">
+    <input id="pin-new" class="input hidden" type="password" placeholder="New PIN (min 4 digits)" inputmode="numeric">
+
     <button id="ok" class="btn">Unlock</button>
-    <div class="small"><a id="setup" href="#">Set PIN</a></div>
+
+    <div class="small">
+      <a class="link" id="set" href="#">Set PIN</a> •
+      <a class="link" id="change" href="#">Change PIN</a> •
+      <a class="link" id="reset" href="#">Reset PIN</a>
+    </div>
   </div>
+
   <script>
-    const pinEl = document.getElementById('pin')
+    const pinLogin = document.getElementById('pin-login')
+    const pinCurrent = document.getElementById('pin-current')
+    const pinNew = document.getElementById('pin-new')
+
     const ok = document.getElementById('ok')
-    const setup = document.getElementById('setup')
     const title = document.getElementById('title')
+    const setLink = document.getElementById('set')
+    const changeLink = document.getElementById('change')
+    const resetLink = document.getElementById('reset')
+
+    // mode: 'login' | 'set' | 'change'
+    let mode = 'login'
+
+    const errorEl = document.createElement('div')
+    errorEl.style.color = 'red'
+    errorEl.style.textAlign = 'center'
+    errorEl.style.marginTop = '8px'
+    errorEl.style.display = 'none'
+    document.querySelector('.card').appendChild(errorEl)
+
+    function show(el, yes) {
+      el.classList.toggle('hidden', !yes)
+    }
+
+    function setModeLogin() {
+      mode = 'login'
+      title.textContent = 'Enter PIN'
+      ok.textContent = 'Unlock'
+      errorEl.style.display = 'none'
+      pinLogin.value = ''
+      pinCurrent.value = ''
+      pinNew.value = ''
+
+      show(pinLogin, true)
+      show(pinCurrent, false)
+      show(pinNew, false)
+
+      pinLogin.focus()
+    }
+
+    function setModeSetPin() {
+      mode = 'set'
+      title.textContent = 'Set a new PIN'
+      ok.textContent = 'Save'
+      errorEl.style.display = 'none'
+      pinLogin.value = ''
+      pinCurrent.value = ''
+      pinNew.value = ''
+
+      show(pinLogin, false)
+      show(pinCurrent, false)
+      show(pinNew, true)
+
+      pinNew.focus()
+    }
+
+    function setModeChangePin() {
+      mode = 'change'
+      title.textContent = 'Change PIN'
+      ok.textContent = 'Save'
+      errorEl.style.display = 'none'
+      pinLogin.value = ''
+      pinCurrent.value = ''
+      pinNew.value = ''
+
+      show(pinLogin, false)
+      show(pinCurrent, true)
+      show(pinNew, true)
+
+      pinCurrent.focus()
+    }
 
     async function init() {
       const state = await overlay.getState()
       const needs = !(state.settings.pinHash && state.settings.pinSalt)
+
       if (needs) {
-        title.textContent = 'Set a new PIN'
-        ok.textContent = 'Save'
-        setup.classList.add('hidden')
+        // Solo Set PIN disponible en primer arranque
+        setLink.classList.remove('hidden')
+        changeLink.classList.add('hidden')
+        setModeSetPin()
+      } else {
+        // Login + Change + Reset
+        setLink.classList.add('hidden')
+        changeLink.classList.remove('hidden')
+        setModeLogin()
       }
-      pinEl.focus() // 🔹 asegura autofocus
     }
 
     ok.addEventListener('click', async () => {
-      const state = await overlay.getState()
-      const needs = !(state.settings.pinHash && state.settings.pinSalt)
-      if (needs) {
-        if (pinEl.value.length < 4) return;
-        await overlay.setPin(pinEl.value);
+      errorEl.style.display = 'none'
+
+      if (mode === 'login') {
+        const pin = pinLogin.value.trim()
+        if (!pin) return
+        // lock:verify cierra el overlay si es correcto (comportamiento deseado al desbloquear)
+        const r = await overlay.verify(pin)
+        if (!r.ok) {
+          pinLogin.value = ''
+          errorEl.textContent = 'Incorrect PIN'
+          errorEl.style.display = 'block'
+        }
         return
       }
-      const r = await overlay.verify(pinEl.value)
-      if (!r.ok) { pinEl.value = '' }
+
+      if (mode === 'set') {
+        const newPin = pinNew.value.trim()
+        if (!/^\d{4,}$/.test(newPin)) {
+          errorEl.textContent = 'PIN must be at least 4 digits'
+          errorEl.style.display = 'block'
+          return
+        }
+        await overlay.setPin(newPin) // cierra overlay desde main.js
+        return
+      }
+
+      if (mode === 'change') {
+        const curr = pinCurrent.value.trim()
+        const next = pinNew.value.trim()
+
+        if (!/^\d{4,}$/.test(curr)) {
+          errorEl.textContent = 'Enter your current PIN'
+          errorEl.style.display = 'block'
+          pinCurrent.focus()
+          return
+        }
+        if (!/^\d{4,}$/.test(next)) {
+          errorEl.textContent = 'New PIN must be at least 4 digits'
+          errorEl.style.display = 'block'
+          pinNew.focus()
+          return
+        }
+        if (curr === next) {
+          errorEl.textContent = 'New PIN cannot be the same as current PIN'
+          errorEl.style.display = 'block'
+          pinNew.focus()
+          return
+        }
+
+        // Verificación que NO cierra el overlay
+        const chk = await overlay.check(curr)
+        if (!chk.ok) {
+          errorEl.textContent = 'Incorrect current PIN'
+          errorEl.style.display = 'block'
+          pinCurrent.value = ''
+          pinCurrent.focus()
+          return
+        }
+
+        await overlay.setPin(next) // cierra overlay desde main.js
+        return
+      }
     })
 
-    // 🔹 también aceptar tecla Enter
-    pinEl.addEventListener("keydown", async (e) => {
-      if (e.key === "Enter") {
-        ok.click();
-      }
-    });
+    function onEnterPress(e) {
+      if (e.key === 'Enter') ok.click()
+    }
+    pinLogin.addEventListener('keydown', onEnterPress)
+    pinCurrent.addEventListener('keydown', onEnterPress)
+    pinNew.addEventListener('keydown', onEnterPress)
 
-    setup.addEventListener('click', async (e) => {
+    setLink.addEventListener('click', (e) => {
       e.preventDefault()
-      title.textContent = 'Set a new PIN'
-      ok.textContent = 'Save'
+      setModeSetPin()
+    })
+
+    changeLink.addEventListener('click', (e) => {
+      e.preventDefault()
+      setModeChangePin()
+    })
+
+    resetLink.addEventListener('click', async (e) => {
+      e.preventDefault()
+      if (confirm("⚠️ Esto borrará todos tus favoritos y sesiones.\n\n¿Continuar?")) {
+        const r = await overlay.reset()
+        if (r.ok) {
+          alert("PIN reseteado a 123456.\nFavoritos eliminados.")
+          location.reload()
+        } else {
+          alert("Error al resetear: " + r.error)
+        }
+      }
     })
 
     init()
