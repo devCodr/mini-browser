@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, session, Menu } from "electron";
+import { app, BrowserWindow, ipcMain, session, Menu, shell } from "electron";
 import path, { dirname } from "path";
 import fs from "fs";
 import crypto from "crypto";
@@ -42,16 +42,13 @@ function loadAllState() {
     pinHash: null,
   });
 
-  // siempre habilitado
   settings.lockEnabled = true;
 
-  // PIN por defecto si no hay
   if (!settings.pinHash || !settings.pinSalt) {
     setPin("123456");
   }
 
   bookmarks = readJson(bookmarksPath, []);
-  // 🔹 Migración: quedarnos SOLO con favoritos que tengan partition persistente
   bookmarks = bookmarks.filter(
     (b) =>
       b && typeof b === "object" && b.partition && /^persist:/.test(b.partition)
@@ -87,7 +84,7 @@ function verifyPin(pin) {
 function createMainMenu() {
   const template = [
     {
-      label: app.name,
+      label: "MiniBrowser",
       submenu: [
         { role: "about" },
         { type: "separator" },
@@ -219,6 +216,37 @@ app.whenReady().then(() => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
+
+// ✅ Enganchar menú contextual a cada webview
+app.on("web-contents-created", (event, contents) => {
+  if (contents.getType() === "webview") {
+    contents.on("context-menu", (event, params) => {
+      const menuTemplate = [];
+
+      if (params.linkURL) {
+        menuTemplate.push({
+          label: "Open in default browser",
+          click: () => {
+            shell.openExternal(params.linkURL);
+          },
+        });
+        menuTemplate.push({ type: "separator" });
+      }
+
+      menuTemplate.push(
+        { role: "copy" },
+        { role: "paste" },
+        { type: "separator" },
+        { role: "selectAll" },
+        { type: "separator" },
+        { role: "reload" }
+      );
+
+      Menu.buildFromTemplate(menuTemplate).popup({ window: mainWindow });
+    });
+  }
+});
+
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
@@ -229,7 +257,6 @@ ipcMain.handle("state:get", () => {
 });
 
 ipcMain.handle("bookmarks:add", (e, payload) => {
-  // payload debe incluir: {title, url, partition}
   const exists = bookmarks.find((b) => b.partition === payload.partition);
   if (!exists) {
     bookmarks.push({
@@ -243,7 +270,6 @@ ipcMain.handle("bookmarks:add", (e, payload) => {
   return bookmarks;
 });
 
-// 🔹 Remover por partition (si viene objeto) o por URL (legacy)
 ipcMain.handle("bookmarks:remove", (e, key) => {
   if (typeof key === "string") {
     bookmarks = bookmarks.filter((b) => b.url !== key);
