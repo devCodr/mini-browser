@@ -23,7 +23,7 @@
   },
   "build": {
     "appId": "com.larico.minibrowser",
-    "productName": "Custom Mini Browser",
+    "productName": "MiniBrowser",
     "copyright": "© 2025 Chris Larico (MIT License)",
     "linux": {
       "target": [
@@ -32,7 +32,7 @@
       "icon": "icon.png",
       "category": "Utility",
       "maintainer": "Chris Larico <chris@larico.dev>",
-      "synopsis": "Custom Mini Browser"
+      "synopsis": "MiniBrowser"
     }
   }
 }

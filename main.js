@@ -181,7 +181,7 @@ function showOverlayLock() {
     parent: mainWindow,
     modal: true,
     frame: false,
-    alwaysOnTop: true,
+    alwaysOnTop: false,
     skipTaskbar: true,
     resizable: false,
     movable: false,
@@ -196,7 +196,7 @@ function showOverlayLock() {
     },
   });
 
-  overlayWindow.setAlwaysOnTop(true, "screen-saver");
+  // overlayWindow.setAlwaysOnTop(true, "screen-saver");
   overlayWindow.setFullScreenable(false);
   overlayWindow.loadFile("overlay.html");
 
