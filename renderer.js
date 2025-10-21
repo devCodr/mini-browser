@@ -69,7 +69,7 @@ function activateFavorite(partition) {
     if (w.getAttribute("partition") === partition) {
       w.classList.add("active");
       urlEl.value = safeGetURL(w);
-      urlEl.setAttribute("readonly", "true");
+      // urlEl.setAttribute("readonly", "true");
       urlEl.style.display = "block";
       try {
         document.title = w.getTitle() || "MiniBrowser";
@@ -278,7 +278,7 @@ reloadEl.addEventListener("click", reload);
 
 newFavEl.addEventListener("click", () => {
   urlEl.style.display = "block";
-  urlEl.removeAttribute("readonly");
+  // urlEl.removeAttribute("readonly");
   urlEl.value = "";
   urlEl.focus();
 });
@@ -287,7 +287,7 @@ urlEl.addEventListener("keydown", async (e) => {
   if (e.key === "Enter" && !urlEl.hasAttribute("readonly")) {
     await addBookmarkFromUrl(urlEl.value);
     urlEl.value = "";
-    urlEl.setAttribute("readonly", "true");
+    // urlEl.setAttribute("readonly", "true");
     urlEl.style.display = "none";
   }
 });
