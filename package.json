@@ -12,14 +12,17 @@
   "type": "module",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "package:mac": "electron-packager . MiniBrowser --platform=darwin --arch=universal --out=dist --app-bundle-id=com.larico.minibrowser --overwrite --prune=true --icon=build/icon.icns",
+    "make:icon": "./scripts/make-icon.sh"
   },
   "dependencies": {
     "node-fetch": "3.3.2"
   },
   "devDependencies": {
     "electron": "38.1.2",
-    "electron-builder": "26.0.12"
+    "electron-builder": "26.0.12",
+    "electron-packager": "^17.1.0"
   },
   "build": {
     "appId": "com.larico.minibrowser",
@@ -33,6 +36,9 @@
       "category": "Utility",
       "maintainer": "Chris Larico <chris@larico.dev>",
       "synopsis": "MiniBrowser"
+    },
+    "mac": {
+      "icon": "build/icon.icns"
     }
   }
 }

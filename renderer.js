@@ -5,6 +5,7 @@ const zoomByPartition = {};
 const webviewsEl = document.getElementById("webviews");
 const urlEl = document.getElementById("url");
 const backEl = document.getElementById("back");
+const homeEl = document.getElementById("home");
 const fwdEl = document.getElementById("fwd");
 const reloadEl = document.getElementById("reload");
 const newFavEl = document.getElementById("newFav"); // botón ➕
@@ -65,9 +66,11 @@ function shortLabelFromUrl(url, existingLabels) {
 // === Core ===
 function activateFavorite(partition) {
   activeFavPartition = partition;
+  let activeWebview = null;
   document.querySelectorAll("webview").forEach((w) => {
     if (w.getAttribute("partition") === partition) {
       w.classList.add("active");
+      activeWebview = w;
       urlEl.value = safeGetURL(w);
       // urlEl.setAttribute("readonly", "true");
       urlEl.style.display = "block";
@@ -85,6 +88,17 @@ function activateFavorite(partition) {
       w.classList.remove("active");
     }
   });
+
+  // focus the active webview so keyboard shortcuts (Cmd+C/Cmd+A) work
+  if (activeWebview) {
+    try {
+      activeWebview.setAttribute("tabindex", "0");
+      activeWebview.focus();
+    } catch (e) {
+      // ignore
+    }
+  }
+
   renderBookmarks();
 }
 
@@ -94,6 +108,7 @@ async function createWebview(fav) {
   const w = document.createElement("webview");
   w.setAttribute("partition", fav.partition);
   w.setAttribute("allowpopups", "true");
+  w.setAttribute("tabindex", "0");
   w.src = fav.url;
   w.className = fav.partition === activeFavPartition ? "active" : "";
 
@@ -293,6 +308,27 @@ urlEl.addEventListener("keydown", async (e) => {
 });
 
 init();
+
+// === Home button ===
+async function goHome() {
+  // look for an existing welcome partition
+  const welcomePartition = "persist:welcome";
+  const existing = document.querySelector(
+    `webview[partition="${welcomePartition}"]`
+  );
+  if (existing) {
+    activateFavorite(welcomePartition);
+    urlEl.style.display = "none";
+    return;
+  }
+
+  // create and activate a welcome webview
+  await createWebview({ url: "welcome.html", partition: welcomePartition });
+  activateFavorite(welcomePartition);
+  urlEl.style.display = "none";
+}
+
+homeEl.addEventListener("click", goHome);
 
 // === Zoom desde el menú ===
 electronAPI.onZoom((dir) => {

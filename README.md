@@ -33,6 +33,12 @@ Build distribución:
 npm run build
 ```
 
+Build para mac solamente
+
+```bash
+npm run package:mac
+```
+
 ## 🗂️ Archivos clave
 
 - `main.js`: proceso principal, menús, overlay PIN.
