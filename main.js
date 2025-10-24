@@ -357,6 +357,27 @@ ipcMain.handle("bookmarks:remove", (e, key) => {
 
 ipcMain.handle("bookmarks:list", () => bookmarks);
 
+ipcMain.handle("bookmarks:update-icon", (e, payload) => {
+  // payload: { partition, iconSvg }
+  if (!payload || !payload.partition) return bookmarks;
+  const b = bookmarks.find((x) => x.partition === payload.partition);
+  if (b) {
+    if (
+      payload.iconSvg &&
+      typeof payload.iconSvg === "string" &&
+      payload.iconSvg.trim() !== ""
+    ) {
+      b.iconSvg = payload.iconSvg;
+    } else {
+      // clear custom icon if empty
+      delete b.iconSvg;
+    }
+    saveBookmarks();
+    createMainMenu();
+  }
+  return bookmarks;
+});
+
 ipcMain.handle("session:create", (e, partitionName) => {
   session.fromPartition(partitionName);
   return true;

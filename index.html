@@ -91,16 +91,28 @@
                     height: 30px;
                 }
 
-                &:nth-child(2) {
+                &:nth-child(2),
+                &:nth-child(3) {
                     position: absolute;
-                    top: 100%;
+
                     display: none;
-                    background-color: red;
-                    width: 12px;
-                    height: 12px;
                     padding: 0;
+                    height: 12px;
                     left: 0;
                     width: 100%;
+                }
+
+                &:nth-child(2) {
+                    top: 100%;
+                    background-color: green;
+
+                    border-radius: 0 0 4px 4px;
+                }
+
+                &:nth-child(3) {
+                    bottom: 100%;
+
+                    background-color: red;
                     border-radius: 0 0 4px 4px;
                 }
 
@@ -123,9 +135,10 @@
                 position: relative;
 
                 &:hover {
-                    button:nth-child(2) {
-                        display: block;
 
+                    button:nth-child(2),
+                    button:nth-child(3) {
+                        display: block;
                     }
 
                 }
@@ -150,6 +163,17 @@
     </div>
     <div id="content">
         <div class="webviews" id="webviews"></div>
+    </div>
+    <!-- Modal for editing bookmark icon -->
+    <div id="iconModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center;">
+        <div style="background:#111; color:#eee; padding:16px; border-radius:8px; width:480px; max-width:95%;">
+            <h3 style="margin-top:0;">Paste SVG icon</h3>
+            <textarea id="iconSvgInput" placeholder="Paste SVG ICON code raw..."></textarea>
+            <div style=" display:flex; gap:8px; justify-content:flex-end; margin-top:8px;">
+                <button id="iconCancel">Cancel</button>
+                <button id="iconSave">Save</button>
+            </div>
+        </div>
     </div>
     <script src="renderer.js"></script>
 </body>

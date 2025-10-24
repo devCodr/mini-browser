@@ -187,20 +187,37 @@ function renderBookmarks() {
     const domain = getDomainFromUrl(b.url);
     const faviconUrl = `https://www.google.com/s2/favicons?sz=32&domain=${domain}`;
 
-    const img = document.createElement("img");
-    img.src = faviconUrl;
-    img.alt = domain;
-    img.width = 32;
-    img.height = 32;
-
-    btn.appendChild(img);
+    if (b.iconSvg) {
+      // insert raw SVG (assume trusted since user pasted it)
+      const wrap = document.createElement("span");
+      wrap.style.display = "inline-block";
+      wrap.style.width = "32px";
+      wrap.style.height = "32px";
+      wrap.style.lineHeight = "0";
+      wrap.innerHTML = b.iconSvg;
+      // ensure the svg fits
+      const sv = wrap.querySelector("svg");
+      if (sv) {
+        sv.setAttribute("width", "32");
+        sv.setAttribute("height", "32");
+        sv.style.display = "block";
+      }
+      btn.appendChild(wrap);
+    } else {
+      const img = document.createElement("img");
+      img.src = faviconUrl;
+      img.alt = domain;
+      img.width = 32;
+      img.height = 32;
+      btn.appendChild(img);
+    }
     btn.title = `${domain} | ${b.partition}`;
     if (b.partition === activeFavPartition) btn.classList.add("active");
     btn.addEventListener("click", () => activateFavorite(b.partition));
 
     const del = document.createElement("button");
     del.textContent = "×";
-    del.title = "Eliminar favorito";
+    del.title = "Remove Bookmark";
     del.addEventListener("click", async (e) => {
       e.stopPropagation();
       const updated = await electronAPI.removeBookmark({
@@ -225,11 +242,65 @@ function renderBookmarks() {
       }
     });
 
+    // change icon button
+    const changeIconBtn = document.createElement("button");
+    changeIconBtn.textContent = "✎";
+    changeIconBtn.title = "Change Icon";
+    changeIconBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openIconModal(b.partition, b.iconSvg || "");
+    });
+
     wrapper.appendChild(btn);
+    wrapper.appendChild(changeIconBtn);
     wrapper.appendChild(del);
     bookmarksEl.appendChild(wrapper);
   });
 }
+
+// --- Icon modal logic ---
+const iconModal = document.getElementById("iconModal");
+const iconSvgInput = document.getElementById("iconSvgInput");
+const iconCancel = document.getElementById("iconCancel");
+const iconSave = document.getElementById("iconSave");
+let iconEditingPartition = null;
+
+function openIconModal(partition, existingSvg) {
+  iconEditingPartition = partition;
+  iconSvgInput.value = existingSvg || "";
+  iconModal.style.display = "flex";
+  iconSvgInput.style.width = "100%";
+  iconSvgInput.style.height = "160px";
+  iconSvgInput.focus();
+}
+
+function closeIconModal() {
+  iconEditingPartition = null;
+  iconModal.style.display = "none";
+}
+
+iconCancel.addEventListener("click", () => closeIconModal());
+
+iconSave.addEventListener("click", async () => {
+  if (!iconEditingPartition) return closeIconModal();
+  const raw = iconSvgInput.value.trim();
+
+  // basic check: must contain <svg
+  if (raw && !/<svg[\s>]/i.test(raw)) {
+    alert("Please paste valid SVG markup starting with <svg>");
+    return;
+  }
+
+  // Save via electronAPI
+  const updated = await electronAPI.updateBookmarkIcon({
+    partition: iconEditingPartition,
+    iconSvg: raw,
+  });
+
+  state.bookmarks = updated;
+  renderBookmarks();
+  closeIconModal();
+});
 
 async function addBookmarkFromUrl(rawUrl) {
   let url = rawUrl.trim();
