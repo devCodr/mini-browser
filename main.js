@@ -264,10 +264,15 @@ app.whenReady().then(() => {
   }, 300);
 
   // ✅ Forzar user-agent moderno para que sitios como WhatsApp funcionen
+  const chromeVersion = process.versions.chrome;
+  const platform =
+    process.platform === "darwin"
+      ? "Macintosh; Intel Mac OS X 10_15_7"
+      : "Windows NT 10.0; Win64; x64";
   app.userAgentFallback =
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-    "AppleWebKit/537.36 (KHTML, like Gecko) " +
-    "Chrome/120.0.0.0 Safari/537.36";
+    `Mozilla/5.0 (${platform}) ` +
+    `AppleWebKit/537.36 (KHTML, like Gecko) ` +
+    `Chrome/${chromeVersion} Safari/537.36`;
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -385,7 +390,10 @@ ipcMain.handle("bookmarks:update-icon", (e, payload) => {
 });
 
 ipcMain.handle("session:create", (e, partitionName) => {
-  session.fromPartition(partitionName);
+  const ses = session.fromPartition(partitionName);
+  ses.setPermissionRequestHandler((webContents, permission, callback) => {
+    callback(true);
+  });
   return true;
 });
 
