@@ -1,5 +1,6 @@
 let state = { settings: null, bookmarks: [] };
 let activeFavPartition = null;
+let webviewPreloadPath = "";
 
 const zoomByPartition = {};
 const webviewsEl = document.getElementById("webviews");
@@ -109,8 +110,17 @@ async function createWebview(fav) {
   w.setAttribute("partition", fav.partition);
   w.setAttribute("allowpopups", "true");
   w.setAttribute("tabindex", "0");
+  if (webviewPreloadPath) {
+    w.setAttribute("preload", "file://" + webviewPreloadPath);
+  }
   w.src = fav.url;
   w.className = fav.partition === activeFavPartition ? "active" : "";
+
+  w.addEventListener("ipc-message", (event) => {
+    if (event.channel === "notification-clicked") {
+      electronAPI.focusApp();
+    }
+  });
 
   w.addEventListener("page-title-updated", () => {
     if (fav.partition === activeFavPartition) updateUrlInput(safeGetURL(w));
@@ -340,6 +350,7 @@ function reload() {
 
 async function init() {
   state = await electronAPI.getState();
+  webviewPreloadPath = await electronAPI.getWebviewPreloadPath();
 
   for (const b of state.bookmarks || []) {
     await createWebview(b);

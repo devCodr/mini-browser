@@ -14,6 +14,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   toggleLock: () => ipcRenderer.invoke("lock:toggle"),
   setInactivityMs: (ms) => ipcRenderer.invoke("settings:setInactivity", ms),
 
+  focusApp: () => ipcRenderer.invoke("app:focus"),
+  getWebviewPreloadPath: () => ipcRenderer.invoke("get-webview-preload-path"),
+
   reorderBookmarks: (list) => ipcRenderer.invoke("bookmarks:reorder", list),
   updateBookmarkIcon: (payload) =>
     ipcRenderer.invoke("bookmarks:update-icon", payload),

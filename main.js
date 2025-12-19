@@ -270,7 +270,13 @@ app.whenReady().then(() => {
     "Chrome/120.0.0.0 Safari/537.36";
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    } else if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    }
   });
 });
 
@@ -428,4 +434,17 @@ ipcMain.handle("settings:setInactivity", (e, ms) => {
   saveSettings();
   resetInactivityTimer();
   return settings.inactivityMs;
+});
+
+ipcMain.handle("app:focus", () => {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+  }
+  return true;
+});
+
+ipcMain.handle("get-webview-preload-path", () => {
+  return path.join(__dirname, "webview-preload.js");
 });
