@@ -228,7 +228,7 @@ function createWindow() {
       webviewTag: true,
     },
   });
-  mainWindow.loadFile("index.html");
+  mainWindow.loadFile(path.join(__dirname, "index.html"));
   mainWindow.on("focus", () => resetInactivityTimer());
   mainWindow.on("blur", () => resetInactivityTimer());
   mainWindow.on("show", () => resetInactivityTimer());

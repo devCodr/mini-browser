@@ -41,6 +41,7 @@
       "preload.js",
       "overlay-preload.js",
       "webview-preload.js",
+      "index.html",
       "overlay.html",
       "welcome.html",
       "icon.png",
