@@ -1,6 +1,19 @@
+// Global error handling
+window.addEventListener('error', (e) => {
+  console.error('Global error:', e.error);
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+  console.error('Unhandled promise rejection:', e.reason);
+});
+
+// electronAPI is already available globally from preload.js
 let state = { settings: null, bookmarks: [] };
 let activeFavPartition = null;
 let webviewPreloadPath = "";
+
+console.log('Renderer.js loaded, electronAPI:', !!electronAPI);
+
 
 const zoomByPartition = {};
 const webviewsEl = document.getElementById("webviews");
@@ -356,6 +369,14 @@ async function init() {
     await createWebview(b);
   }
 
+  renderBookmarks();
+  
+  // Initialize lock overlay after everything else is ready
+  if (state.settings.lockEnabled) {
+    console.log('Lock enabled, showing overlay from init');
+    showLockOverlay();
+  }
+
   if (state.bookmarks.length > 0) {
     activateFavorite(state.bookmarks[0].partition);
   } else {
@@ -389,7 +410,22 @@ urlEl.addEventListener("keydown", async (e) => {
   }
 });
 
-init();
+try {
+  console.log('Starting initialization...');
+  init();
+} catch (error) {
+  console.error('Error during initialization:', error);
+}
+
+// Force show overlay for testing
+setTimeout(() => {
+  console.log('Force testing overlay...');
+  if (window.showLockOverlay) {
+    window.showLockOverlay();
+  } else {
+    console.error('showLockOverlay function not available');
+  }
+}, 1000);
 
 // === Home button ===
 async function goHome() {
@@ -437,3 +473,211 @@ electronAPI.onZoom((dir) => {
 electronAPI.onTabReload(() => {
   reload(); // recarga solo el webview activo; no cambia de favorito
 });
+
+// === Lock Overlay Functionality ===
+const lockOverlay = document.getElementById('lockOverlay');
+const pinLogin = document.getElementById('pinLogin');
+const pinCurrent = document.getElementById('pinCurrent');
+const pinNew = document.getElementById('pinNew');
+const lockOk = document.getElementById('lockOk');
+const lockTitle = document.getElementById('lockTitle');
+const lockSet = document.getElementById('lockSet');
+const lockChange = document.getElementById('lockChange');
+const lockError = document.getElementById('lockError');
+
+// Verify all elements exist
+console.log('Overlay elements found:', {
+  lockOverlay: !!lockOverlay,
+  pinLogin: !!pinLogin,
+  pinCurrent: !!pinCurrent,
+  pinNew: !!pinNew,
+  lockOk: !!lockOk,
+  lockTitle: !!lockTitle,
+  lockSet: !!lockSet,
+  lockChange: !!lockChange,
+  lockError: !!lockError
+});
+
+let lockMode = 'login'; // 'login' | 'set' | 'change'
+
+function showLockOverlay() {
+  if (!lockOverlay) {
+    console.error('lockOverlay element not found!');
+    return;
+  }
+  console.log('Showing lock overlay');
+  lockOverlay.style.display = 'flex';
+  initLockMode();
+}
+
+function hideLockOverlay() {
+  lockOverlay.style.display = 'none';
+}
+
+function showLockInput(element, show) {
+  element.style.display = show ? 'block' : 'none';
+}
+
+function setLockModeLogin() {
+  lockMode = 'login';
+  lockTitle.textContent = 'Enter PIN';
+  lockOk.textContent = 'Unlock';
+  lockError.style.display = 'none';
+  pinLogin.value = '';
+  pinCurrent.value = '';
+  pinNew.value = '';
+  
+  showLockInput(pinLogin, true);
+  showLockInput(pinCurrent, false);
+  showLockInput(pinNew, false);
+  
+  pinLogin.focus();
+}
+
+function setLockModeSetPin() {
+  lockMode = 'set';
+  lockTitle.textContent = 'Set a new PIN';
+  lockOk.textContent = 'Save';
+  lockError.style.display = 'none';
+  pinLogin.value = '';
+  pinCurrent.value = '';
+  pinNew.value = '';
+  
+  showLockInput(pinLogin, false);
+  showLockInput(pinCurrent, false);
+  showLockInput(pinNew, true);
+  
+  pinNew.focus();
+}
+
+function setLockModeChangePin() {
+  lockMode = 'change';
+  lockTitle.textContent = 'Change PIN';
+  lockOk.textContent = 'Save';
+  lockError.style.display = 'none';
+  pinLogin.value = '';
+  pinCurrent.value = '';
+  pinNew.value = '';
+  
+  showLockInput(pinLogin, false);
+  showLockInput(pinCurrent, true);
+  showLockInput(pinNew, true);
+  
+  pinCurrent.focus();
+}
+
+async function initLockMode() {
+  const state = await electronAPI.getState();
+  const needsSetup = !(state.settings.pinHash && state.settings.pinSalt);
+  
+  if (needsSetup) {
+    lockSet.style.display = 'inline';
+    lockChange.style.display = 'none';
+    setLockModeSetPin();
+  } else {
+    lockSet.style.display = 'none';
+    lockChange.style.display = 'inline';
+    setLockModeLogin();
+  }
+}
+
+lockOk.addEventListener('click', async () => {
+  lockError.style.display = 'none';
+  
+  if (lockMode === 'login') {
+    const pin = pinLogin.value.trim();
+    if (!pin) return;
+    
+    const result = await electronAPI.lockVerify(pin);
+    if (!result.ok) {
+      pinLogin.value = '';
+      lockError.textContent = 'Incorrect PIN (Default PIN: 123456)';
+      lockError.style.display = 'block';
+    }
+    return;
+  }
+  
+  if (lockMode === 'set') {
+    const newPin = pinNew.value.trim();
+    if (!/^\d{4,}$/.test(newPin)) {
+      lockError.textContent = 'PIN must be at least 4 digits';
+      lockError.style.display = 'block';
+      return;
+    }
+    await electronAPI.lockSetPin(newPin);
+    return;
+  }
+  
+  if (lockMode === 'change') {
+    const curr = pinCurrent.value.trim();
+    const next = pinNew.value.trim();
+    
+    if (!/^\d{4,}$/.test(curr)) {
+      lockError.textContent = 'Enter your current PIN';
+      lockError.style.display = 'block';
+      pinCurrent.focus();
+      return;
+    }
+    if (!/^\d{4,}$/.test(next)) {
+      lockError.textContent = 'New PIN must be at least 4 digits';
+      lockError.style.display = 'block';
+      pinNew.focus();
+      return;
+    }
+    if (curr === next) {
+      lockError.textContent = 'New PIN cannot be the same as current PIN';
+      lockError.style.display = 'block';
+      pinNew.focus();
+      return;
+    }
+    
+    const check = await electronAPI.lockCheck(curr);
+    if (!check.ok) {
+      lockError.textContent = 'Incorrect current PIN (Default PIN: 123456)';
+      lockError.style.display = 'block';
+      pinCurrent.value = '';
+      pinCurrent.focus();
+      return;
+    }
+    
+    await electronAPI.lockSetPin(next);
+    return;
+  }
+});
+
+function onEnterPress(e) {
+  if (e.key === 'Enter') lockOk.click();
+}
+
+pinLogin.addEventListener('keydown', onEnterPress);
+pinCurrent.addEventListener('keydown', onEnterPress);
+pinNew.addEventListener('keydown', onEnterPress);
+
+lockSet.addEventListener('click', (e) => {
+  e.preventDefault();
+  setLockModeSetPin();
+});
+
+lockChange.addEventListener('click', (e) => {
+  e.preventDefault();
+  setLockModeChangePin();
+});
+
+// Listen for lock events from main process
+electronAPI.onLockShow(() => {
+  showLockOverlay();
+});
+
+// Listen for lock hide events from main process
+electronAPI.onLockHide = (callback) =>
+  ipcRenderer.on("lock:hide", () => callback());
+
+electronAPI.onLockHide(() => {
+  hideLockOverlay();
+});
+
+// Overlay initialization is now handled in the init() function
+
+// Debug function - manually show overlay
+window.showLockOverlay = showLockOverlay;
+window.hideLockOverlay = hideLockOverlay;

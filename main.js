@@ -18,10 +18,10 @@ const __dirname = dirname(__filename);
 
 const INACTIVITY_DEFAULT_MS = 5 * 60 * 1000;
 let mainWindow;
-let overlayWindow;
 let inactivityTimer = null;
 let settings = null;
 let bookmarks = [];
+let isLocked = false;
 
 const userDataDir = app.getPath("userData");
 const settingsPath = path.join(userDataDir, "settings.json");
@@ -167,72 +167,48 @@ function createMainMenu() {
 }
 
 function toggleLockEnabled() {
+  // Only allow toggling when app is unlocked
+  if (isLocked) {
+    return;
+  }
+  
   settings.lockEnabled = !settings.lockEnabled;
   saveSettings();
   createMainMenu();
+  
+  // If lock is disabled, hide overlay and reset timer
+  if (!settings.lockEnabled && mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send("lock:hide");
+    if (inactivityTimer) {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = null;
+    }
+  }
+  
+  // If lock is enabled again, start the inactivity timer
+  if (settings.lockEnabled) {
+    resetInactivityTimer();
+  }
 }
 function resetInactivityTimer() {
   if (!settings.lockEnabled) return;
-  if (
-    overlayWindow &&
-    !overlayWindow.isDestroyed() &&
-    overlayWindow.isVisible()
-  )
-    return;
   if (inactivityTimer) clearTimeout(inactivityTimer);
   inactivityTimer = setTimeout(() => {
     showOverlayLock();
   }, settings.inactivityMs || INACTIVITY_DEFAULT_MS);
 }
 function showOverlayLock() {
-  if (overlayWindow && !overlayWindow.isDestroyed()) return;
   if (!mainWindow || mainWindow.isDestroyed()) return;
-
-  const bounds = mainWindow.getBounds();
-  overlayWindow = new BrowserWindow({
-    parent: mainWindow,
-    modal: true,
-    frame: false,
-    alwaysOnTop: false,
-    skipTaskbar: true,
-    resizable: false,
-    movable: false,
-    width: bounds.width,
-    height: bounds.height,
-    x: bounds.x,
-    y: bounds.y,
-    webPreferences: {
-      contextIsolation: true,
-      nodeIntegration: false,
-      preload: path.join(__dirname, "overlay-preload.js"),
-    },
-  });
-
-  // overlayWindow.setAlwaysOnTop(true, "screen-saver");
-  overlayWindow.setFullScreenable(false);
-  overlayWindow.loadFile("overlay.html");
-
-  mainWindow.on("resize", () => {
-    if (overlayWindow && !overlayWindow.isDestroyed()) {
-      overlayWindow.setBounds(mainWindow.getBounds());
-    }
-  });
-  mainWindow.on("move", () => {
-    if (overlayWindow && !overlayWindow.isDestroyed()) {
-      overlayWindow.setBounds(mainWindow.getBounds());
-    }
-  });
-
-  overlayWindow.on("closed", () => {
-    overlayWindow = null;
-    resetInactivityTimer();
-  });
+  if (!settings.lockEnabled) return;
+  
+  isLocked = true;
+  // Send message to renderer to show lock overlay
+  mainWindow.webContents.send("lock:show");
 }
+
 function closeOverlay() {
-  if (overlayWindow && !overlayWindow.isDestroyed()) {
-    overlayWindow.close();
-    overlayWindow = null;
-  }
+  // The overlay is now handled internally by the renderer
+  // This function is kept for compatibility but doesn't need to do anything
 }
 
 function createWindow() {
@@ -251,6 +227,9 @@ function createWindow() {
   mainWindow.on("blur", () => resetInactivityTimer());
   mainWindow.on("show", () => resetInactivityTimer());
   mainWindow.on("hide", () => resetInactivityTimer());
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
 }
 
 app.whenReady().then(() => {
@@ -409,7 +388,13 @@ ipcMain.handle("lock:verify", (e, pin) => {
   if (!settings.pinHash || !settings.pinSalt)
     return { ok: false, needsSetup: true };
   const ok = verifyPin(pin);
-  if (ok) closeOverlay();
+  if (ok && mainWindow && !mainWindow.isDestroyed()) {
+    isLocked = false;
+    // Send message to renderer to hide lock overlay
+    mainWindow.webContents.send("lock:hide");
+    // Reset inactivity timer after successful unlock
+    resetInactivityTimer();
+  }
   return { ok, needsSetup: false };
 });
 
@@ -422,7 +407,11 @@ ipcMain.handle("lock:check", (e, pin) => {
 
 ipcMain.handle("lock:setpin", (e, pin) => {
   setPin(pin);
-  closeOverlay();
+  isLocked = false;
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    // Send message to renderer to hide lock overlay
+    mainWindow.webContents.send("lock:hide");
+  }
   dialog.showMessageBox({
     type: "warning",
     title: "Importante",
@@ -430,6 +419,8 @@ ipcMain.handle("lock:setpin", (e, pin) => {
       "Has cambiado tu PIN.\n\n⚠️ Si lo olvidas, no hay manera de recuperarlo.\nLa única opción será desinstalar y volver a instalar la aplicación.",
     buttons: ["Entendido"],
   });
+  // Reset inactivity timer after setting PIN
+  resetInactivityTimer();
   return { ok: true };
 });
 

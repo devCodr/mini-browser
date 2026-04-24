@@ -26,4 +26,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   onZoom: (callback) => ipcRenderer.on("zoom", (_e, dir) => callback(dir)),
   onTabReload: (callback) => ipcRenderer.on("tab:reload", () => callback()),
+  
+  // Lock functions
+  lockVerify: (pin) => ipcRenderer.invoke("lock:verify", pin),
+  lockCheck: (pin) => ipcRenderer.invoke("lock:check", pin),
+  lockSetPin: (pin) => ipcRenderer.invoke("lock:setpin", pin),
+  onLockShow: (callback) => ipcRenderer.on("lock:show", () => callback()),
+  onLockHide: (callback) => ipcRenderer.on("lock:hide", () => callback()),
 });

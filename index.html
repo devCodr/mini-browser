@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <title>Mini Browser</title>
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self';">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
 
     <style>
         html,
@@ -181,7 +181,34 @@
             </div>
         </div>
     </div>
-    <script src="renderer.js"></script>
+    
+    <!-- Lock Overlay (integrated within main window) -->
+    <div id="lockOverlay" style="display:none; position:fixed; inset:0; background:#111; z-index:9999; align-items:center; justify-content:center; flex-direction:column;">
+        <div style="width:360px; padding:24px; background:#1d1d1d; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.6);">
+            <img src="./icon.png" alt="Mini Browser" style="width:125px; height:auto; display:block; margin:auto auto 20px auto;">
+            <h1 id="lockTitle" style="margin:0 0 12px 0; font-size:18px; text-align:center; color:#eee;">Enter PIN</h1>
+            
+            <input id="pinLogin" class="input" type="password" placeholder="PIN" inputmode="numeric" autofocus
+                   style="width:100%; padding:12px; border-radius:8px; border:1px solid #333; background:#0f0f0f; color:#eee; font-size:16px; outline:none; margin-top:8px;">
+            
+            <input id="pinCurrent" class="input hidden" type="password" placeholder="Current PIN" inputmode="numeric"
+                   style="width:100%; padding:12px; border-radius:8px; border:1px solid #333; background:#0f0f0f; color:#eee; font-size:16px; outline:none; margin-top:8px; display:none;">
+            
+            <input id="pinNew" class="input hidden" type="password" placeholder="New PIN (min 4 digits)" inputmode="numeric"
+                   style="width:100%; padding:12px; border-radius:8px; border:1px solid #333; background:#0f0f0f; color:#eee; font-size:16px; outline:none; margin-top:8px; display:none;">
+            
+            <button id="lockOk" class="btn" style="width:100%; padding:12px; border:none; border-radius:8px; background:#2a7fde; color:#fff; font-size:16px; margin-top:12px; cursor:pointer;">Unlock</button>
+            
+            <div style="margin-top:8px; text-align:center; font-size:12px; color:#aaa;">
+                <a id="lockSet" class="link" href="#" style="color:#fff; cursor:pointer;">Set PIN</a> •
+                <a id="lockChange" class="link" href="#" style="color:#fff; cursor:pointer;">Change PIN</a>
+            </div>
+            
+            <div id="lockError" style="color:red; text-align:center; margin-top:8px; display:none;"></div>
+        </div>
+    </div>
+    
+        <script src="renderer.js"></script>
 </body>
 
 </html>
