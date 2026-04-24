@@ -21,11 +21,13 @@
 
 Descarga la versión más reciente para tu plataforma:
 
-- **macOS**: [MiniBrowser.dmg](https://github.com/devCodr/mini-browser/releases/latest/download/MiniBrowser.dmg)
-- **Linux**: [MiniBrowser.deb](https://github.com/devCodr/mini-browser/releases/latest/download/MiniBrowser.deb)
-- **Windows**: [MiniBrowser.exe](https://github.com/devCodr/mini-browser/releases/latest/download/MiniBrowser.exe)
+👉 **[Ver todos los releases](https://github.com/devCodr/mini-browser/releases)** - Selecciona el archivo adecuado para tu sistema:
 
-> 📋 **Nota**: Los releases se generan automáticamente con cada nuevo tag en el repositorio.
+- **macOS**: `MiniBrowser-*.dmg` (Intel o Apple Silicon)
+- **Linux**: `mini-browser_*.deb` (Debian/Ubuntu) o `MiniBrowser-*.AppImage`
+- **Windows**: `MiniBrowser Setup *.exe`
+
+> 📋 **Nota**: Los releases se generan automáticamente con cada nuevo tag en el repositorio. Siempre descarga la última versión disponible.
 
 ## ▶️ Uso Rápido
 
