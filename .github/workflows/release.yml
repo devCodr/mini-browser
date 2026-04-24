@@ -30,6 +30,7 @@ jobs:
       run: npm ci
 
     - name: Update package.json version from tag
+      shell: bash
       run: |
         # Extract version from git tag (remove 'v' prefix)
         VERSION=${GITHUB_REF#refs/tags/v}
