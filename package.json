@@ -12,9 +12,13 @@
   "type": "module",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder",
+    "build": "electron-builder --publish=never",
+    "build:all": "electron-builder --mac --win --linux --publish=never",
     "package:mac": "electron-packager . MiniBrowser --platform=darwin --arch=universal --out=dist --app-bundle-id=com.larico.minibrowser --overwrite --prune=true --icon=build/icon.icns",
-    "make:icon": "./scripts/make-icon.sh"
+    "package:linux": "electron-packager . MiniBrowser --platform=linux --arch=x64 --out=dist --app-bundle-id=com.larico.minibrowser --overwrite --prune=true --icon=icon.png",
+    "package:windows": "electron-packager . MiniBrowser --platform=win32 --arch=x64 --out=dist --app-bundle-id=com.larico.minibrowser --overwrite --prune=true --icon=icon.ico",
+    "make:icon": "./scripts/make-icon.sh",
+    "release": "electron-builder --publish=always"
   },
   "dependencies": {
     "node-fetch": "3.3.2"
@@ -28,17 +32,63 @@
     "appId": "com.larico.minibrowser",
     "productName": "MiniBrowser",
     "copyright": "© 2025 Chris Larico (MIT License)",
-    "linux": {
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "renderer.js",
+      "preload.js",
+      "overlay-preload.js",
+      "webview-preload.js",
+      "overlay.html",
+      "welcome.html",
+      "icon.png",
+      "package.json"
+    ],
+    "mac": {
+      "icon": "build/icon.icns",
+      "category": "public.app-category.productivity",
       "target": [
-        "deb"
-      ],
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ]
+    },
+    "win": {
+      "icon": "icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "linux": {
       "icon": "icon.png",
       "category": "Utility",
+      "target": [
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        },
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        }
+      ],
       "maintainer": "Chris Larico <chris@larico.dev>",
-      "synopsis": "MiniBrowser"
+      "synopsis": "MiniBrowser - Lightweight private browser"
     },
-    "mac": {
-      "icon": "build/icon.icns"
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "devCodr",
+      "repo": "mini-browser"
     }
   }
 }
