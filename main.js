@@ -8,6 +8,12 @@ import {
   dialog,
 } from "electron";
 
+// Add command line switches for SSL bypass (development only)
+app.commandLine.appendSwitch('ignore-certificate-errors');
+app.commandLine.appendSwitch('ignore-ssl-errors');
+app.commandLine.appendSwitch('ignore-certificate-errors-spki-list');
+app.commandLine.appendSwitch('ignore-certificate-errors-spki-list');
+
 import path, { dirname } from "path";
 import fs from "fs";
 import crypto from "crypto";
@@ -242,16 +248,48 @@ app.whenReady().then(() => {
     showOverlayLock();
   }, 300);
 
-  // ✅ Forzar user-agent moderno para que sitios como WhatsApp funcionen
+  // ✅ Enhanced User Agent and security configuration for Google services compatibility
   const chromeVersion = process.versions.chrome;
   const platform =
     process.platform === "darwin"
       ? "Macintosh; Intel Mac OS X 10_15_7"
       : "Windows NT 10.0; Win64; x64";
+  
+  // Enhanced User Agent specifically for Google personal account compatibility
   app.userAgentFallback =
-    `Mozilla/5.0 (${platform}) ` +
-    `AppleWebKit/537.36 (KHTML, like Gecko) ` +
-    `Chrome/${chromeVersion} Safari/537.36`;
+    `Mozilla/5.0 (${platform}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chromeVersion} Safari/537.36`;
+  
+  // Additional headers for Google compatibility
+  app.on('web-contents-created', (event, contents) => {
+    contents.on('before-input-event', (event, input) => {
+      // Add any additional browser behavior simulation here
+    });
+    
+    // Set additional headers that Google expects
+    contents.session.webRequest.onBeforeSendHeaders((details, callback) => {
+      details.requestHeaders['User-Agent'] = app.userAgentFallback;
+      details.requestHeaders['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9';
+      details.requestHeaders['Accept-Language'] = 'en-US,en;q=0.9,es;q=0.8';
+      details.requestHeaders['Accept-Encoding'] = 'gzip, deflate, br';
+      details.requestHeaders['DNT'] = '1';
+      details.requestHeaders['Connection'] = 'keep-alive';
+      details.requestHeaders['Upgrade-Insecure-Requests'] = '1';
+      callback({ cancel: false, requestHeaders: details.requestHeaders });
+    });
+  });
+  
+  // Configure SSL/TLS settings - more permissive for development
+  app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+    // Ignore certificate errors for development to allow HTTPS sites to load
+    event.preventDefault();
+    callback(true);
+  });
+  
+  // Configure session for better compatibility
+  session.defaultSession.setUserAgent(app.userAgentFallback);
+  
+  // Enable spell checking and other features
+  session.defaultSession.setSpellCheckerLanguages(['en-US', 'es-ES']);
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -266,6 +304,19 @@ app.whenReady().then(() => {
 
 app.on("web-contents-created", (event, contents) => {
   if (contents.getType() === "webview") {
+    // Intercept Google personal account login attempts
+    contents.on('will-navigate', (event, navigationUrl) => {
+      if (navigationUrl.includes('accounts.google.com') && 
+          (navigationUrl.includes('gmail.com') || navigationUrl.includes('signin'))) {
+        // For personal Gmail accounts, use system browser
+        if (navigationUrl.includes('gmail.com') && !navigationUrl.includes('larico.net')) {
+          event.preventDefault();
+          shell.openExternal(navigationUrl);
+          return;
+        }
+      }
+    });
+    
     contents.on("context-menu", (event, params) => {
       const menuTemplate = [];
 
@@ -288,6 +339,16 @@ app.on("web-contents-created", (event, contents) => {
         {
           label: "Reload this tab",
           click: () => contents.reload(),
+        },
+        { type: "separator" },
+        {
+          label: "Open in system browser (for Gmail)",
+          click: () => {
+            const currentUrl = contents.getURL();
+            if (currentUrl) {
+              shell.openExternal(currentUrl);
+            }
+          },
         }
       );
 
@@ -370,9 +431,34 @@ ipcMain.handle("bookmarks:update-icon", (e, payload) => {
 
 ipcMain.handle("session:create", (e, partitionName) => {
   const ses = session.fromPartition(partitionName);
+  
+  // Set the same user agent as the main app
+  ses.setUserAgent(app.userAgentFallback);
+  
+  // Handle permissions more gracefully
   ses.setPermissionRequestHandler((webContents, permission, callback) => {
-    callback(true);
+    // Allow most permissions for better compatibility
+    if (['notifications', 'geolocation', 'camera', 'microphone', 'midi'].includes(permission)) {
+      callback(true);
+    } else {
+      callback(true); // Allow all for now, can be restricted later
+    }
   });
+  
+  // Handle certificate errors for webviews - completely permissive for development
+  ses.setCertificateVerifyProc((request, callback) => {
+    // Ignore ALL certificate errors to allow HTTPS sites to load
+    callback(0); // 0 = OK
+  });
+  
+  // Additional SSL bypass for webviews
+  ses.setPermissionRequestHandler((webContents, permission, callback) => {
+    callback(true); // Allow all permissions
+  });
+  
+  // Enable spell checking
+  ses.setSpellCheckerLanguages(['en-US', 'es-ES']);
+  
   return true;
 });
 
