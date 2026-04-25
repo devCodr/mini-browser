@@ -4,284 +4,627 @@
 <head>
   <meta charset="utf-8">
   <title>Locked</title>
+ 
   <style>
-    html,
-    body {
-      margin: 0;
-      height: 100%
-    }
-
     * {
-      box-sizing: border-box
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
     }
 
     body {
-      background: #111;
+      background: radial-gradient(ellipse at 30% 20%, #1a1040 0%, #0d0d18 50%, #060610 100%);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: sans-serif;
-      color: #eee
+     font-family: system-ui, sans-serif;
+      color: #fff;
+      position: relative;
+    }
+
+    /* Ambient background orbs */
+    body::before {
+      content: '';
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(99, 78, 211, 0.15) 0%, transparent 70%);
+      top: -100px;
+      left: -100px;
+      pointer-events: none;
+    }
+
+    body::after {
+      content: '';
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(56, 182, 255, 0.08) 0%, transparent 70%);
+      bottom: -50px;
+      right: -50px;
+      pointer-events: none;
     }
 
     .card {
-      width: 360px;
-      padding: 24px;
-      background: #1d1d1d;
-      border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, .6)
+      width: 300px;
+      padding: 32px 24px 28px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 24px;
+      box-shadow:
+        0 40px 80px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+        0 1px 0 rgba(255, 255, 255, 0.12) inset;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      position: relative;
+      z-index: 1;
     }
 
-    h1 {
-      margin: 0 0 12px 0;
-      font-size: 18px;
-      text-align: center
+    /* Logo icon */
+    .logo-wrap {
+      width: 72px;
+      height: 72px;
+      border-radius: 100%;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow:
+        0 8px 24px rgba(0,0,0,0.45),
+        0 0 0 1px rgba(255,255,255,0.08) inset;
+      margin-bottom: 16px;
+      flex-shrink: 0;
     }
 
-    .logo {
-      width: 125px;
-      height: auto;
+    .logo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
       display: block;
-      margin: auto auto 20px auto;
     }
 
-    .input {
-      width: 100%;
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid #333;
-      background: #0f0f0f;
-      color: #eee;
-      font-size: 16px;
-      outline: none;
-      margin-top: 8px;
-    }
-
-    .btn {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 8px;
-      background: #2a7fde;
+    .app-name {
+      font-size: 18px;
+      font-weight: 600;
       color: #fff;
-      font-size: 16px;
-      margin-top: 12px;
-      cursor: pointer
+      letter-spacing: -0.3px;
+      margin-bottom: 4px;
     }
 
-    .link {
+    .subtitle {
+      font-size: 12px;
+      color: rgba(255,255,255,0.45);
+      margin-bottom: 22px;
+      font-weight: 400;
+    }
+
+    /* PIN dots */
+    .pin-dots {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .pin-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255,255,255,0.3);
+      background: transparent;
+      transition: all 0.2s ease;
+    }
+
+    .pin-dot.filled {
+      background: #7c5af0;
+      border-color: #7c5af0;
+      box-shadow: 0 0 8px rgba(124, 90, 240, 0.7);
+    }
+
+    .pin-dot.error {
+      background: #ef4444;
+      border-color: #ef4444;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.7);
+    }
+
+    /* Keypad */
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    .key {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
       color: #fff;
+      font-size: 20px;
+      font-weight: 400;
+      font-family: system-ui, sans-serif;
+      height: 52px;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s ease;
+      -webkit-app-region: no-drag;
+      user-select: none;
     }
 
-    .small {
-      margin-top: 8px;
+    .key:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.15);
+    }
+
+    .key:active {
+      background: rgba(124, 90, 240, 0.3);
+      border-color: rgba(124, 90, 240, 0.5);
+      transform: scale(0.95);
+    }
+
+    .key-flash {
+      background: rgba(124, 90, 240, 0.45) !important;
+      border-color: rgba(124, 90, 240, 0.7) !important;
+      transform: scale(0.93) !important;
+      box-shadow: 0 0 14px rgba(124, 90, 240, 0.5);
+    }
+
+    .key.zero-key {
+      grid-column: 2;
+    }
+
+    .key.del-key {
+      grid-column: 3;
+      font-size: 16px;
+    }
+
+    /* Enter key */
+    .key.enter-key {
+      grid-column: 1;
+      background: rgba(124, 90, 240, 0.18);
+      border-color: rgba(124, 90, 240, 0.35);
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(124, 90, 240, 1);
+      letter-spacing: 0.3px;
+    }
+
+    .key.enter-key:hover {
+      background: rgba(124, 90, 240, 0.3) !important;
+      border-color: rgba(124, 90, 240, 0.55) !important;
+      color: #fff;
+    }
+
+    .key.enter-key:active {
+      background: rgba(124, 90, 240, 0.5) !important;
+      transform: scale(0.93);
+    }
+
+    .key.enter-key:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+
+    /* Error message */
+    .error-msg {
+      font-size: 11.5px;
+      color: #ef4444;
+      text-align: center;
+      min-height: 16px;
+      margin-top: 4px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .error-msg.visible {
+      opacity: 1;
+    }
+
+    /* Change PIN link */
+    .change-pin-link {
+      margin-top: 16px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.35);
+      cursor: pointer;
+      border: none;
+      background: none;
+    font-family: system-ui, sans-serif;
+      transition: color 0.2s;
+      -webkit-app-region: no-drag;
+      text-decoration: none;
+    }
+
+    .change-pin-link:hover {
+      color: rgba(255,255,255,0.65);
+    }
+
+    /* --- Change PIN panel --- */
+    .change-panel {
+      width: 100%;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .change-panel.active {
+      display: flex;
+    }
+
+    .change-panel input {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05);
+      color: #fff;
+      font-size: 14px;
+    font-family: system-ui, sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+      -webkit-app-region: no-drag;
+    }
+
+    .change-panel input:focus {
+      border-color: rgba(124, 90, 240, 0.6);
+      background: rgba(124, 90, 240, 0.08);
+    }
+
+    .change-panel input::placeholder {
+      color: rgba(255,255,255,0.3);
+    }
+
+    .change-panel .save-btn {
+      padding: 11px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(135deg, #7c5af0 0%, #5b35d9 100%);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      font-family: system-ui, sans-serif;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      -webkit-app-region: no-drag;
+    }
+
+    .change-panel .save-btn:hover {
+      opacity: 0.9;
+    }
+
+    .change-panel .save-btn:active {
+      transform: scale(0.98);
+    }
+
+    .change-panel .cancel-link {
       text-align: center;
       font-size: 12px;
-      color: #aaa
+      color: rgba(255,255,255,0.35);
+      cursor: pointer;
+      border: none;
+      background: none;
+    font-family: system-ui, sans-serif;
+      -webkit-app-region: no-drag;
     }
 
-    .hidden {
-      display: none
+    .change-panel .cancel-link:hover {
+      color: rgba(255,255,255,0.6);
+    }
+
+    /* Shake animation */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+
+    .shake {
+      animation: shake 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.97) translateY(8px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .card {
+      animation: fadeIn 0.35s ease;
     }
   </style>
 </head>
 
 <body>
-  <div class="card">
-    <img class="logo" width="128" height="128" src="./icon.png" alt="Mini Browser">
-    <h1 id="title">Enter PIN</h1>
-
-    <!-- Login input -->
-    <input id="pin-login" class="input" type="password" placeholder="PIN" inputmode="numeric" autofocus>
-
-    <!-- Change / Set inputs -->
-    <input id="pin-current" class="input hidden" type="password" placeholder="Current PIN" inputmode="numeric">
-    <input id="pin-new" class="input hidden" type="password" placeholder="New PIN (min 4 digits)" inputmode="numeric">
-
-    <button id="ok" class="btn">Unlock</button>
-
-    <div class="small">
-      <a class="link" id="set" href="#">Set PIN</a> •
-      <a class="link" id="change" href="#">Change PIN</a>
+  <div class="card" id="card">
+    <div class="logo-wrap">
+      <img src="./icon.png" alt="MiniBrowser">
     </div>
+    <div class="app-name">MiniBrowser</div>
+    <div class="subtitle" id="subtitle">Ingresa tu PIN para acceder</div>
+
+    <!-- PIN dots -->
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot" data-i="0"></div>
+      <div class="pin-dot" data-i="1"></div>
+      <div class="pin-dot" data-i="2"></div>
+      <div class="pin-dot" data-i="3"></div>
+      <div class="pin-dot" data-i="4"></div>
+      <div class="pin-dot" data-i="5"></div>
+    </div>
+
+    <!-- Keypad -->
+    <div class="keypad" id="keypad">
+      <button class="key" data-digit="1">1</button>
+      <button class="key" data-digit="2">2</button>
+      <button class="key" data-digit="3">3</button>
+      <button class="key" data-digit="4">4</button>
+      <button class="key" data-digit="5">5</button>
+      <button class="key" data-digit="6">6</button>
+      <button class="key" data-digit="7">7</button>
+      <button class="key" data-digit="8">8</button>
+      <button class="key" data-digit="9">9</button>
+      <button class="key enter-key" id="enterBtn" disabled>OK</button>
+      <button class="key zero-key" data-digit="0">0</button>
+      <button class="key del-key" id="delBtn">⌫</button>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <!-- Change PIN panel (hidden by default) -->
+    <div class="change-panel" id="changePanel">
+      <input type="password" id="pinCurrent" placeholder="PIN actual" inputmode="numeric" autocomplete="off">
+      <input type="password" id="pinNew" placeholder="Nuevo PIN (mín. 4 dígitos)" inputmode="numeric" autocomplete="off">
+      <button class="save-btn" id="saveChangePinBtn">Guardar PIN</button>
+      <button class="cancel-link" id="cancelChangePinBtn">Cancelar</button>
+    </div>
+
+    <a class="change-pin-link" id="changePinLink" href="#">Cambiar PIN</a>
   </div>
 
   <script>
-    const pinLogin = document.getElementById('pin-login')
-    const pinCurrent = document.getElementById('pin-current')
-    const pinNew = document.getElementById('pin-new')
+    const PIN_MIN = 4;
+    const PIN_MAX = 6;  // auto-submit length
+    let pinBuffer = '';
+    let mode = 'login'; // 'login' | 'change'
 
-    const ok = document.getElementById('ok')
-    const title = document.getElementById('title')
-    const setLink = document.getElementById('set')
-    const changeLink = document.getElementById('change')
-    const resetLink = document.getElementById('reset')
+    const pinDotsEl = document.getElementById('pinDots');
+    const dotsEls = pinDotsEl.querySelectorAll('.pin-dot');
+    const keypadEl = document.getElementById('keypad');
+    const enterBtn = document.getElementById('enterBtn');
+    const delBtn = document.getElementById('delBtn');
+    const errorMsg = document.getElementById('errorMsg');
+    const changePinLink = document.getElementById('changePinLink');
+    const changePanel = document.getElementById('changePanel');
+    const pinCurrentEl = document.getElementById('pinCurrent');
+    const pinNewEl = document.getElementById('pinNew');
+    const saveChangePinBtn = document.getElementById('saveChangePinBtn');
+    const cancelChangePinBtn = document.getElementById('cancelChangePinBtn');
+    const subtitleEl = document.getElementById('subtitle');
+    const card = document.getElementById('card');
 
-    // mode: 'login' | 'set' | 'change'
-    let mode = 'login'
-
-    const errorEl = document.createElement('div')
-    errorEl.style.color = 'red'
-    errorEl.style.textAlign = 'center'
-    errorEl.style.marginTop = '8px'
-    errorEl.style.display = 'none'
-    document.querySelector('.card').appendChild(errorEl)
-
-    function show(el, yes) {
-      el.classList.toggle('hidden', !yes)
+    function updateDots(err = false) {
+      dotsEls.forEach((d, i) => {
+        d.classList.remove('filled', 'error');
+        if (i < pinBuffer.length) {
+          d.classList.add(err ? 'error' : 'filled');
+        }
+      });
+      // Enable Enter button once MIN digits are typed
+      enterBtn.disabled = pinBuffer.length < PIN_MIN;
     }
 
-    function setModeLogin() {
-      mode = 'login'
-      title.textContent = 'Enter PIN'
-      ok.textContent = 'Unlock'
-      errorEl.style.display = 'none'
-      pinLogin.value = ''
-      pinCurrent.value = ''
-      pinNew.value = ''
-
-      show(pinLogin, true)
-      show(pinCurrent, false)
-      show(pinNew, false)
-
-      pinLogin.focus()
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.classList.add('visible');
+      // Shake dots
+      dotsEls.forEach(d => {
+        if (d.classList.contains('filled')) d.classList.add('error');
+      });
+      card.classList.remove('shake');
+      void card.offsetWidth; // reflow
+      card.classList.add('shake');
+      setTimeout(() => {
+        errorMsg.classList.remove('visible');
+        pinBuffer = '';
+        updateDots();
+      }, 1400);
     }
 
-    function setModeSetPin() {
-      mode = 'set'
-      title.textContent = 'Set a new PIN'
-      ok.textContent = 'Save'
-      errorEl.style.display = 'none'
-      pinLogin.value = ''
-      pinCurrent.value = ''
-      pinNew.value = ''
-
-      show(pinLogin, false)
-      show(pinCurrent, false)
-      show(pinNew, true)
-
-      pinNew.focus()
+    function clearError() {
+      errorMsg.classList.remove('visible');
     }
 
-    function setModeChangePin() {
-      mode = 'change'
-      title.textContent = 'Change PIN'
-      ok.textContent = 'Save'
-      errorEl.style.display = 'none'
-      pinLogin.value = ''
-      pinCurrent.value = ''
-      pinNew.value = ''
+    // Keypad press
+    keypadEl.addEventListener('click', async (e) => {
+      if (mode !== 'login') return;
+      const btn = e.target.closest('[data-digit]');
+      if (!btn) return;
+      if (pinBuffer.length >= PIN_MAX) return;
 
-      show(pinLogin, false)
-      show(pinCurrent, true)
-      show(pinNew, true)
+      clearError();
+      pinBuffer += btn.dataset.digit;
+      updateDots();
 
-      pinCurrent.focus()
+      // Auto-submit only at max length
+      if (pinBuffer.length === PIN_MAX) {
+        await verifyPin();
+      }
+    });
+
+    // Enter button click
+    enterBtn.addEventListener('click', async () => {
+      if (mode !== 'login') return;
+      if (pinBuffer.length < PIN_MIN) return;
+      await verifyPin();
+    });
+
+    delBtn.addEventListener('click', () => {
+      if (mode !== 'login') return;
+      if (pinBuffer.length > 0) {
+        pinBuffer = pinBuffer.slice(0, -1);
+        updateDots();
+        clearError();
+      }
+    });
+
+    // Flash the keypad button visually
+    function flashKey(digit) {
+      const btn = digit === 'del'
+        ? delBtn
+        : digit === 'enter'
+        ? enterBtn
+        : keypadEl.querySelector(`[data-digit="${digit}"]`);
+      if (!btn) return;
+      btn.classList.add('key-flash');
+      setTimeout(() => btn.classList.remove('key-flash'), 160);
     }
+
+    // Keyboard support
+    document.addEventListener('keydown', (e) => {
+      if (mode !== 'login') return;
+      if (e.key >= '0' && e.key <= '9') {
+        if (pinBuffer.length < PIN_MAX) {
+          flashKey(e.key);
+          clearError();
+          pinBuffer += e.key;
+          updateDots();
+          if (pinBuffer.length === PIN_MAX) {
+            verifyPin();
+          }
+        }
+      } else if (e.key === 'Backspace') {
+        flashKey('del');
+        if (pinBuffer.length > 0) {
+          pinBuffer = pinBuffer.slice(0, -1);
+          updateDots();
+          clearError();
+        }
+      } else if (e.key === 'Enter') {
+        if (pinBuffer.length >= PIN_MIN) {
+          flashKey('enter');
+          verifyPin();
+        }
+      }
+    });
+
+    async function verifyPin() {
+      const pin = pinBuffer;
+      pinBuffer = '';
+      const r = await overlay.verify(pin);
+      if (!r.ok) {
+        updateDots();
+        showError('PIN incorrecto · Default: 123456');
+      }
+      // if ok, overlay.verify closes the window from main.js
+    }
+
+    // --- Change PIN mode ---
+    changePinLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      enterChangeMode();
+    });
+
+    function enterChangeMode() {
+      mode = 'change';
+      pinBuffer = '';
+      updateDots();
+      clearError();
+      keypadEl.style.display = 'none';
+      pinDotsEl.style.display = 'none';
+      subtitleEl.textContent = 'Cambiar PIN';
+      changePinLink.style.display = 'none';
+      changePanel.classList.add('active');
+      pinCurrentEl.value = '';
+      pinNewEl.value = '';
+      pinCurrentEl.focus();
+    }
+
+    function exitChangeMode() {
+      mode = 'login';
+      pinBuffer = '';
+      updateDots();
+      clearError();
+      keypadEl.style.display = '';
+      pinDotsEl.style.display = '';
+      subtitleEl.textContent = 'Ingresa tu PIN para acceder';
+      changePinLink.style.display = '';
+      changePanel.classList.remove('active');
+    }
+
+    cancelChangePinBtn.addEventListener('click', () => {
+      exitChangeMode();
+    });
+
+    saveChangePinBtn.addEventListener('click', async () => {
+      const curr = pinCurrentEl.value.trim();
+      const next = pinNewEl.value.trim();
+
+      if (!/^\d{4,}$/.test(curr)) {
+        errorMsg.textContent = 'Ingresa tu PIN actual';
+        errorMsg.classList.add('visible');
+        pinCurrentEl.focus();
+        return;
+      }
+      if (!/^\d{4,}$/.test(next)) {
+        errorMsg.textContent = 'El nuevo PIN debe tener al menos 4 dígitos';
+        errorMsg.classList.add('visible');
+        pinNewEl.focus();
+        return;
+      }
+      if (curr === next) {
+        errorMsg.textContent = 'El nuevo PIN no puede ser igual al actual';
+        errorMsg.classList.add('visible');
+        pinNewEl.focus();
+        return;
+      }
+
+      const chk = await overlay.check(curr);
+      if (!chk.ok) {
+        errorMsg.textContent = 'PIN actual incorrecto';
+        errorMsg.classList.add('visible');
+        pinCurrentEl.value = '';
+        pinCurrentEl.focus();
+        return;
+      }
+
+      await overlay.setPin(next);
+      // setPin closes the overlay from main.js
+    });
+
+    [pinCurrentEl, pinNewEl].forEach(el => {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') saveChangePinBtn.click();
+      });
+    });
 
     async function init() {
-      const state = await overlay.getState()
-      const needs = !(state.settings.pinHash && state.settings.pinSalt)
+      const state = await overlay.getState();
+      const needsSetup = !(state.settings.pinHash && state.settings.pinSalt);
 
-      if (needs) {
-        // Solo Set PIN disponible en primer arranque
-        setLink.classList.remove('hidden')
-        changeLink.classList.add('hidden')
-        setModeSetPin()
-      } else {
-        // Login + Change + Reset
-        setLink.classList.add('hidden')
-        changeLink.classList.remove('hidden')
-        setModeLogin()
+      if (needsSetup) {
+        // No PIN set — go straight to change/set mode
+        changePinLink.style.display = 'none';
+        enterChangeMode();
+        subtitleEl.textContent = 'Configura tu PIN';
       }
     }
 
-    ok.addEventListener('click', async () => {
-      errorEl.style.display = 'none'
-
-      if (mode === 'login') {
-        const pin = pinLogin.value.trim()
-        if (!pin) return
-        // lock:verify cierra el overlay si es correcto (comportamiento deseado al desbloquear)
-        const r = await overlay.verify(pin)
-        if (!r.ok) {
-          pinLogin.value = ''
-          errorEl.textContent = 'Incorrect PIN (Default PIN: 123456)'
-          errorEl.style.display = 'block'
-        }
-        return
-      }
-
-      if (mode === 'set') {
-        const newPin = pinNew.value.trim()
-        if (!/^\d{4,}$/.test(newPin)) {
-          errorEl.textContent = 'PIN must be at least 4 digits'
-          errorEl.style.display = 'block'
-          return
-        }
-        await overlay.setPin(newPin) // cierra overlay desde main.js
-        return
-      }
-
-      if (mode === 'change') {
-        const curr = pinCurrent.value.trim()
-        const next = pinNew.value.trim()
-
-        if (!/^\d{4,}$/.test(curr)) {
-          errorEl.textContent = 'Enter your current PIN'
-          errorEl.style.display = 'block'
-          pinCurrent.focus()
-          return
-        }
-        if (!/^\d{4,}$/.test(next)) {
-          errorEl.textContent = 'New PIN must be at least 4 digits'
-          errorEl.style.display = 'block'
-          pinNew.focus()
-          return
-        }
-        if (curr === next) {
-          errorEl.textContent = 'New PIN cannot be the same as current PIN'
-          errorEl.style.display = 'block'
-          pinNew.focus()
-          return
-        }
-
-        // Verificación que NO cierra el overlay
-        const chk = await overlay.check(curr)
-        if (!chk.ok) {
-          errorEl.textContent = 'Incorrect current PIN (PIN Default: 123456)'
-          errorEl.style.display = 'block'
-          pinCurrent.value = ''
-          pinCurrent.focus()
-          return
-        }
-
-        await overlay.setPin(next) // cierra overlay desde main.js
-        return
-      }
-    })
-
-    function onEnterPress(e) {
-      if (e.key === 'Enter') ok.click()
-    }
-    pinLogin.addEventListener('keydown', onEnterPress)
-    pinCurrent.addEventListener('keydown', onEnterPress)
-    pinNew.addEventListener('keydown', onEnterPress)
-
-    setLink.addEventListener('click', (e) => {
-      e.preventDefault()
-      setModeSetPin()
-    })
-
-    changeLink.addEventListener('click', (e) => {
-      e.preventDefault()
-      setModeChangePin()
-    })
-
-
-
-    init()
+    init();
   </script>
 </body>
 

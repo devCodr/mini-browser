@@ -168,10 +168,10 @@ function renderBookmarks() {
   (state.bookmarks || []).forEach((b, idx) => {
     const wrapper = document.createElement("div");
     wrapper.className = "bookmark";
-    wrapper.draggable = true; // 🔹 habilitar arrastrar
+    wrapper.draggable = true;
     wrapper.dataset.index = idx;
 
-    // drag start
+    // drag events
     wrapper.addEventListener("dragstart", (e) => {
       e.dataTransfer.setData("text/plain", idx);
       wrapper.classList.add("dragging");
@@ -179,74 +179,68 @@ function renderBookmarks() {
     wrapper.addEventListener("dragend", () => {
       wrapper.classList.remove("dragging");
     });
-
-    // drag over
     wrapper.addEventListener("dragover", (e) => {
       e.preventDefault();
       const draggingEl = bookmarksEl.querySelector(".dragging");
       if (!draggingEl) return;
       const bounding = wrapper.getBoundingClientRect();
-      const offset = e.clientX - bounding.left;
-      const before = offset < bounding.width / 2;
-      if (before) {
-        bookmarksEl.insertBefore(draggingEl, wrapper);
-      } else {
-        bookmarksEl.insertBefore(draggingEl, wrapper.nextSibling);
-      }
+      const before = e.clientX - bounding.left < bounding.width / 2;
+      bookmarksEl.insertBefore(draggingEl, before ? wrapper : wrapper.nextSibling);
     });
-
-    // drop
     wrapper.addEventListener("drop", async () => {
-      const newOrder = Array.from(bookmarksEl.children).map((el) => {
-        const i = el.dataset.index;
-        return state.bookmarks[i];
-      });
+      const newOrder = Array.from(bookmarksEl.children).map((el) => state.bookmarks[el.dataset.index]);
       state.bookmarks = await electronAPI.reorderBookmarks(newOrder);
       renderBookmarks();
     });
 
-    // === Botón principal con favicon ===
+    // Main favicon button
     const btn = document.createElement("button");
+    btn.className = "bm-main-btn";
     const domain = getDomainFromUrl(b.url);
     const faviconUrl = `https://www.google.com/s2/favicons?sz=32&domain=${domain}`;
 
     if (b.iconSvg) {
-      // insert raw SVG (assume trusted since user pasted it)
       const wrap = document.createElement("span");
-      wrap.style.display = "inline-block";
-      wrap.style.width = "32px";
-      wrap.style.height = "32px";
-      wrap.style.lineHeight = "0";
+      wrap.style.cssText = "display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;";
       wrap.innerHTML = b.iconSvg;
-      // ensure the svg fits
       const sv = wrap.querySelector("svg");
-      if (sv) {
-        sv.setAttribute("width", "32");
-        sv.setAttribute("height", "32");
-        sv.style.display = "block";
-      }
+      if (sv) { sv.setAttribute("width", "18"); sv.setAttribute("height", "18"); }
       btn.appendChild(wrap);
     } else {
       const img = document.createElement("img");
       img.src = faviconUrl;
       img.alt = domain;
-      img.width = 32;
-      img.height = 32;
+      img.width = 18;
+      img.height = 18;
       btn.appendChild(img);
     }
-    btn.title = `${domain} | ${b.partition}`;
+
+    btn.title = `${domain}`;
     if (b.partition === activeFavPartition) btn.classList.add("active");
     btn.addEventListener("click", () => activateFavorite(b.partition));
 
+    // Hover action strip
+    const actions = document.createElement("div");
+    actions.className = "bm-actions";
+
+    // Edit icon btn
+    const changeIconBtn = document.createElement("button");
+    changeIconBtn.className = "bm-action-btn";
+    changeIconBtn.title = "Cambiar ícono";
+    changeIconBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+    changeIconBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openIconModal(b.partition, b.iconSvg || "");
+    });
+
+    // Delete btn
     const del = document.createElement("button");
-    del.textContent = "×";
-    del.title = "Remove Bookmark";
+    del.className = "bm-action-btn del";
+    del.title = "Eliminar";
+    del.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
     del.addEventListener("click", async (e) => {
       e.stopPropagation();
-      const updated = await electronAPI.removeBookmark({
-        partition: b.partition,
-        url: b.url,
-      });
+      const updated = await electronAPI.removeBookmark({ partition: b.partition, url: b.url });
       state.bookmarks = updated;
       renderBookmarks();
       const w = document.querySelector(`webview[partition="${b.partition}"]`);
@@ -265,18 +259,11 @@ function renderBookmarks() {
       }
     });
 
-    // change icon button
-    const changeIconBtn = document.createElement("button");
-    changeIconBtn.textContent = "✎";
-    changeIconBtn.title = "Change Icon";
-    changeIconBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      openIconModal(b.partition, b.iconSvg || "");
-    });
+    actions.appendChild(changeIconBtn);
+    actions.appendChild(del);
 
     wrapper.appendChild(btn);
-    wrapper.appendChild(changeIconBtn);
-    wrapper.appendChild(del);
+    wrapper.appendChild(actions);
     bookmarksEl.appendChild(wrapper);
   });
 }
@@ -291,30 +278,27 @@ let iconEditingPartition = null;
 function openIconModal(partition, existingSvg) {
   iconEditingPartition = partition;
   iconSvgInput.value = existingSvg || "";
-  iconModal.style.display = "flex";
-  iconSvgInput.style.width = "100%";
-  iconSvgInput.style.height = "160px";
+  iconModal.classList.add("open");
   iconSvgInput.focus();
 }
 
 function closeIconModal() {
   iconEditingPartition = null;
-  iconModal.style.display = "none";
+  iconModal.classList.remove("open");
 }
 
 iconCancel.addEventListener("click", () => closeIconModal());
+iconModal.addEventListener("click", (e) => { if (e.target === iconModal) closeIconModal(); });
 
 iconSave.addEventListener("click", async () => {
   if (!iconEditingPartition) return closeIconModal();
   const raw = iconSvgInput.value.trim();
 
-  // basic check: must contain <svg
   if (raw && !/<svg[\s>]/i.test(raw)) {
-    alert("Please paste valid SVG markup starting with <svg>");
+    alert("Por favor pega markup SVG válido que empiece con <svg>");
     return;
   }
 
-  // Save via electronAPI
   const updated = await electronAPI.updateBookmarkIcon({
     partition: iconEditingPartition,
     iconSvg: raw,

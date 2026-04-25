@@ -205,6 +205,7 @@ function resetInactivityTimer() {
 }
 function showOverlayLock() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
+<<<<<<< HEAD
   if (!settings.lockEnabled) return;
   
   isLocked = true;
@@ -212,6 +213,57 @@ function showOverlayLock() {
   mainWindow.webContents.send("lock:show");
 }
 
+=======
+
+  const bounds = mainWindow.getBounds();
+  // Offset 28px down so macOS traffic-light buttons remain accessible
+  const TITLEBAR_H = 28;
+  overlayWindow = new BrowserWindow({
+    parent: mainWindow,
+    modal: false,
+    frame: false,
+    alwaysOnTop: false,
+    skipTaskbar: true,
+    resizable: false,
+    movable: false,
+    width: bounds.width,
+    height: bounds.height - TITLEBAR_H,
+    x: bounds.x,
+    y: bounds.y + TITLEBAR_H,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      preload: path.join(__dirname, "overlay-preload.js"),
+    },
+  });
+
+  overlayWindow.setFullScreenable(false);
+  overlayWindow.loadFile("overlay.html");
+
+  // Keep overlay covering content area on resize/move
+  mainWindow.on("resize", syncOverlayBounds);
+  mainWindow.on("move", syncOverlayBounds);
+
+  overlayWindow.on("closed", () => {
+    overlayWindow = null;
+    mainWindow.removeListener("resize", syncOverlayBounds);
+    mainWindow.removeListener("move", syncOverlayBounds);
+    resetInactivityTimer();
+  });
+}
+
+function syncOverlayBounds() {
+  if (!overlayWindow || overlayWindow.isDestroyed()) return;
+  const TITLEBAR_H = 28;
+  const b = mainWindow.getBounds();
+  overlayWindow.setBounds({
+    x: b.x,
+    y: b.y + TITLEBAR_H,
+    width: b.width,
+    height: b.height - TITLEBAR_H,
+  });
+}
+>>>>>>> f36ebf7 (update)
 function closeOverlay() {
   // The overlay is now handled internally by the renderer
   // This function is kept for compatibility but doesn't need to do anything
@@ -233,8 +285,18 @@ function createWindow() {
   mainWindow.on("blur", () => resetInactivityTimer());
   mainWindow.on("show", () => resetInactivityTimer());
   mainWindow.on("hide", () => resetInactivityTimer());
+<<<<<<< HEAD
   mainWindow.on("closed", () => {
     mainWindow = null;
+=======
+
+  // Allow closing the app even when the overlay (lock) is active
+  mainWindow.on("close", () => {
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+      overlayWindow.destroy();
+      overlayWindow = null;
+    }
+>>>>>>> f36ebf7 (update)
   });
 }
 

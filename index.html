@@ -2,171 +2,404 @@
 <html>
 
 <head>
+<<<<<<< HEAD
     <meta charset="utf-8">
     <title>Mini Browser</title>
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
+=======
+  <meta charset="utf-8">
+  <title>MiniBrowser</title>
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self';">
+  
+>>>>>>> f36ebf7 (update)
 
-    <style>
-        html,
-        body {
-            height: 100%;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            font-family: sans-serif;
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
 
-        }
+    html, body {
+      height: 100%;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      font-family: system-ui, sans-serif;
+      background: #0d0d12;
+      color: #e6e6e6;
+    }
 
-        #toolbar {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-            padding: 8px;
-            background: #1b1b1c;
-            border-bottom: 1px solid #2a2a2b;
-        }
+    /* ===== TOOLBAR ===== */
+    #toolbar {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      padding: 8px 12px;
+      background: #13131a;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      min-height: 50px;
+      flex-shrink: 0;
+      -webkit-app-region: drag;
+    }
 
-        button {
-            background: #2a2a2b;
-            color: #e6e6e6;
-            border: 1px solid #3a3a3b;
-            border-radius: 6px;
-            padding: 6px 10px;
-            cursor: pointer;
-        }
+    #toolbar > * {
+      -webkit-app-region: no-drag;
+    }
 
-        #url {
-            flex: 1;
-            padding: 8px;
-            border-radius: 6px;
-            border: 1px solid #3a3a3b;
-            background: #121213;
-            color: #e6e6e6;
-            display: none;
-            /* 🔹 oculta por defecto */
-        }
+    /* Nav buttons */
+    .nav-btn {
+      background: rgba(255,255,255,0.05);
+      color: rgba(255,255,255,0.7);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 8px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, transform 0.1s;
+      font-size: 14px;
+      flex-shrink: 0;
+      padding: 0;
+    }
 
-        #content {
-            flex: 1;
-            display: flex;
-            position: relative;
-            height: 100%;
-        }
+    .nav-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
 
-        .webviews {
-            flex: 1;
-            position: relative;
-            height: 100%;
-        }
+    .nav-btn:active {
+      transform: scale(0.92);
+      background: rgba(124, 90, 240, 0.25);
+    }
 
-        .webviews webview {
-            width: 100%;
-            height: 100%;
-            border: none;
-            visibility: hidden;
-            position: absolute;
-            left: 0;
-            top: 0;
+    /* URL bar */
+    #url {
+      flex: 1;
+      max-width: 400px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05);
+      color: #e6e6e6;
+      font-size: 12px;
+     font-family: system-ui, sans-serif;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+      display: none;
+    }
 
-        }
+    #url:focus {
+      border-color: rgba(124, 90, 240, 0.6);
+      background: rgba(124, 90, 240, 0.08);
+    }
 
-        .webviews webview.active {
-            visibility: visible;
-        }
+    #url::placeholder {
+      color: rgba(255,255,255,0.3);
+    }
 
-        #bookmarks {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            align-items: center;
-            margin-left: auto;
+    /* Add bookmark button */
+    #newFav {
+      background: rgba(124, 90, 240, 0.15);
+      color: rgba(124, 90, 240, 1);
+      border: 1px solid rgba(124, 90, 240, 0.3);
+      border-radius: 8px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      font-size: 16px;
+      flex-shrink: 0;
+      padding: 0;
+    }
 
-            button {
-                display: grid;
-                place-content: center;
+    #newFav:hover {
+      background: rgba(124, 90, 240, 0.28);
+    }
 
-                &:nth-child(1) {
-                    padding: 3px;
-                    width: 30px;
-                    height: 30px;
-                }
+    #newFav:active {
+      transform: scale(0.92);
+    }
 
-                &:nth-child(2),
-                &:nth-child(3) {
-                    position: absolute;
+    /* Content */
+    #content {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+    }
 
-                    display: none;
-                    padding: 0;
-                    height: 12px;
-                    left: 0;
-                    width: 100%;
-                }
+    .webviews {
+      flex: 1;
+      position: relative;
+    }
 
-                &:nth-child(2) {
-                    top: 100%;
-                    background-color: green;
+    .webviews webview {
+      width: 100%;
+      height: 100%;
+      border: none;
+      visibility: hidden;
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
 
-                    border-radius: 0 0 4px 4px;
-                }
+    .webviews webview.active {
+      visibility: visible;
+    }
 
-                &:nth-child(3) {
-                    bottom: 100%;
+    /* ===== BOOKMARKS BAR ===== */
+    #bookmarks {
+      display: flex;
+      gap: 4px;
+      flex-wrap: nowrap;
+      align-items: center;
+      margin-left: auto;
+      overflow: hidden;
+    }
 
-                    background-color: red;
-                    border-radius: 0 0 4px 4px;
-                }
+    .bookmark {
+      display: inline-flex;
+      align-items: center;
+      position: relative;
+      border-radius: 10px;
+    }
 
-                svg {
-                    width: 22px;
-                    aspect-ratio: 1/1;
-                    margin: auto;
-                }
+    .bookmark:hover .bm-actions {
+      opacity: 1;
+      pointer-events: auto;
+    }
 
-                img {
-                    border-radius: 4px;
-                    display: block;
-                    width: 100%;
-                    height: auto;
-                }
-            }
+    /* Main favicon button */
+    .bm-main-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      padding: 0;
+      flex-shrink: 0;
+      position: relative;
+    }
 
-            .bookmark button.active {
-                outline: 2px solid #2a7fde;
-            }
+    .bm-main-btn img,
+    .bm-main-btn svg {
+      width: 18px;
+      height: 18px;
+      border-radius: 3px;
+      display: block;
+    }
 
-            .bookmark {
-                display: inline-flex;
-                align-items: center;
-                gap: 2px;
-                position: relative;
+    .bm-main-btn:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.13);
+    }
 
-                &:hover {
+    .bm-main-btn:active {
+      transform: scale(0.92);
+    }
 
-                    button:nth-child(2),
-                    button:nth-child(3) {
-                        display: block;
-                    }
+    .bm-main-btn.active {
+      background: rgba(124, 90, 240, 0.2);
+      border-color: rgba(124, 90, 240, 0.5);
+      box-shadow: 0 0 0 2px rgba(124, 90, 240, 0.2);
+    }
 
-                }
-            }
+    /* Hover action strip that appears below */
+    .bm-actions {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 2px;
+      background: #1e1e2a;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 3px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s;
+      z-index: 100;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
 
+    .bm-action-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,0.55);
+      cursor: pointer;
+      border-radius: 5px;
+      width: 24px;
+      height: 24px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.1s, color 0.1s;
+    }
 
-        }
-    </style>
+    .bm-action-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+
+    .bm-action-btn.del {
+      color: rgba(239, 68, 68, 0.6);
+    }
+
+    .bm-action-btn.del:hover {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+
+    /* Dragging */
+    .bookmark.dragging {
+      opacity: 0.4;
+    }
+
+    /* ===== ICON MODAL ===== */
+    #iconModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(4px);
+    }
+
+    #iconModal.open {
+      display: flex;
+    }
+
+    .modal-inner {
+      background: #1a1a24;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 24px;
+      width: 480px;
+      max-width: 95%;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.7);
+    }
+
+    .modal-inner h3 {
+      margin: 0 0 16px 0;
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    #iconSvgInput {
+      width: 100%;
+      height: 160px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      color: #e6e6e6;
+      font-size: 12px;
+      font-family: monospace;
+      padding: 10px 12px;
+      outline: none;
+      resize: vertical;
+      transition: border-color 0.2s;
+    }
+
+    #iconSvgInput:focus {
+      border-color: rgba(124, 90, 240, 0.5);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 14px;
+    }
+
+    .modal-btn {
+      padding: 8px 18px;
+      border-radius: 9px;
+      font-size: 13px;
+    font-family: system-ui, sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .modal-btn:active {
+      transform: scale(0.97);
+    }
+
+    #iconCancel {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.7);
+    }
+
+    #iconCancel:hover {
+      background: rgba(255,255,255,0.11);
+    }
+
+    #iconSave {
+      background: linear-gradient(135deg, #7c5af0, #5b35d9);
+      border: none;
+      color: #fff;
+    }
+
+    #iconSave:hover {
+      opacity: 0.88;
+    }
+  </style>
 </head>
 
 <body>
-    <div id="toolbar">
-        <button id="back">⟵</button>
-        <button id="home" title="Home">🏠</button>
-        <button id="fwd">⟶</button>
-        <button id="reload">⟳</button>
-        <button id="newFav" title="Add Favorite">➕</button>
-        <input id="url" type="text" placeholder="Enter URL to create new favorite" style="display:none;">
+  <div id="toolbar">
+    <button class="nav-btn" id="back" title="Atrás">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <button class="nav-btn" id="home" title="Inicio">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </button>
+    <button class="nav-btn" id="fwd" title="Adelante">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="nav-btn" id="reload" title="Recargar">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+    </button>
 
+    <input id="url" type="text" placeholder="Ingresa una URL para crear un favorito" style="display:none;">
 
-        <div id="bookmarks"></div>
+    <button id="newFav" title="Agregar favorito">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+
+    <div id="bookmarks"></div>
+  </div>
+
+  <div id="content">
+    <div class="webviews" id="webviews"></div>
+  </div>
+
+  <!-- Modal for editing bookmark icon -->
+  <div id="iconModal">
+    <div class="modal-inner">
+      <h3>Pegar ícono SVG</h3>
+      <textarea id="iconSvgInput" placeholder="Pega el código SVG aquí..."></textarea>
+      <div class="modal-actions">
+        <button id="iconCancel" class="modal-btn">Cancelar</button>
+        <button id="iconSave" class="modal-btn">Guardar</button>
+      </div>
     </div>
+<<<<<<< HEAD
     <div id="content">
         <div class="webviews" id="webviews"></div>
     </div>
@@ -209,6 +442,11 @@
     </div>
     
         <script src="renderer.js"></script>
+=======
+  </div>
+
+  <script src="renderer.js"></script>
+>>>>>>> f36ebf7 (update)
 </body>
 
 </html>
