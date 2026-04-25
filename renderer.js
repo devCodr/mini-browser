@@ -14,7 +14,6 @@ let webviewPreloadPath = "";
 
 console.log('Renderer.js loaded, electronAPI:', !!electronAPI);
 
-
 const zoomByPartition = {};
 const webviewsEl = document.getElementById("webviews");
 const urlEl = document.getElementById("url");
@@ -31,6 +30,14 @@ function domainSlugFromUrl(url) {
     return new URL(url).hostname.replace(/\W+/g, "_");
   } catch {
     return "site";
+  }
+}
+
+function getDomainFromUrl(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
   }
 }
 
@@ -154,14 +161,6 @@ async function createWebview(fav) {
   webviewsEl.appendChild(w);
   fav.webview = w;
 }
-function getDomainFromUrl(url) {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return url;
-  }
-}
-
 function renderBookmarks() {
   bookmarksEl.innerHTML = "";
 

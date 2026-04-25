@@ -91,15 +91,19 @@ function createMainMenu() {
         {
           label: "About",
           click: () => {
+            // Read package.json for dynamic info
+            const packagePath = path.join(__dirname, 'package.json');
+            const packageData = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+            
             dialog.showMessageBox({
               type: "info",
-              title: "About MiniBrowser",
+              title: `About ${packageData.build.productName || packageData.name}`,
               message:
-                `MiniBrowser v${app.getVersion()}\n\n` +
-                "Proyecto creado con Electron\n" +
-                "Crafted by: Chris Larico\n" +
-                "Website: https://larico.dev\n\n" +
-                "© 2025 MIT License",
+                `${packageData.build.productName || packageData.name} v${app.getVersion()}\n\n` +
+                `${packageData.description}\n\n` +
+                `Crafted by: ${packageData.author.name}\n` +
+                `Website: ${packageData.author.url}\n\n` +
+                `© ${new Date().getFullYear()} ${packageData.license || 'MIT License'}`,
               icon: path.join(__dirname, "icon.png"),
               buttons: ["Close"],
             });

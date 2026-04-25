@@ -414,7 +414,7 @@
     </div>
   </div>
 
-  <div class="footer">MiniBrowser · Crafted by Chris Larico · larico.dev · © 2025</div>
+  <div class="footer" id="app-footer">MiniBrowser · Crafted by Chris Larico · larico.dev · © 2025</div>
 
   <!-- Icon edit modal -->
   <div id="iconModal">
@@ -625,6 +625,24 @@
     }
 
     init();
+
+    // Update footer with package.json data
+    async function updateFooter() {
+      try {
+        const response = await fetch('./package.json');
+        const packageData = await response.json();
+        const footer = document.getElementById('app-footer');
+        if (footer) {
+          const currentYear = new Date().getFullYear(); 
+          footer.innerHTML = `${packageData.build?.productName || packageData.name} v${packageData.version} · Crafted by ${packageData.author.name} · ${packageData.author.url.replace('https://', '')} · © ${currentYear}`;
+        }
+      } catch (error) {
+        console.error('Error loading package.json:', error);
+      }
+    }
+
+    // Update footer on load
+    updateFooter();
   </script>
 </body>
 </html>
