@@ -93,17 +93,39 @@ function createMainMenu() {
           click: () => {
             // Read package.json for dynamic info
             const packagePath = path.join(__dirname, 'package.json');
-            const packageData = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+            let packageData;
+            
+            try {
+                packageData = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+            } catch (error) {
+                // Fallback values if package.json can't be read
+                packageData = {
+                    name: "MiniBrowser",
+                    description: "Custom Mini Browser to private sessions",
+                    author: {
+                        name: "Chris Larico",
+                        url: "https://larico.dev"
+                    },
+                    license: "MIT License"
+                };
+            }
+            
+            // Safe access to properties with fallbacks
+            const productName = (packageData.build && packageData.build.productName) || packageData.name || "MiniBrowser";
+            const description = packageData.description || "Custom Mini Browser to private sessions";
+            const authorName = (packageData.author && packageData.author.name) || "Chris Larico";
+            const authorUrl = (packageData.author && packageData.author.url) || "https://larico.dev";
+            const license = packageData.license || "MIT License";
             
             dialog.showMessageBox({
               type: "info",
-              title: `About ${packageData.build.productName || packageData.name}`,
+              title: `About ${productName}`,
               message:
-                `${packageData.build.productName || packageData.name} v${app.getVersion()}\n\n` +
-                `${packageData.description}\n\n` +
-                `Crafted by: ${packageData.author.name}\n` +
-                `Website: ${packageData.author.url}\n\n` +
-                `© ${new Date().getFullYear()} ${packageData.license || 'MIT License'}`,
+                `${productName} v${app.getVersion()}\n\n` +
+                `${description}\n\n` +
+                `Crafted by: ${authorName}\n` +
+                `Website: ${authorUrl}\n\n` +
+                `© ${new Date().getFullYear()} ${license}`,
               icon: path.join(__dirname, "icon.png"),
               buttons: ["Close"],
             });

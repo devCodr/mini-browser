@@ -14,13 +14,19 @@
     "start": "electron .",
     "build": "electron-builder --publish=never",
     "build:all": "electron-builder --mac --win --linux --publish=never",
-    "package:mac": "electron-packager . MiniBrowser --platform=darwin --arch=universal --out=dist --app-bundle-id=com.larico.minibrowser --overwrite --prune=true --icon=build/icon.icns",
+    "package:mac": "electron-packager . MiniBrowser --platform=darwin --arch=universal --out=dist --app-bundle-id=com.larico.minibrowser --overwrite --icon=build/icon.icns",
     "package:linux": "electron-packager . MiniBrowser --platform=linux --arch=x64 --out=dist --app-bundle-id=com.larico.minibrowser --overwrite --prune=true --icon=icon.png",
     "package:windows": "electron-packager . MiniBrowser --platform=win32 --arch=x64 --out=dist --app-bundle-id=com.larico.minibrowser --overwrite --prune=true --icon=icon.ico",
     "make:icon": "./scripts/make-icon.sh",
     "release": "electron-builder --publish=always"
   },
   "dependencies": {
+    "@electron/get": "^5.0.0",
+    "data-uri-to-buffer": "^8.0.0",
+    "debug": "^4.4.3",
+    "fetch-blob": "^4.0.0",
+    "formdata-polyfill": "^4.0.10",
+    "node-domexception": "^2.0.2",
     "node-fetch": "3.3.2"
   },
   "devDependencies": {
@@ -45,15 +51,27 @@
       "overlay.html",
       "welcome.html",
       "icon.png",
-      "package.json"
+      "package.json",
+      "node_modules/**/*"
     ],
+    "extraResources": [
+      {
+        "from": "node_modules",
+        "to": "node_modules"
+      }
+    ],
+    "compression": "maximum",
+    "removePackageScripts": true,
     "mac": {
       "icon": "build/icon.icns",
       "category": "public.app-category.productivity",
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ]
     },
@@ -62,7 +80,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
@@ -72,11 +92,15 @@
       "target": [
         {
           "target": "deb",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "AppImage",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "maintainer": "Chris Larico <chris@larico.dev>",
