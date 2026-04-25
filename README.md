@@ -23,7 +23,7 @@ Descarga la versión más reciente para tu plataforma:
 
 👉 **[Ver todos los releases](https://github.com/devCodr/mini-browser/releases)** - Selecciona el archivo adecuado para tu sistema:
 
-- **macOS**: `MiniBrowser-*.dmg` (Intel o Apple Silicon)
+- **macOS**: `MiniBrowser-*.dmg` (Apple Silicon M1/M2/M3+)
 - **Linux**: `mini-browser_*.deb` (Debian/Ubuntu) o `MiniBrowser-*.AppImage`
 - **Windows**: `MiniBrowser Setup *.exe`
 
@@ -64,7 +64,7 @@ pnpm run build
 ### Build Específico por Plataforma
 
 ```bash
-# macOS
+# macOS (Apple Silicon optimizado)
 pnpm run package:mac
 
 # Linux
@@ -112,11 +112,14 @@ Los datos se guardan en el directorio de usuario de la aplicación:
 
 ## 🔄 Flujo de Trabajo de Releases
 
-El proyecto utiliza **GitHub Actions** para generar releases automáticos:
+El proyecto utiliza **GitHub Actions** para generar releases automáticos optimizados:
 
 1. **Trigger**: Creación de un nuevo tag (ej: `v1.0.1`)
 2. **Build**: Compilación multi-plataforma con `electron-builder`
-3. **Upload**: Generación de assets para cada plataforma
+   - **macOS**: Apple Silicon (arm64) optimizado para rendimiento nativo
+   - **Linux**: x64 compatible con distribuciones modernas
+   - **Windows**: x64 con instalador NSIS
+3. **Upload**: Generación de assets optimizados para cada plataforma
 4. **Release**: Creación automática del GitHub Release
 
 ### Crear Nuevo Release
