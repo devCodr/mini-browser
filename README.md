@@ -47,10 +47,10 @@ git clone https://github.com/devCodr/mini-browser.git
 cd mini-browser
 
 # Instalar dependencias
-npm install
+pnpm install
 
 # Ejecutar en modo desarrollo
-npm start
+pnpm start
 ```
 
 ## 🛠️ Build y Distribución
@@ -58,26 +58,26 @@ npm start
 ### Build Completo (Multi-plataforma)
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 ### Build Específico por Plataforma
 
 ```bash
 # macOS
-npm run package:mac
+pnpm run package:mac
 
 # Linux
-npm run package:linux
+pnpm run package:linux
 
 # Windows
-npm run package:windows
+pnpm run package:windows
 ```
 
 ### Generar Iconos
 
 ```bash
-npm run make:icon
+pnpm run make:icon
 ```
 
 ## 🗂️ Arquitectura del Proyecto

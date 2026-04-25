@@ -1,4 +1,33 @@
-const { ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer } = require("electron");
+
+// Expose electronAPI to webview content (including welcome.html)
+contextBridge.exposeInMainWorld("electronAPI", {
+  getState: () => ipcRenderer.invoke("state:get"),
+  addBookmark: (b) => ipcRenderer.invoke("bookmarks:add", b),
+  removeBookmark: (key) => ipcRenderer.invoke("bookmarks:remove", key),
+  listBookmarks: () => ipcRenderer.invoke("bookmarks:list"),
+  ensureSession: (p) => ipcRenderer.invoke("session:create", p),
+  signalActivity: () => ipcRenderer.invoke("lock:activity"),
+  showLock: () => ipcRenderer.invoke("lock:show"),
+  verifyPin: (pin) => ipcRenderer.invoke("lock:verify", pin),
+  setPin: (pin) => ipcRenderer.invoke("lock:setpin", pin),
+  toggleLock: () => ipcRenderer.invoke("lock:toggle"),
+  setInactivityMs: (ms) => ipcRenderer.invoke("settings:setInactivity", ms),
+  focusApp: () => ipcRenderer.invoke("app:focus"),
+  getWebviewPreloadPath: () => ipcRenderer.invoke("get-webview-preload-path"),
+  reorderBookmarks: (list) => ipcRenderer.invoke('bookmarks:reorder', list),
+  updateBookmarkIcon: (payload) => ipcRenderer.invoke('bookmarks:update-icon', payload),
+  activateBookmark: (partition) => ipcRenderer.send('bookmark:activate', partition),
+  onActivateBookmark: (cb) => ipcRenderer.on('bookmark:activate', (_e, partition) => cb(partition)),
+  onNavigateTo: (callback) => ipcRenderer.on("navigate-to", (e, url) => callback(url)),
+  onZoom: (callback) => ipcRenderer.on("zoom", (_e, dir) => callback(dir)),
+  onTabReload: (callback) => ipcRenderer.on("tab:reload", () => callback()),
+  lockVerify: (pin) => ipcRenderer.invoke("lock:verify", pin),
+  lockCheck: (pin) => ipcRenderer.invoke("lock:check", pin),
+  lockSetPin: (pin) => ipcRenderer.invoke("lock:setpin", pin),
+  onLockShow: (callback) => ipcRenderer.on("lock:show", () => callback()),
+  onLockHide: (callback) => ipcRenderer.on("lock:hide", () => callback()),
+});
 
 const OriginalNotification = window.Notification;
 

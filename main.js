@@ -8,12 +8,6 @@ import {
   dialog,
 } from "electron";
 
-// Add command line switches for SSL bypass (development only)
-app.commandLine.appendSwitch('ignore-certificate-errors');
-app.commandLine.appendSwitch('ignore-ssl-errors');
-app.commandLine.appendSwitch('ignore-certificate-errors-spki-list');
-app.commandLine.appendSwitch('ignore-certificate-errors-spki-list');
-
 import path, { dirname } from "path";
 import fs from "fs";
 import crypto from "crypto";
@@ -24,10 +18,10 @@ const __dirname = dirname(__filename);
 
 const INACTIVITY_DEFAULT_MS = 5 * 60 * 1000;
 let mainWindow;
+let overlayWindow;
 let inactivityTimer = null;
 let settings = null;
 let bookmarks = [];
-let isLocked = false;
 
 const userDataDir = app.getPath("userData");
 const settingsPath = path.join(userDataDir, "settings.json");
@@ -173,47 +167,27 @@ function createMainMenu() {
 }
 
 function toggleLockEnabled() {
-  // Only allow toggling when app is unlocked
-  if (isLocked) {
-    return;
-  }
-  
   settings.lockEnabled = !settings.lockEnabled;
   saveSettings();
   createMainMenu();
-  
-  // If lock is disabled, hide overlay and reset timer
-  if (!settings.lockEnabled && mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send("lock:hide");
-    if (inactivityTimer) {
-      clearTimeout(inactivityTimer);
-      inactivityTimer = null;
-    }
-  }
-  
-  // If lock is enabled again, start the inactivity timer
-  if (settings.lockEnabled) {
-    resetInactivityTimer();
-  }
 }
 function resetInactivityTimer() {
   if (!settings.lockEnabled) return;
+  if (
+    overlayWindow &&
+    !overlayWindow.isDestroyed() &&
+    overlayWindow.isVisible()
+  )
+    return;
   if (inactivityTimer) clearTimeout(inactivityTimer);
   inactivityTimer = setTimeout(() => {
     showOverlayLock();
   }, settings.inactivityMs || INACTIVITY_DEFAULT_MS);
 }
 function showOverlayLock() {
-  if (!mainWindow || mainWindow.isDestroyed()) return;
-<<<<<<< HEAD
   if (!settings.lockEnabled) return;
-  
-  isLocked = true;
-  // Send message to renderer to show lock overlay
-  mainWindow.webContents.send("lock:show");
-}
-
-=======
+  if (overlayWindow && !overlayWindow.isDestroyed()) return;
+  if (!mainWindow || mainWindow.isDestroyed()) return;
 
   const bounds = mainWindow.getBounds();
   // Offset 28px down so macOS traffic-light buttons remain accessible
@@ -263,10 +237,11 @@ function syncOverlayBounds() {
     height: b.height - TITLEBAR_H,
   });
 }
->>>>>>> f36ebf7 (update)
 function closeOverlay() {
-  // The overlay is now handled internally by the renderer
-  // This function is kept for compatibility but doesn't need to do anything
+  if (overlayWindow && !overlayWindow.isDestroyed()) {
+    overlayWindow.close();
+    overlayWindow = null;
+  }
 }
 
 function createWindow() {
@@ -280,15 +255,11 @@ function createWindow() {
       webviewTag: true,
     },
   });
-  mainWindow.loadFile(path.join(__dirname, "index.html"));
+  mainWindow.loadFile("index.html");
   mainWindow.on("focus", () => resetInactivityTimer());
   mainWindow.on("blur", () => resetInactivityTimer());
   mainWindow.on("show", () => resetInactivityTimer());
   mainWindow.on("hide", () => resetInactivityTimer());
-<<<<<<< HEAD
-  mainWindow.on("closed", () => {
-    mainWindow = null;
-=======
 
   // Allow closing the app even when the overlay (lock) is active
   mainWindow.on("close", () => {
@@ -296,7 +267,6 @@ function createWindow() {
       overlayWindow.destroy();
       overlayWindow = null;
     }
->>>>>>> f36ebf7 (update)
   });
 }
 
@@ -310,48 +280,16 @@ app.whenReady().then(() => {
     showOverlayLock();
   }, 300);
 
-  // ✅ Enhanced User Agent and security configuration for Google services compatibility
+  // ✅ Forzar user-agent moderno para que sitios como WhatsApp funcionen
   const chromeVersion = process.versions.chrome;
   const platform =
     process.platform === "darwin"
       ? "Macintosh; Intel Mac OS X 10_15_7"
       : "Windows NT 10.0; Win64; x64";
-  
-  // Enhanced User Agent specifically for Google personal account compatibility
   app.userAgentFallback =
-    `Mozilla/5.0 (${platform}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chromeVersion} Safari/537.36`;
-  
-  // Additional headers for Google compatibility
-  app.on('web-contents-created', (event, contents) => {
-    contents.on('before-input-event', (event, input) => {
-      // Add any additional browser behavior simulation here
-    });
-    
-    // Set additional headers that Google expects
-    contents.session.webRequest.onBeforeSendHeaders((details, callback) => {
-      details.requestHeaders['User-Agent'] = app.userAgentFallback;
-      details.requestHeaders['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9';
-      details.requestHeaders['Accept-Language'] = 'en-US,en;q=0.9,es;q=0.8';
-      details.requestHeaders['Accept-Encoding'] = 'gzip, deflate, br';
-      details.requestHeaders['DNT'] = '1';
-      details.requestHeaders['Connection'] = 'keep-alive';
-      details.requestHeaders['Upgrade-Insecure-Requests'] = '1';
-      callback({ cancel: false, requestHeaders: details.requestHeaders });
-    });
-  });
-  
-  // Configure SSL/TLS settings - more permissive for development
-  app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
-    // Ignore certificate errors for development to allow HTTPS sites to load
-    event.preventDefault();
-    callback(true);
-  });
-  
-  // Configure session for better compatibility
-  session.defaultSession.setUserAgent(app.userAgentFallback);
-  
-  // Enable spell checking and other features
-  session.defaultSession.setSpellCheckerLanguages(['en-US', 'es-ES']);
+    `Mozilla/5.0 (${platform}) ` +
+    `AppleWebKit/537.36 (KHTML, like Gecko) ` +
+    `Chrome/${chromeVersion} Safari/537.36`;
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -366,19 +304,6 @@ app.whenReady().then(() => {
 
 app.on("web-contents-created", (event, contents) => {
   if (contents.getType() === "webview") {
-    // Intercept Google personal account login attempts
-    contents.on('will-navigate', (event, navigationUrl) => {
-      if (navigationUrl.includes('accounts.google.com') && 
-          (navigationUrl.includes('gmail.com') || navigationUrl.includes('signin'))) {
-        // For personal Gmail accounts, use system browser
-        if (navigationUrl.includes('gmail.com') && !navigationUrl.includes('larico.net')) {
-          event.preventDefault();
-          shell.openExternal(navigationUrl);
-          return;
-        }
-      }
-    });
-    
     contents.on("context-menu", (event, params) => {
       const menuTemplate = [];
 
@@ -401,16 +326,6 @@ app.on("web-contents-created", (event, contents) => {
         {
           label: "Reload this tab",
           click: () => contents.reload(),
-        },
-        { type: "separator" },
-        {
-          label: "Open in system browser (for Gmail)",
-          click: () => {
-            const currentUrl = contents.getURL();
-            if (currentUrl) {
-              shell.openExternal(currentUrl);
-            }
-          },
         }
       );
 
@@ -425,6 +340,13 @@ app.on("window-all-closed", () => {
 
 // === IPC ===
 
+// Forward bookmark:activate from any webview → main renderer
+ipcMain.on("bookmark:activate", (_e, partition) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send("bookmark:activate", partition);
+  }
+});
+
 ipcMain.handle("bookmarks:reorder", (e, newOrder) => {
   if (Array.isArray(newOrder)) {
     bookmarks = newOrder.filter(
@@ -435,6 +357,10 @@ ipcMain.handle("bookmarks:reorder", (e, newOrder) => {
         /^persist:/.test(b.partition)
     );
     saveBookmarks();
+    // Notify main renderer to update bookmarks
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('bookmarks-updated', bookmarks);
+    }
   }
   return bookmarks;
 });
@@ -453,6 +379,10 @@ ipcMain.handle("bookmarks:add", (e, payload) => {
     });
     saveBookmarks();
     createMainMenu();
+    // Notify main renderer to update bookmarks
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('bookmarks-updated', bookmarks);
+    }
   }
   return bookmarks;
 });
@@ -465,6 +395,10 @@ ipcMain.handle("bookmarks:remove", (e, key) => {
   }
   saveBookmarks();
   createMainMenu();
+  // Notify main renderer to update bookmarks
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('bookmarks-updated', bookmarks);
+  }
   return bookmarks;
 });
 
@@ -487,40 +421,19 @@ ipcMain.handle("bookmarks:update-icon", (e, payload) => {
     }
     saveBookmarks();
     createMainMenu();
+    // Notify main renderer to update bookmarks
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('bookmarks-updated', bookmarks);
+    }
   }
   return bookmarks;
 });
 
 ipcMain.handle("session:create", (e, partitionName) => {
   const ses = session.fromPartition(partitionName);
-  
-  // Set the same user agent as the main app
-  ses.setUserAgent(app.userAgentFallback);
-  
-  // Handle permissions more gracefully
   ses.setPermissionRequestHandler((webContents, permission, callback) => {
-    // Allow most permissions for better compatibility
-    if (['notifications', 'geolocation', 'camera', 'microphone', 'midi'].includes(permission)) {
-      callback(true);
-    } else {
-      callback(true); // Allow all for now, can be restricted later
-    }
+    callback(true);
   });
-  
-  // Handle certificate errors for webviews - completely permissive for development
-  ses.setCertificateVerifyProc((request, callback) => {
-    // Ignore ALL certificate errors to allow HTTPS sites to load
-    callback(0); // 0 = OK
-  });
-  
-  // Additional SSL bypass for webviews
-  ses.setPermissionRequestHandler((webContents, permission, callback) => {
-    callback(true); // Allow all permissions
-  });
-  
-  // Enable spell checking
-  ses.setSpellCheckerLanguages(['en-US', 'es-ES']);
-  
   return true;
 });
 
@@ -536,13 +449,7 @@ ipcMain.handle("lock:verify", (e, pin) => {
   if (!settings.pinHash || !settings.pinSalt)
     return { ok: false, needsSetup: true };
   const ok = verifyPin(pin);
-  if (ok && mainWindow && !mainWindow.isDestroyed()) {
-    isLocked = false;
-    // Send message to renderer to hide lock overlay
-    mainWindow.webContents.send("lock:hide");
-    // Reset inactivity timer after successful unlock
-    resetInactivityTimer();
-  }
+  if (ok) closeOverlay();
   return { ok, needsSetup: false };
 });
 
@@ -555,11 +462,7 @@ ipcMain.handle("lock:check", (e, pin) => {
 
 ipcMain.handle("lock:setpin", (e, pin) => {
   setPin(pin);
-  isLocked = false;
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    // Send message to renderer to hide lock overlay
-    mainWindow.webContents.send("lock:hide");
-  }
+  closeOverlay();
   dialog.showMessageBox({
     type: "warning",
     title: "Importante",
@@ -567,8 +470,6 @@ ipcMain.handle("lock:setpin", (e, pin) => {
       "Has cambiado tu PIN.\n\n⚠️ Si lo olvidas, no hay manera de recuperarlo.\nLa única opción será desinstalar y volver a instalar la aplicación.",
     buttons: ["Entendido"],
   });
-  // Reset inactivity timer after setting PIN
-  resetInactivityTimer();
   return { ok: true };
 });
 

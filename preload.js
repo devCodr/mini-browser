@@ -17,9 +17,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
   focusApp: () => ipcRenderer.invoke("app:focus"),
   getWebviewPreloadPath: () => ipcRenderer.invoke("get-webview-preload-path"),
 
-  reorderBookmarks: (list) => ipcRenderer.invoke("bookmarks:reorder", list),
-  updateBookmarkIcon: (payload) =>
-    ipcRenderer.invoke("bookmarks:update-icon", payload),
+  reorderBookmarks: (list) => ipcRenderer.invoke('bookmarks:reorder', list),
+  updateBookmarkIcon: (payload) => ipcRenderer.invoke('bookmarks:update-icon', payload),
+
+  // Tells the main renderer to activate a bookmark tab (from welcome page)
+  activateBookmark: (partition) => ipcRenderer.send('bookmark:activate', partition),
+  onActivateBookmark: (cb) => ipcRenderer.on('bookmark:activate', (_e, partition) => cb(partition)),
 
   onNavigateTo: (callback) =>
     ipcRenderer.on("navigate-to", (e, url) => callback(url)),
@@ -33,4 +36,5 @@ contextBridge.exposeInMainWorld("electronAPI", {
   lockSetPin: (pin) => ipcRenderer.invoke("lock:setpin", pin),
   onLockShow: (callback) => ipcRenderer.on("lock:show", () => callback()),
   onLockHide: (callback) => ipcRenderer.on("lock:hide", () => callback()),
+  onBookmarksUpdated: (callback) => ipcRenderer.on("bookmarks-updated", (event, bookmarks) => callback(bookmarks)),
 });

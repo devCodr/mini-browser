@@ -219,94 +219,20 @@ function renderBookmarks() {
     if (b.partition === activeFavPartition) btn.classList.add("active");
     btn.addEventListener("click", () => activateFavorite(b.partition));
 
-    // Hover action strip
-    const actions = document.createElement("div");
-    actions.className = "bm-actions";
-
-    // Edit icon btn
-    const changeIconBtn = document.createElement("button");
-    changeIconBtn.className = "bm-action-btn";
-    changeIconBtn.title = "Cambiar ícono";
-    changeIconBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
-    changeIconBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      openIconModal(b.partition, b.iconSvg || "");
-    });
-
-    // Delete btn
-    const del = document.createElement("button");
-    del.className = "bm-action-btn del";
-    del.title = "Eliminar";
-    del.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
-    del.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      const updated = await electronAPI.removeBookmark({ partition: b.partition, url: b.url });
-      state.bookmarks = updated;
-      renderBookmarks();
-      const w = document.querySelector(`webview[partition="${b.partition}"]`);
-      if (w) w.remove();
-      if (activeFavPartition === b.partition) {
-        const next = state.bookmarks[0];
-        if (next) activateFavorite(next.partition);
-        else {
-          activeFavPartition = null;
-          const partition = "persist:welcome";
-          createWebview({ url: "welcome.html", partition }).then(() => {
-            activateFavorite(partition);
-            urlEl.style.display = "none";
-          });
-        }
-      }
-    });
-
-    actions.appendChild(changeIconBtn);
-    actions.appendChild(del);
-
     wrapper.appendChild(btn);
-    wrapper.appendChild(actions);
     bookmarksEl.appendChild(wrapper);
   });
 }
 
-// --- Icon modal logic ---
-const iconModal = document.getElementById("iconModal");
-const iconSvgInput = document.getElementById("iconSvgInput");
-const iconCancel = document.getElementById("iconCancel");
-const iconSave = document.getElementById("iconSave");
-let iconEditingPartition = null;
+// Handle bookmark activation from welcome page
+electronAPI.onActivateBookmark((partition) => {
+  activateFavorite(partition);
+});
 
-function openIconModal(partition, existingSvg) {
-  iconEditingPartition = partition;
-  iconSvgInput.value = existingSvg || "";
-  iconModal.classList.add("open");
-  iconSvgInput.focus();
-}
-
-function closeIconModal() {
-  iconEditingPartition = null;
-  iconModal.classList.remove("open");
-}
-
-iconCancel.addEventListener("click", () => closeIconModal());
-iconModal.addEventListener("click", (e) => { if (e.target === iconModal) closeIconModal(); });
-
-iconSave.addEventListener("click", async () => {
-  if (!iconEditingPartition) return closeIconModal();
-  const raw = iconSvgInput.value.trim();
-
-  if (raw && !/<svg[\s>]/i.test(raw)) {
-    alert("Por favor pega markup SVG válido que empiece con <svg>");
-    return;
-  }
-
-  const updated = await electronAPI.updateBookmarkIcon({
-    partition: iconEditingPartition,
-    iconSvg: raw,
-  });
-
-  state.bookmarks = updated;
+// Listen for bookmarks updates from main process
+electronAPI.onBookmarksUpdated((updatedBookmarks) => {
+  state.bookmarks = updatedBookmarks;
   renderBookmarks();
-  closeIconModal();
 });
 
 async function addBookmarkFromUrl(rawUrl) {
@@ -354,12 +280,6 @@ async function init() {
   }
 
   renderBookmarks();
-  
-  // Initialize lock overlay after everything else is ready
-  if (state.settings.lockEnabled) {
-    console.log('Lock enabled, showing overlay from init');
-    showLockOverlay();
-  }
 
   if (state.bookmarks.length > 0) {
     activateFavorite(state.bookmarks[0].partition);
@@ -401,15 +321,6 @@ try {
   console.error('Error during initialization:', error);
 }
 
-// Force show overlay for testing
-setTimeout(() => {
-  console.log('Force testing overlay...');
-  if (window.showLockOverlay) {
-    window.showLockOverlay();
-  } else {
-    console.error('showLockOverlay function not available');
-  }
-}, 1000);
 
 // === Home button ===
 async function goHome() {
@@ -458,210 +369,3 @@ electronAPI.onTabReload(() => {
   reload(); // recarga solo el webview activo; no cambia de favorito
 });
 
-// === Lock Overlay Functionality ===
-const lockOverlay = document.getElementById('lockOverlay');
-const pinLogin = document.getElementById('pinLogin');
-const pinCurrent = document.getElementById('pinCurrent');
-const pinNew = document.getElementById('pinNew');
-const lockOk = document.getElementById('lockOk');
-const lockTitle = document.getElementById('lockTitle');
-const lockSet = document.getElementById('lockSet');
-const lockChange = document.getElementById('lockChange');
-const lockError = document.getElementById('lockError');
-
-// Verify all elements exist
-console.log('Overlay elements found:', {
-  lockOverlay: !!lockOverlay,
-  pinLogin: !!pinLogin,
-  pinCurrent: !!pinCurrent,
-  pinNew: !!pinNew,
-  lockOk: !!lockOk,
-  lockTitle: !!lockTitle,
-  lockSet: !!lockSet,
-  lockChange: !!lockChange,
-  lockError: !!lockError
-});
-
-let lockMode = 'login'; // 'login' | 'set' | 'change'
-
-function showLockOverlay() {
-  if (!lockOverlay) {
-    console.error('lockOverlay element not found!');
-    return;
-  }
-  console.log('Showing lock overlay');
-  lockOverlay.style.display = 'flex';
-  initLockMode();
-}
-
-function hideLockOverlay() {
-  lockOverlay.style.display = 'none';
-}
-
-function showLockInput(element, show) {
-  element.style.display = show ? 'block' : 'none';
-}
-
-function setLockModeLogin() {
-  lockMode = 'login';
-  lockTitle.textContent = 'Enter PIN';
-  lockOk.textContent = 'Unlock';
-  lockError.style.display = 'none';
-  pinLogin.value = '';
-  pinCurrent.value = '';
-  pinNew.value = '';
-  
-  showLockInput(pinLogin, true);
-  showLockInput(pinCurrent, false);
-  showLockInput(pinNew, false);
-  
-  pinLogin.focus();
-}
-
-function setLockModeSetPin() {
-  lockMode = 'set';
-  lockTitle.textContent = 'Set a new PIN';
-  lockOk.textContent = 'Save';
-  lockError.style.display = 'none';
-  pinLogin.value = '';
-  pinCurrent.value = '';
-  pinNew.value = '';
-  
-  showLockInput(pinLogin, false);
-  showLockInput(pinCurrent, false);
-  showLockInput(pinNew, true);
-  
-  pinNew.focus();
-}
-
-function setLockModeChangePin() {
-  lockMode = 'change';
-  lockTitle.textContent = 'Change PIN';
-  lockOk.textContent = 'Save';
-  lockError.style.display = 'none';
-  pinLogin.value = '';
-  pinCurrent.value = '';
-  pinNew.value = '';
-  
-  showLockInput(pinLogin, false);
-  showLockInput(pinCurrent, true);
-  showLockInput(pinNew, true);
-  
-  pinCurrent.focus();
-}
-
-async function initLockMode() {
-  const state = await electronAPI.getState();
-  const needsSetup = !(state.settings.pinHash && state.settings.pinSalt);
-  
-  if (needsSetup) {
-    lockSet.style.display = 'inline';
-    lockChange.style.display = 'none';
-    setLockModeSetPin();
-  } else {
-    lockSet.style.display = 'none';
-    lockChange.style.display = 'inline';
-    setLockModeLogin();
-  }
-}
-
-lockOk.addEventListener('click', async () => {
-  lockError.style.display = 'none';
-  
-  if (lockMode === 'login') {
-    const pin = pinLogin.value.trim();
-    if (!pin) return;
-    
-    const result = await electronAPI.lockVerify(pin);
-    if (!result.ok) {
-      pinLogin.value = '';
-      lockError.textContent = 'Incorrect PIN (Default PIN: 123456)';
-      lockError.style.display = 'block';
-    }
-    return;
-  }
-  
-  if (lockMode === 'set') {
-    const newPin = pinNew.value.trim();
-    if (!/^\d{4,}$/.test(newPin)) {
-      lockError.textContent = 'PIN must be at least 4 digits';
-      lockError.style.display = 'block';
-      return;
-    }
-    await electronAPI.lockSetPin(newPin);
-    return;
-  }
-  
-  if (lockMode === 'change') {
-    const curr = pinCurrent.value.trim();
-    const next = pinNew.value.trim();
-    
-    if (!/^\d{4,}$/.test(curr)) {
-      lockError.textContent = 'Enter your current PIN';
-      lockError.style.display = 'block';
-      pinCurrent.focus();
-      return;
-    }
-    if (!/^\d{4,}$/.test(next)) {
-      lockError.textContent = 'New PIN must be at least 4 digits';
-      lockError.style.display = 'block';
-      pinNew.focus();
-      return;
-    }
-    if (curr === next) {
-      lockError.textContent = 'New PIN cannot be the same as current PIN';
-      lockError.style.display = 'block';
-      pinNew.focus();
-      return;
-    }
-    
-    const check = await electronAPI.lockCheck(curr);
-    if (!check.ok) {
-      lockError.textContent = 'Incorrect current PIN (Default PIN: 123456)';
-      lockError.style.display = 'block';
-      pinCurrent.value = '';
-      pinCurrent.focus();
-      return;
-    }
-    
-    await electronAPI.lockSetPin(next);
-    return;
-  }
-});
-
-function onEnterPress(e) {
-  if (e.key === 'Enter') lockOk.click();
-}
-
-pinLogin.addEventListener('keydown', onEnterPress);
-pinCurrent.addEventListener('keydown', onEnterPress);
-pinNew.addEventListener('keydown', onEnterPress);
-
-lockSet.addEventListener('click', (e) => {
-  e.preventDefault();
-  setLockModeSetPin();
-});
-
-lockChange.addEventListener('click', (e) => {
-  e.preventDefault();
-  setLockModeChangePin();
-});
-
-// Listen for lock events from main process
-electronAPI.onLockShow(() => {
-  showLockOverlay();
-});
-
-// Listen for lock hide events from main process
-electronAPI.onLockHide = (callback) =>
-  ipcRenderer.on("lock:hide", () => callback());
-
-electronAPI.onLockHide(() => {
-  hideLockOverlay();
-});
-
-// Overlay initialization is now handled in the init() function
-
-// Debug function - manually show overlay
-window.showLockOverlay = showLockOverlay;
-window.hideLockOverlay = hideLockOverlay;

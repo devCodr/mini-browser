@@ -1,56 +1,630 @@
 <!doctype html>
 <html>
-
 <head>
-    <meta charset="utf-8">
-    <title>Welcome • MiniBrowser</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: system-ui, sans-serif;
-            background: #0e0e0f;
-            color: #e6e6e6;
-        }
+  <meta charset="utf-8">
+  <title>MiniBrowser — Inicio</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .wrap {
-            max-width: 760px;
-            margin: 48px auto;
-            padding: 0 20px;
-        }
+    html, body {
+      height: 100%;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0d0d12;
+      color: #e6e6e6;
+      overflow-x: hidden;
+    }
 
-        h1 {
-            font-size: 24px;
-            margin: 0 0 12px;
-        }
+    /* ── HEADER ── */
+    .header {
+      padding: 48px 40px 32px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
 
-        p {
-            color: #bdbdbd;
-            line-height: 1.6;
-        }
+    .header-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      overflow: hidden;
+      flex-shrink: 0;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
 
-        code {
-            background: #151516;
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
+    .header-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
 
-        ul {
-            margin-top: 10px;
-        }
-    </style>
+    .header-text h1 {
+      font-size: 22px;
+      font-weight: 600;
+      color: #fff;
+      letter-spacing: -0.4px;
+    }
+
+    .header-text p {
+      font-size: 13px;
+      color: rgba(255,255,255,0.4);
+      margin-top: 2px;
+    }
+
+    /* ── MAIN ── */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 40px 60px;
+    }
+
+    /* Section title */
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+      margin-bottom: 14px;
+    }
+
+    /* ── BOOKMARK GRID ── */
+    #bookmarkGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 48px;
+    }
+
+    .bm-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      position: relative;
+      overflow: visible;
+    }
+
+    .bm-card:hover {
+      background: rgba(255,255,255,0.07);
+      border-color: rgba(255,255,255,0.12);
+    }
+
+    .bm-card:active {
+      transform: scale(0.98);
+    }
+
+    .bm-card.active-card {
+      border-color: rgba(124, 90, 240, 0.5);
+      background: rgba(124, 90, 240, 0.08);
+    }
+
+    /* Dragging styles */
+    .bm-card.dragging {
+      opacity: 0.4;
+      cursor: grabbing;
+    }
+
+    .bm-card[draggable="true"] {
+      cursor: grab;
+    }
+
+    .bm-card[draggable="true"]:hover {
+      cursor: grab;
+    }
+
+    .bm-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .bm-favicon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
+      font-size: 18px;
+    }
+
+    .bm-favicon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      border-radius: 8px;
+    }
+
+    .bm-favicon svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .bm-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .bm-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .bm-url {
+      font-size: 11px;
+      color: rgba(255,255,255,0.35);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+
+    /* Action row at bottom of card */
+    .bm-card-actions {
+      display: flex;
+      gap: 6px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding-top: 10px;
+    }
+
+    .bm-act {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 8px;
+      color: rgba(255,255,255,0.55);
+      font-size: 11px;
+      font-family: system-ui, sans-serif;
+      cursor: pointer;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: background 0.1s, color 0.1s, border-color 0.1s;
+      padding: 0 6px;
+    }
+
+    .bm-act:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border-color: rgba(255,255,255,0.13);
+    }
+
+    .bm-act.open-act:hover {
+      background: rgba(124, 90, 240, 0.2);
+      border-color: rgba(124, 90, 240, 0.4);
+      color: #a78bfa;
+    }
+
+    .bm-act.del-act {
+      color: rgba(239, 68, 68, 0.55);
+    }
+
+    .bm-act.del-act:hover {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: rgba(255,255,255,0.3);
+    }
+
+    .empty-state .empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ── TIPS ── */
+    .tips-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+    }
+
+    .tip-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+
+    .tip-icon {
+      font-size: 20px;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .tip-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 4px;
+    }
+
+    .tip-desc {
+      font-size: 11px;
+      color: rgba(255,255,255,0.35);
+      line-height: 1.5;
+    }
+
+    /* ── FOOTER ── */
+    .footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.2);
+    }
+
+    /* ── ICON MODAL ── */
+    #iconModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    #iconModal.open {
+      display: flex;
+    }
+
+    .modal-box {
+      background: #1a1a24;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 24px;
+      width: 420px;
+      max-width: 95%;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.7);
+    }
+
+    .modal-box h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .modal-box p {
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+
+    #iconInput {
+      width: 100%;
+      height: 120px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      color: #e6e6e6;
+      font-size: 12px;
+      font-family: monospace;
+      padding: 10px 12px;
+      outline: none;
+      resize: none;
+      transition: border-color 0.2s;
+    }
+
+    #iconInput:focus {
+      border-color: rgba(124, 90, 240, 0.5);
+    }
+
+    .modal-row {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 14px;
+    }
+
+    .modal-btn {
+      padding: 8px 18px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-family: system-ui, sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      border: none;
+    }
+
+    .modal-btn.cancel {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.7);
+    }
+
+    .modal-btn.save {
+      background: linear-gradient(135deg, #7c5af0, #5b35d9);
+      color: #fff;
+    }
+
+    .modal-btn:hover { opacity: 0.85; }
+  </style>
 </head>
-
 <body>
-    <div class="wrap">
-        <h1>👋 Bienvenido a MiniBrowser</h1>
-        <p>Usa el botón <b>➕</b> para agregar tu primer favorito. Cada favorito abre su propia sesión aislada.</p>
-        <ul>
-            <li>Barra: ⟵, ⟶, ⟳ controlan solo la pestaña activa.</li>
-            <li>Zoom: <code>Ctrl/Cmd +</code>, <code>Ctrl/Cmd -</code>, <code>Ctrl/Cmd 0</code>.</li>
-            <li>Clic derecho dentro de un sitio: “Open in default browser”.</li>
-        </ul>
-        <p style="margin-top:28px;color:#8a8a8a">© 2025</p>
-    </div>
-</body>
 
+  <div class="header">
+    <div class="header-icon">
+      <img src="./icon.png" alt="MiniBrowser">
+    </div>
+    <div class="header-text">
+      <h1>MiniBrowser</h1>
+      <p>Gestor de favoritos — sesiones aisladas</p>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <div class="section-title">Favoritos guardados</div>
+    <div id="bookmarkGrid">
+      <!-- Cards rendered by JS -->
+    </div>
+
+    <div class="section-title">Atajos de teclado</div>
+    <div class="tips-grid">
+      <div class="tip-card">
+        <span class="tip-icon">➕</span>
+        <div class="tip-title">Nuevo favorito</div>
+        <div class="tip-desc">Haz clic en + en la barra para agregar un sitio con sesión propia.</div>
+      </div>
+      <div class="tip-card">
+        <span class="tip-icon">🔍</span>
+        <div class="tip-title">Zoom</div>
+        <div class="tip-desc">Cmd/Ctrl + · Cmd/Ctrl − · Cmd/Ctrl 0 para ajustar el zoom.</div>
+      </div>
+      <div class="tip-card">
+        <span class="tip-icon">🔄</span>
+        <div class="tip-title">Recargar</div>
+        <div class="tip-desc">Cmd/Ctrl R recarga solo la pestaña activa.</div>
+      </div>
+      <div class="tip-card">
+        <span class="tip-icon">🔒</span>
+        <div class="tip-title">Bloqueo</div>
+        <div class="tip-desc">La app se bloquea automáticamente tras 5 min de inactividad.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">MiniBrowser · Crafted by Chris Larico · larico.dev · © 2025</div>
+
+  <!-- Icon edit modal -->
+  <div id="iconModal">
+    <div class="modal-box">
+      <h3>Cambiar ícono</h3>
+      <p>Pega un emoji (ej: 🚀) o código SVG completo. Deja vacío para restaurar el favicon automático.</p>
+      <textarea id="iconInput" placeholder="Emoji: 🚀   o código SVG: <svg ...></svg>"></textarea>
+      <div class="modal-row">
+        <button class="modal-btn cancel" id="iconCancel">Cancelar</button>
+        <button class="modal-btn save" id="iconSave">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let bookmarks = [];
+    let editingPartition = null;
+
+    // ── Helpers ──
+    function getDomain(url) {
+      try { return new URL(url).hostname.replace(/^www\./, ''); }
+      catch { return url; }
+    }
+
+    function faviconUrl(url) {
+      return `https://www.google.com/s2/favicons?sz=32&domain=${getDomain(url)}`;
+    }
+
+    function renderFavicon(b) {
+      const wrap = document.createElement('div');
+      wrap.className = 'bm-favicon';
+
+      if (b.iconSvg) {
+        const isSvg = /<svg[\s>]/i.test(b.iconSvg);
+        if (isSvg) {
+          wrap.innerHTML = b.iconSvg;
+          const sv = wrap.querySelector('svg');
+          if (sv) { sv.setAttribute('width', '18'); sv.setAttribute('height', '18'); }
+        } else {
+          wrap.textContent = b.iconSvg; // emoji
+        }
+      } else {
+        const img = document.createElement('img');
+        img.src = faviconUrl(b.url);
+        img.alt = getDomain(b.url);
+        wrap.appendChild(img);
+      }
+      return wrap;
+    }
+
+    // ── Render grid ──
+    function renderGrid() {
+      const grid = document.getElementById('bookmarkGrid');
+      grid.innerHTML = '';
+
+      if (!bookmarks.length) {
+        grid.innerHTML = `
+          <div class="empty-state" style="grid-column:1/-1">
+            <span class="empty-icon">🔖</span>
+            <p>Aún no tienes favoritos.<br>Usa el botón <b>+</b> en la barra para agregar uno.</p>
+          </div>`;
+        return;
+      }
+
+      bookmarks.forEach((b, idx) => {
+        const card = document.createElement('div');
+        card.className = 'bm-card';
+        card.draggable = true;
+        card.dataset.index = idx;
+
+        // drag events
+        card.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', idx);
+          card.classList.add('dragging');
+        });
+        card.addEventListener('dragend', () => {
+          card.classList.remove('dragging');
+        });
+        card.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          const draggingEl = grid.querySelector('.dragging');
+          if (!draggingEl) return;
+          const bounding = card.getBoundingClientRect();
+          const before = e.clientX - bounding.left < bounding.width / 2;
+          grid.insertBefore(draggingEl, before ? card : card.nextSibling);
+        });
+        card.addEventListener('drop', async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const newOrder = Array.from(grid.children).map((el) => bookmarks[el.dataset.index]);
+          bookmarks = await window.electronAPI.reorderBookmarks(newOrder);
+          renderGrid();
+        });
+
+        // Header: favicon + info
+        const hdr = document.createElement('div');
+        hdr.className = 'bm-card-header';
+        hdr.appendChild(renderFavicon(b));
+
+        const info = document.createElement('div');
+        info.className = 'bm-info';
+        info.innerHTML = `
+          <div class="bm-name">${getDomain(b.url)}</div>
+          <div class="bm-url">${b.url}</div>`;
+        hdr.appendChild(info);
+        card.appendChild(hdr);
+
+        // Action row
+        const actions = document.createElement('div');
+        actions.className = 'bm-card-actions';
+
+        // Open btn
+        const openBtn = document.createElement('button');
+        openBtn.className = 'bm-act open-act';
+        openBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg> Abrir`;
+        openBtn.title = 'Abrir esta sesión';
+        openBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          window.electronAPI.activateBookmark(b.partition);
+        });
+
+        // Icon btn
+        const iconBtn = document.createElement('button');
+        iconBtn.className = 'bm-act';
+        iconBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Ícono`;
+        iconBtn.title = 'Cambiar ícono';
+        iconBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openIconModal(b.partition, b.iconSvg || '');
+        });
+
+        // Delete btn
+        const delBtn = document.createElement('button');
+        delBtn.className = 'bm-act del-act';
+        delBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>`;
+        delBtn.title = 'Eliminar favorito';
+        delBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!confirm(`¿Eliminar "${getDomain(b.url)}"?`)) return;
+          bookmarks = await window.electronAPI.removeBookmark({ partition: b.partition, url: b.url });
+          renderGrid();
+        });
+
+        actions.appendChild(openBtn);
+        actions.appendChild(iconBtn);
+        actions.appendChild(delBtn);
+        card.appendChild(actions);
+
+        // Click card body = open (but not during drag)
+        let isDragging = false;
+        card.addEventListener('dragstart', () => {
+          isDragging = true;
+          setTimeout(() => isDragging = false, 100);
+        });
+        
+        card.addEventListener('click', (e) => {
+          if (!isDragging && !e.target.closest('.bm-act')) {
+            window.electronAPI.activateBookmark(b.partition);
+          }
+        });
+
+        grid.appendChild(card);
+      });
+    }
+
+    // ── Icon Modal ──
+    const iconModal = document.getElementById('iconModal');
+    const iconInput = document.getElementById('iconInput');
+
+    function openIconModal(partition, existing) {
+      editingPartition = partition;
+      iconInput.value = existing || '';
+      iconModal.classList.add('open');
+      iconInput.focus();
+    }
+
+    function closeIconModal() {
+      editingPartition = null;
+      iconModal.classList.remove('open');
+    }
+
+    document.getElementById('iconCancel').addEventListener('click', closeIconModal);
+    iconModal.addEventListener('click', (e) => { if (e.target === iconModal) closeIconModal(); });
+
+    document.getElementById('iconSave').addEventListener('click', async () => {
+      if (!editingPartition) return closeIconModal();
+      const raw = iconInput.value.trim();
+      bookmarks = await window.electronAPI.updateBookmarkIcon({ partition: editingPartition, iconSvg: raw });
+      renderGrid();
+      closeIconModal();
+    });
+
+    // ── Init ──
+    async function init() {
+      const state = await window.electronAPI.getState();
+      bookmarks = state.bookmarks || [];
+      renderGrid();
+
+      // Re-render if bookmarks change (e.g. added from toolbar)
+      setInterval(async () => {
+        const s = await window.electronAPI.getState();
+        const newBm = s.bookmarks || [];
+        if (JSON.stringify(newBm) !== JSON.stringify(bookmarks)) {
+          bookmarks = newBm;
+          renderGrid();
+        }
+      }, 2000);
+    }
+
+    init();
+  </script>
+</body>
 </html>
