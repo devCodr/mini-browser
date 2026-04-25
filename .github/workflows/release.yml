@@ -39,10 +39,15 @@ jobs:
       run: |
         # Extract version from git tag (remove 'v' prefix)
         VERSION=${GITHUB_REF#refs/tags/v}
-        echo "Updating package.json version to $VERSION"
-        # Update package.json version
-        pnpm version $VERSION --no-git-tag-version
-        echo "Updated package.json to version $VERSION"
+        echo "Checking package.json version to $VERSION"
+        # Only update if different
+        CURRENT_VERSION=$(node -p "require('./package.json').version")
+        if [ "$CURRENT_VERSION" != "$VERSION" ]; then
+          echo "Updating package.json version from $CURRENT_VERSION to $VERSION"
+          pnpm version $VERSION --no-git-tag-version
+        else
+          echo "Package.json version already matches $VERSION"
+        fi
 
     - name: Build for ${{ matrix.os }}
       run: pnpm run build
