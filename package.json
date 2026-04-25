@@ -51,14 +51,7 @@
       "overlay.html",
       "welcome.html",
       "icon.png",
-      "package.json",
-      "node_modules/**/*"
-    ],
-    "extraResources": [
-      {
-        "from": "node_modules",
-        "to": "node_modules"
-      }
+      "package.json"
     ],
     "compression": "maximum",
     "removePackageScripts": true,
