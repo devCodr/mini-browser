@@ -8,7 +8,7 @@ use tauri::{
 pub const HEADER_HEIGHT: f64 = 42.0;
 
 #[cfg(target_os = "macos")]
-pub const USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Safari/605.1.15";
+pub const USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
 
 #[cfg(not(target_os = "macos"))]
 pub const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
@@ -103,10 +103,72 @@ impl SessionManager {
         let app_handle_clone = app.clone();
         let app_handle_new_win = app.clone();
 
+        let partition_for_notif = partition.to_string();
+
         let init_script = r##"
             try {
                 Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
             } catch(e) {}
+
+            // === Native Notification Bridge ===
+            (function() {
+                // Grant permission by default so sites don't keep asking
+                var _origNotif = window.Notification;
+                var _permission = 'granted';
+
+                function MiniBrowserNotification(title, options) {
+                    options = options || {};
+                    try {
+                        sendHostAction('notify', {
+                            title: title || '',
+                            body: (options.body || '').toString().substring(0, 300),
+                            icon: (options.icon || '').toString().substring(0, 500),
+                            tag: (options.tag || '').toString().substring(0, 100)
+                        });
+                    } catch(e) { console.error('Notification bridge error:', e); }
+                    // Return a fake object with event handlers
+                    var self = {
+                        close: function() {},
+                        onclick: null,
+                        onclose: null,
+                        onerror: null,
+                        onshow: null,
+                        addEventListener: function() {},
+                        removeEventListener: function() {},
+                        dispatchEvent: function() { return true; }
+                    };
+                    return self;
+                }
+
+                MiniBrowserNotification.permission = _permission;
+                MiniBrowserNotification.requestPermission = function(cb) {
+                    var result = Promise.resolve(_permission);
+                    if (typeof cb === 'function') cb(_permission);
+                    return result;
+                };
+
+                try {
+                    Object.defineProperty(window, 'Notification', {
+                        configurable: true,
+                        enumerable: true,
+                        get: function() { return MiniBrowserNotification; },
+                        set: function() {}
+                    });
+                } catch(e) {
+                    window.Notification = MiniBrowserNotification;
+                }
+
+                // Patch navigator.permissions.query so sites see 'granted'
+                try {
+                    var origQuery = navigator.permissions.query.bind(navigator.permissions);
+                    navigator.permissions.query = function(desc) {
+                        if (desc && desc.name === 'notifications') {
+                            return Promise.resolve({ state: 'granted', onchange: null });
+                        }
+                        return origQuery(desc);
+                    };
+                } catch(e) {}
+            })();
 
             function sendHostAction(action, data) {
                 try {
@@ -410,6 +472,17 @@ impl SessionManager {
                                     }
                                 }
                             }
+                        }
+                        "notify" => {
+                            let title = params.get("title").cloned().unwrap_or_else(|| partition_for_notif.clone());
+                            let body = params.get("body").cloned().unwrap_or_default();
+                            use tauri_plugin_notification::NotificationExt;
+                            let _ = app_handle_clone
+                                .notification()
+                                .builder()
+                                .title(&title)
+                                .body(&body)
+                                .show();
                         }
                         _ => {}
                     }
