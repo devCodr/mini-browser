@@ -54,6 +54,17 @@ pub fn rebuild_menu(app: &AppHandle, bookmarks: &[Bookmark]) {
 
     let Ok(tabs_menu) = tabs_builder.build() else { return; };
 
+    let Ok(edit_menu) = tauri::menu::SubmenuBuilder::new(app, "Edit")
+        .undo()
+        .redo()
+        .separator()
+        .cut()
+        .copy()
+        .paste()
+        .separator()
+        .select_all()
+        .build() else { return; };
+
     let Ok(view_menu) = tauri::menu::SubmenuBuilder::new(app, "View")
         .item(&tauri::menu::MenuItemBuilder::with_id("reload", "Reload Active Tab").accelerator("CmdOrCtrl+R").build(app).unwrap())
         .item(&tauri::menu::MenuItemBuilder::with_id("home", "Home / Dashboard").accelerator("CmdOrCtrl+H").build(app).unwrap())
@@ -62,7 +73,7 @@ pub fn rebuild_menu(app: &AppHandle, bookmarks: &[Bookmark]) {
         .build() else { return; };
 
     if let Ok(menu) = tauri::menu::MenuBuilder::new(app)
-        .items(&[&file_menu, &tabs_menu, &view_menu])
+        .items(&[&file_menu, &edit_menu, &tabs_menu, &view_menu])
         .build() {
         let _ = app.set_menu(menu);
     }
@@ -108,6 +119,17 @@ fn hide_active_session(app: AppHandle, state: State<'_, AppStateWrapper>) -> Res
 fn show_active_session(app: AppHandle, state: State<'_, AppStateWrapper>) -> Result<(), String> {
     state.sessions.show_active(&app);
     Ok(())
+}
+
+#[tauri::command]
+fn open_in_default_browser(app: AppHandle, url: String) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    app.opener().open_url(&url, None::<&str>).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn open_in_new_session(app: AppHandle, url: String) -> Result<(), String> {
+    app.emit("open-new-session-url", &url).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -474,6 +496,8 @@ pub fn run() {
             set_pin,
             toggle_lock,
             set_inactivity_ms,
+            open_in_default_browser,
+            open_in_new_session,
             update_settings,
             lock_now
         ])

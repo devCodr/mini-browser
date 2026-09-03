@@ -37,7 +37,9 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background-color: var(--bg-base);
   color: var(--text-primary);
   height: 100vh;
@@ -112,7 +114,9 @@ body.is-linux .header {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
   -webkit-app-region: no-drag;
 }
 
@@ -352,8 +356,16 @@ kbd {
   scrollbar-width: none;
   height: 100%;
   padding: 0 12px 0 4px;
-  mask-image: linear-gradient(to right, black calc(100% - 36px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, black calc(100% - 36px), transparent 100%);
+  mask-image: linear-gradient(
+    to right,
+    black calc(100% - 36px),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    black calc(100% - 36px),
+    transparent 100%
+  );
   -webkit-app-region: no-drag !important;
 }
 
@@ -374,7 +386,9 @@ kbd {
   color: var(--text-secondary);
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
   position: relative;
   flex-shrink: 0;
   -webkit-app-region: no-drag !important;
@@ -501,7 +515,11 @@ kbd {
   display: flex;
   justify-content: center;
   padding: 50px 20px;
-  background: radial-gradient(circle at 50% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 60%);
+  background: radial-gradient(
+    circle at 50% 20%,
+    rgba(99, 102, 241, 0.05) 0%,
+    transparent 60%
+  );
 }
 
 .welcome-container {
@@ -611,10 +629,22 @@ kbd {
   flex-shrink: 0;
 }
 
-.preset-icon-wrapper.whatsapp { background: rgba(37, 211, 102, 0.15); color: #25D366; }
-.preset-icon-wrapper.gmail { background: rgba(234, 67, 53, 0.15); color: #EA4335; }
-.preset-icon-wrapper.facebook { background: rgba(24, 119, 242, 0.15); color: #1877F2; }
-.preset-icon-wrapper.x-twitter { background: rgba(255, 255, 255, 0.1); color: #FFFFFF; }
+.preset-icon-wrapper.whatsapp {
+  background: rgba(37, 211, 102, 0.15);
+  color: #25d366;
+}
+.preset-icon-wrapper.gmail {
+  background: rgba(234, 67, 53, 0.15);
+  color: #ea4335;
+}
+.preset-icon-wrapper.facebook {
+  background: rgba(24, 119, 242, 0.15);
+  color: #1877f2;
+}
+.preset-icon-wrapper.x-twitter {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
 
 .preset-info {
   display: flex;
@@ -756,7 +786,8 @@ kbd {
   font-weight: 600;
 }
 
-.modal-form, .modal-content {
+.modal-form,
+.modal-content {
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -774,8 +805,12 @@ kbd {
   gap: 10px;
 }
 
-.flex-1 { flex: 1; }
-.badge-input-group { width: 80px; }
+.flex-1 {
+  flex: 1;
+}
+.badge-input-group {
+  width: 80px;
+}
 
 .form-group label {
   font-size: 12px;
@@ -783,7 +818,8 @@ kbd {
   color: var(--text-secondary);
 }
 
-.form-group input, .select-input {
+.form-group input,
+.select-input {
   height: 38px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-subtle);
@@ -797,7 +833,8 @@ kbd {
   -webkit-user-select: text;
 }
 
-.form-group input:focus, .select-input:focus {
+.form-group input:focus,
+.select-input:focus {
   border-color: var(--accent-primary);
 }
 
@@ -820,7 +857,9 @@ kbd {
   height: 22px;
   border-radius: 50%;
   border: 2px solid transparent;
-  transition: transform 0.15s, border-color 0.15s;
+  transition:
+    transform 0.15s,
+    border-color 0.15s;
 }
 
 .color-radio input:checked + span {
@@ -880,7 +919,11 @@ kbd {
   cursor: pointer;
 }
 
-.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
 
 .slider {
   position: absolute;
@@ -994,7 +1037,9 @@ kbd {
   width: 72px;
   height: 72px;
   border-radius: 18px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5), 0 0 24px rgba(99, 102, 241, 0.25);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.5),
+    0 0 24px rgba(99, 102, 241, 0.25);
   border: 1.5px solid rgba(255, 255, 255, 0.12);
   object-fit: contain;
 }
@@ -1154,9 +1199,18 @@ kbd {
 
 /* Shake Animation on PIN Error */
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-8px); }
-  40%, 80% { transform: translateX(8px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-8px);
+  }
+  40%,
+  80% {
+    transform: translateX(8px);
+  }
 }
 
 .shake {
@@ -1374,7 +1428,11 @@ kbd {
   width: 72px;
   height: 72px;
   margin-bottom: 14px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
+  background: linear-gradient(
+    135deg,
+    rgba(99, 102, 241, 0.2),
+    rgba(168, 85, 247, 0.2)
+  );
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 18px;
   display: flex;

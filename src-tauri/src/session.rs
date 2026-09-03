@@ -102,7 +102,7 @@ impl SessionManager {
         let part_clone = partition.to_string();
         let app_handle_clone = app.clone();
 
-        let init_script = r#"
+        let init_script = r##"
             try {
                 Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
             } catch(e) {}
@@ -121,7 +121,213 @@ impl SessionManager {
                     }
                 }
             }, true);
-        "#;
+
+            // Context Menu & Link Actions (Open in Default Browser, Open in New Session, Copy/Paste)
+            (function() {
+                var menuId = 'mini-browser-ctx-menu';
+
+                function removeMenu() {
+                    var el = document.getElementById(menuId);
+                    if (el) el.remove();
+                }
+
+                document.addEventListener('click', function(e) {
+                    if (!e.target.closest('#' + menuId)) {
+                        removeMenu();
+                    }
+                }, true);
+
+                window.addEventListener('blur', removeMenu);
+                window.addEventListener('scroll', removeMenu, true);
+                window.addEventListener('resize', removeMenu);
+                window.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') removeMenu();
+                }, true);
+
+                window.addEventListener('contextmenu', function(e) {
+                    if (e.shiftKey) return; // Allow native menu if holding Shift
+
+                    removeMenu();
+
+                    var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+                    var modName = isMac ? 'Cmd' : 'Ctrl';
+
+                    var linkEl = e.target.closest('a[href]');
+                    var targetUrl = linkEl ? linkEl.href : null;
+                    var selectedText = window.getSelection() ? window.getSelection().toString().trim() : '';
+                    var activeEl = document.activeElement;
+                    var isEditable = activeEl && (
+                        activeEl.isContentEditable ||
+                        activeEl.tagName === 'INPUT' ||
+                        activeEl.tagName === 'TEXTAREA'
+                    );
+
+                    var items = [];
+
+                    if (targetUrl && (targetUrl.startsWith('http://') || targetUrl.startsWith('https://') || targetUrl.startsWith('mailto:'))) {
+                        items.push({
+                            icon: '🌐',
+                            label: 'Open in Default Browser',
+                            action: function() {
+                                if (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke) {
+                                    window.__TAURI_INTERNALS__.invoke('open_in_default_browser', { url: targetUrl });
+                                } else {
+                                    window.open(targetUrl, '_blank');
+                                }
+                            }
+                        });
+                        items.push({
+                            icon: '🔗',
+                            label: 'Open in New Session Tab',
+                            action: function() {
+                                if (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke) {
+                                    window.__TAURI_INTERNALS__.invoke('open_in_new_session', { url: targetUrl });
+                                }
+                            }
+                        });
+                        items.push({
+                            icon: '📋',
+                            label: 'Copy Link Address',
+                            action: function() {
+                                if (navigator.clipboard && navigator.clipboard.writeText) {
+                                    navigator.clipboard.writeText(targetUrl);
+                                }
+                            }
+                        });
+                        items.push({ separator: true });
+                    }
+
+                    if (selectedText) {
+                        items.push({
+                            icon: '📄',
+                            label: 'Copy',
+                            shortcut: modName + '+C',
+                            action: function() {
+                                document.execCommand('copy');
+                            }
+                        });
+                        if (isEditable) {
+                            items.push({
+                                icon: '✂️',
+                                label: 'Cut',
+                                shortcut: modName + '+X',
+                                action: function() {
+                                    document.execCommand('cut');
+                                }
+                            });
+                        }
+                    }
+
+                    if (isEditable) {
+                        items.push({
+                            icon: '📥',
+                            label: 'Paste',
+                            shortcut: modName + '+V',
+                            action: function() {
+                                if (navigator.clipboard && navigator.clipboard.readText) {
+                                    navigator.clipboard.readText().then(function(text) {
+                                        if (text) {
+                                            document.execCommand('insertText', false, text);
+                                        }
+                                    }).catch(function() {
+                                        document.execCommand('paste');
+                                    });
+                                } else {
+                                    document.execCommand('paste');
+                                }
+                            }
+                        });
+                        items.push({
+                            icon: '🔤',
+                            label: 'Select All',
+                            shortcut: modName + '+A',
+                            action: function() {
+                                document.execCommand('selectAll');
+                            }
+                        });
+                        items.push({ separator: true });
+                    }
+
+                    items.push({
+                        icon: '🔙',
+                        label: 'Back',
+                        action: function() { window.history.back(); }
+                    });
+                    items.push({
+                        icon: '🔜',
+                        label: 'Forward',
+                        action: function() { window.history.forward(); }
+                    });
+                    items.push({
+                        icon: '🔄',
+                        label: 'Reload',
+                        shortcut: modName + '+R',
+                        action: function() { window.location.reload(); }
+                    });
+
+                    if (!targetUrl) {
+                        items.push({ separator: true });
+                        items.push({
+                            icon: '🌐',
+                            label: 'Open Page in Default Browser',
+                            action: function() {
+                                var curUrl = window.location.href;
+                                if (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke) {
+                                    window.__TAURI_INTERNALS__.invoke('open_in_default_browser', { url: curUrl });
+                                }
+                            }
+                        });
+                    }
+
+                    e.preventDefault();
+
+                    var menu = document.createElement('div');
+                    menu.id = menuId;
+                    menu.style.cssText = 'position:fixed; z-index:2147483647; background:rgba(24,24,27,0.96); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.14); border-radius:10px; box-shadow:0 12px 36px rgba(0,0,0,0.65), 0 0 0 1px rgba(0,0,0,0.2); padding:5px; min-width:210px; max-width:280px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,sans-serif; font-size:13px; color:#e4e4e7; user-select:none;';
+
+                    items.forEach(function(it) {
+                        if (it.separator) {
+                            var sep = document.createElement('div');
+                            sep.style.cssText = 'height:1px; background:rgba(255,255,255,0.1); margin:4px 6px;';
+                            menu.appendChild(sep);
+                            return;
+                        }
+                        var row = document.createElement('div');
+                        row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; padding:6px 10px; border-radius:6px; cursor:pointer; gap:8px; font-weight:450; transition:background 0.1s ease;';
+                        row.innerHTML = '<span style="display:flex; align-items:center; gap:8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><span style="font-size:13px; opacity:0.9;">' + it.icon + '</span><span>' + it.label + '</span></span>' + (it.shortcut ? '<span style="font-size:11px; opacity:0.4; font-family:monospace;">' + it.shortcut + '</span>' : '');
+                        
+                        row.addEventListener('mouseenter', function() {
+                            row.style.background = 'rgba(99,102,241,0.85)';
+                            row.style.color = '#ffffff';
+                        });
+                        row.addEventListener('mouseleave', function() {
+                            row.style.background = 'transparent';
+                            row.style.color = '#e4e4e7';
+                        });
+                        row.addEventListener('click', function(ev) {
+                            ev.stopPropagation();
+                            removeMenu();
+                            try { it.action(); } catch(err) { console.error(err); }
+                        });
+                        menu.appendChild(row);
+                    });
+
+                    document.documentElement.appendChild(menu);
+
+                    var x = e.clientX;
+                    var y = e.clientY;
+                    var rect = menu.getBoundingClientRect();
+                    if (x + rect.width > window.innerWidth) {
+                        x = Math.max(10, window.innerWidth - rect.width - 10);
+                    }
+                    if (y + rect.height > window.innerHeight) {
+                        y = Math.max(10, window.innerHeight - rect.height - 10);
+                    }
+                    menu.style.left = x + 'px';
+                    menu.style.top = y + 'px';
+                }, true);
+            })();
+        "##;
 
         let builder = WebviewBuilder::new(&label, WebviewUrl::External(parsed_url))
             .data_directory(data_dir)

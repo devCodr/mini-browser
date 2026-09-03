@@ -1152,6 +1152,16 @@ listen("session-navigated", (event) => {
   }
 });
 
+// Listen for opening new session from context menu
+listen("open-new-session-url", (event) => {
+  const url = event.payload;
+  if (url) {
+    const domain = getDomain(url) || "Web";
+    const badge = domain.replace(/[^a-zA-Z0-9]/g, "").slice(0, 2).toUpperCase() || "NW";
+    createSession(url, domain, badge, "#6366f1");
+  }
+});
+
 // Platform & Window Controls setup
 async function setupPlatformUI() {
   let platform = "macos";
