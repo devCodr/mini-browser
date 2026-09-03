@@ -319,7 +319,7 @@
           </div>
           <div class="about-meta-item">
             <span class="about-meta-label">Native Engine</span>
-            <span id="about-engine-val" class="about-meta-val">WebKit (macOS) / Rust Core</span>
+            <span id="about-engine-val" class="about-meta-val">Native WebView / Rust Core</span>
           </div>
           <div class="about-meta-item">
             <span class="about-meta-label">Memory Footprint</span>
@@ -407,8 +407,9 @@
     </div>
   </div>
 
-  <!-- Glassmorphic PIN Lock Screen Overlay -->
-  <div id="lock-overlay" class="lock-overlay hidden">
+  <!-- Glassmorphic PIN Lock Screen Overlay (Draggable Window Region) -->
+  <div id="lock-overlay" class="lock-overlay hidden" data-tauri-drag-region>
+    <div class="lock-drag-bar" data-tauri-drag-region></div>
     <div class="lock-card">
       <div class="lock-icon-wrapper">
         <img src="icon.png" class="lock-logo-img" alt="MiniBrowser" onerror="this.style.display='none'" />

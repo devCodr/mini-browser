@@ -945,6 +945,18 @@ kbd {
   justify-content: center;
   z-index: 1000;
   transition: opacity 0.25s ease;
+  -webkit-app-region: drag;
+  cursor: default;
+}
+
+.lock-drag-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  -webkit-app-region: drag;
+  z-index: 1001;
 }
 
 .lock-overlay.hidden {
@@ -953,12 +965,19 @@ kbd {
 }
 
 .lock-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   max-width: 320px;
   width: 100%;
+  -webkit-app-region: no-drag;
+  z-index: 1002;
+}
+
+.lock-card * {
+  -webkit-app-region: no-drag;
 }
 
 .lock-icon-wrapper {

@@ -1168,14 +1168,15 @@ async function setupPlatformUI() {
 
   const engineVal = document.getElementById("about-engine-val");
   if (engineVal) {
-    if (platform === "windows") {
-      engineVal.textContent = "WebView2 (Windows) / Rust Core";
-    } else if (platform === "linux") {
-      engineVal.textContent = "WebKitGTK (Linux) / Rust Core";
-    } else {
-      engineVal.textContent = "WebKit (macOS) / Rust Core";
-    }
+    engineVal.textContent = "Native WebView / Rust Core";
   }
+
+  // Window drag while locked
+  lockOverlay.addEventListener("mousedown", (e) => {
+    if (e.target === lockOverlay || e.target.classList.contains("lock-drag-bar")) {
+      invoke("start_dragging").catch(() => {});
+    }
+  });
 
   // If not macOS, update shortcut text across UI tooltips & modal
   if (platform !== "macos") {
