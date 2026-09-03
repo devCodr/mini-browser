@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniBrowser</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Slim Unified Header (44px) with Full Drag Region -->
+  <header id="header" class="header" data-tauri-drag-region>
+    <!-- macOS traffic light spacer (draggable) -->
+    <div class="traffic-spacer" data-tauri-drag-region></div>
+
+    <!-- Navigation Pill Group -->
+    <div class="nav-group">
+      <button id="btn-back" class="icon-btn" title="Back (Cmd+[)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <button id="btn-fwd" class="icon-btn" title="Forward (Cmd+])">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+      <button id="btn-reload" class="icon-btn" title="Reload (Cmd+R)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+      </button>
+      <button id="btn-home" class="icon-btn" title="Home / Dashboard (Cmd+H)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </button>
+    </div>
+
+    <!-- Smart URL / Search Pill (Fixed Width - No Tab Shifting) -->
+    <div class="url-container">
+      <div id="url-pill" class="url-pill">
+        <svg class="lock-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span id="url-domain" class="url-domain">Welcome</span>
+      </div>
+      <input id="url-input" class="url-input" type="text" placeholder="Search or URL (Enter)..." autocomplete="off" spellcheck="false" />
+    </div>
+
+    <!-- Session Tabs Bar (Scrollable horizontally, with live tab reordering) -->
+    <div id="tabs-bar" class="tabs-bar">
+      <!-- Injected dynamically -->
+    </div>
+
+    <!-- Flexible Drag Spacer -->
+    <div class="drag-spacer" data-tauri-drag-region></div>
+
+    <!-- Action Controls -->
+    <div class="actions-group">
+      <button id="btn-new-session" class="action-btn new-session-btn" title="New Session (Cmd+T)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        <span>Session</span>
+      </button>
+
+      <button id="btn-manage-sessions" class="icon-btn" title="Manage Sessions (Cmd+M)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+      </button>
+
+      <button id="btn-lock" class="icon-btn lock-btn" title="Lock Browser Now (Cmd+Alt+L)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </button>
+
+      <button id="btn-shortcuts" class="icon-btn" title="Keyboard Shortcuts & Help (Cmd+/)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+      </button>
+
+      <button id="btn-about" class="icon-btn" title="About MiniBrowser">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+      </button>
+
+      <button id="btn-settings" class="icon-btn" title="Settings">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Welcome / Dashboard View (Visible when no session webview is active) -->
+  <main id="welcome-view" class="welcome-view">
+    <div class="welcome-container">
+      <div class="welcome-badge">
+        <span class="pulse-dot"></span> Rust Native Engine
+      </div>
+      <h1 class="welcome-title">MiniBrowser <span class="gradient-text">Private Sessions</span></h1>
+      <p class="welcome-subtitle">Each favorite runs in a 100% isolated persistent partition with zero cookie leakage.</p>
+
+      <!-- Quick Launch Presets -->
+      <div class="presets-section">
+        <h2 class="section-heading">Quick Launch Isolated Session</h2>
+        <div class="presets-grid">
+          <button class="preset-card" data-url="https://web.whatsapp.com" data-title="WhatsApp Web" data-badge="W1" data-color="#25D366">
+            <div class="preset-icon-wrapper whatsapp">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+            </div>
+            <div class="preset-info">
+              <span class="preset-title">WhatsApp Web</span>
+              <span class="preset-desc">Isolated account</span>
+            </div>
+            <span class="preset-badge" style="background: rgba(37, 211, 102, 0.15); color: #25D366;">W1</span>
+          </button>
+
+          <button class="preset-card" data-url="https://accounts.google.com/ServiceLogin?service=mail&continue=https://mail.google.com/mail/" data-title="Gmail" data-badge="G1" data-color="#EA4335">
+            <div class="preset-icon-wrapper gmail">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.272H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"/></svg>
+            </div>
+            <div class="preset-info">
+              <span class="preset-title">Gmail</span>
+              <span class="preset-desc">Google Account</span>
+            </div>
+            <span class="preset-badge" style="background: rgba(234, 67, 53, 0.15); color: #EA4335;">G1</span>
+          </button>
+
+          <button class="preset-card" data-url="https://facebook.com" data-title="Facebook" data-badge="F1" data-color="#1877F2">
+            <div class="preset-icon-wrapper facebook">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            </div>
+            <div class="preset-info">
+              <span class="preset-title">Facebook</span>
+              <span class="preset-desc">Social Profile</span>
+            </div>
+            <span class="preset-badge" style="background: rgba(24, 119, 242, 0.15); color: #1877F2;">F1</span>
+          </button>
+
+          <button class="preset-card" data-url="https://x.com" data-title="X / Twitter" data-badge="X1" data-color="#FFFFFF">
+            <div class="preset-icon-wrapper x-twitter">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </div>
+            <div class="preset-info">
+              <span class="preset-title">X (Twitter)</span>
+              <span class="preset-desc">Alternate handle</span>
+            </div>
+            <span class="preset-badge" style="background: rgba(255, 255, 255, 0.15); color: #FFFFFF;">X1</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Custom URL Bar on Dashboard -->
+      <div class="custom-launch-section">
+        <h2 class="section-heading">Launch Custom Website</h2>
+        <form id="form-custom-launch" class="custom-launch-form">
+          <input id="input-custom-url" class="custom-url-input" type="text" placeholder="https://notion.so, https://github.com..." required />
+          <button type="submit" class="primary-btn">Create Session</button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <!-- New Session Modal -->
+  <div id="modal-new-session" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">New Private Session</h3>
+        <button id="btn-close-modal" class="icon-btn close-modal-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <form id="form-new-session" class="modal-form">
+        <div class="form-group">
+          <label for="new-session-url">Website URL</label>
+          <input id="new-session-url" type="text" placeholder="https://example.com" required autofocus />
+        </div>
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="new-session-title">Session Name</label>
+            <input id="new-session-title" type="text" placeholder="Work, Client A, Personal..." />
+          </div>
+          <div class="form-group badge-input-group">
+            <label for="new-session-badge">Badge</label>
+            <input id="new-session-badge" type="text" maxlength="3" placeholder="W1" style="text-align: center; text-transform: uppercase;" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Color Tag</label>
+          <div class="color-picker-row">
+            <label class="color-radio"><input type="radio" name="session-color" value="#6366f1" checked /><span style="background:#6366f1"></span></label>
+            <label class="color-radio"><input type="radio" name="session-color" value="#25D366" /><span style="background:#25D366"></span></label>
+            <label class="color-radio"><input type="radio" name="session-color" value="#EA4335" /><span style="background:#EA4335"></span></label>
+            <label class="color-radio"><input type="radio" name="session-color" value="#1877F2" /><span style="background:#1877F2"></span></label>
+            <label class="color-radio"><input type="radio" name="session-color" value="#F59E0B" /><span style="background:#F59E0B"></span></label>
+            <label class="color-radio"><input type="radio" name="session-color" value="#EC4899" /><span style="background:#EC4899"></span></label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="btn-cancel-modal" class="secondary-btn">Cancel</button>
+          <button type="submit" class="primary-btn">Create & Launch</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Keyboard Shortcuts Modal -->
+  <div id="modal-shortcuts" class="modal-backdrop hidden">
+    <div class="modal-card shortcuts-modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Keyboard Shortcuts</h3>
+        <button id="btn-close-shortcuts" class="icon-btn close-modal-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="modal-content shortcuts-content">
+        <div class="shortcut-group">
+          <div class="shortcut-group-title">🎯 Tab Reordering</div>
+          <div class="shortcut-row"><span class="shortcut-desc">Move active tab left</span><span><kbd>Cmd</kbd> + <kbd>Alt</kbd> + <kbd>&larr;</kbd></span></div>
+          <div class="shortcut-row"><span class="shortcut-desc">Move active tab right</span><span><kbd>Cmd</kbd> + <kbd>Alt</kbd> + <kbd>&rarr;</kbd></span></div>
+          <div class="shortcut-row"><span class="shortcut-desc">Tab Context Menu</span><span>Right-Click on any tab</span></div>
+          <div class="shortcut-row"><span class="shortcut-desc">Live Drag & Drop</span><span>Click & drag tab horizontally</span></div>
+          <div class="shortcut-row"><span class="shortcut-desc">Manage Sessions reorder</span><span><kbd>Cmd</kbd> + <kbd>M</kbd> &bull; Buttons <kbd>&uarr;</kbd> <kbd>&darr;</kbd></span></div>
+          <div class="shortcut-row"><span class="shortcut-desc">Horizontal tabs scroll</span><span>Mouse Wheel / Trackpad scroll</span></div>
+        </div>
+
+        <div class="shortcut-group">
+          <div class="shortcut-group-title">🌐 Tabs & Navigation</div>
+          <div class="shortcut-row"><span class="shortcut-desc">New Private Session</span><span><kbd>Cmd</kbd> + <kbd>T</kbd></span></div>
+          <div class="shortcut-row"><span class="shortcut-desc">Close Active Session</span><span><kbd>Cmd</kbd> + <kbd>W</kbd></span></div>
+          <div class="shortcut-row"><span class="shortcut-desc">Direct Switch to Tab (1–9)</span><span><kbd>Cmd</kbd> + <kbd>1-9</kbd></span></div>
+          <div class="shortcut-row"><span class="shortcut-desc">Manage Sessions Center</span><span><kbd>Cmd</kbd> + <kbd>M</kbd></span></div>
+          <div class="shortcut-row"><span class="shortcut-desc">Focus Address Bar</span><span><kbd>Cmd</kbd> + <kbd>L</kbd></span></div>
+          <div class="shortcut-row"><span class="shortcut-desc">Home / Dashboard</span><span><kbd>Cmd</kbd> + <kbd>H</kbd></span></div>
+          <div class="shortcut-row"><span class="shortcut-desc">Reload Active Page</span><span><kbd>Cmd</kbd> + <kbd>R</kbd></span></div>
+          <div class="shortcut-row"><span class="shortcut-desc">Navigate Back / Forward</span><span><kbd>Cmd</kbd> + <kbd>[</kbd> / <kbd>]</kbd></span></div>
+        </div>
+
+        <div class="shortcut-group">
+          <div class="shortcut-group-title">🔒 Security & View</div>
+          <div class="shortcut-row"><span class="shortcut-desc">Lock Browser Now</span><span><kbd>Cmd</kbd> + <kbd>Alt</kbd> + <kbd>L</kbd></span></div>
+          <div class="shortcut-row"><span class="shortcut-desc">Zoom In / Zoom Out</span><span><kbd>Cmd</kbd> + <kbd>+</kbd> / <kbd>-</kbd></span></div>
+          <div class="shortcut-row"><span class="shortcut-desc">Reset Zoom (100%)</span><span><kbd>Cmd</kbd> + <kbd>0</kbd></span></div>
+          <div class="shortcut-row"><span class="shortcut-desc">Toggle Shortcuts Help</span><span><kbd>Cmd</kbd> + <kbd>/</kbd></span></div>
+        </div>
+      </div>
+
+      <div class="shortcuts-docs-banner">
+        <div class="docs-banner-text">
+          <span class="docs-banner-title">📖 Complete User Guide & FAQ</span>
+          <span class="docs-banner-subtitle">Explore multi-session architecture & guides on the web docs</span>
+        </div>
+        <a href="https://devcodr.github.io/mini-browser/" target="_blank" class="docs-banner-btn">
+          <span>Documentation ↗</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manage Sessions Modal -->
+  <div id="modal-manage-sessions" class="modal-backdrop hidden">
+    <div class="modal-card manage-sessions-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h3 class="modal-title">Manage Sessions</h3>
+          <span class="modal-subtitle">Drag to reorder tabs, edit badges & names, or remove</span>
+        </div>
+        <button id="btn-close-manage" class="icon-btn close-modal-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-content manage-sessions-content">
+        <div id="manage-sessions-list" class="manage-sessions-list">
+          <!-- Dynamically populated session rows -->
+        </div>
+      </div>
+      <div class="modal-footer space-between">
+        <button id="btn-manage-add" class="secondary-btn flex-center">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          <span>Add New Session</span>
+        </button>
+        <button id="btn-manage-done" class="primary-btn">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- About Modal -->
+  <div id="modal-about" class="modal-backdrop hidden">
+    <div class="modal-card about-modal-card">
+      <div class="modal-header no-border">
+        <button id="btn-close-about" class="icon-btn close-modal-btn" style="margin-left: auto;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <div class="about-content">
+        <div class="about-icon-wrapper">
+          <img src="icon.png" class="about-app-icon" alt="MiniBrowser" onerror="this.style.display='none'" />
+        </div>
+        <h2 class="about-app-name">MiniBrowser</h2>
+        <span class="about-version-badge">v1.0.0 &bull; Rust &amp; Tauri v2 Native</span>
+        <p class="about-description">
+          Lightweight, high-performance multi-session browser designed for privacy and productivity.
+          Each session runs in a 100% isolated persistent sandbox with independent cookies, cache, and storage.
+        </p>
+
+        <div class="about-meta-grid">
+          <div class="about-meta-item">
+            <span class="about-meta-label">Developer</span>
+            <span class="about-meta-val">Chris Larico</span>
+          </div>
+          <div class="about-meta-item">
+            <span class="about-meta-label">Website</span>
+            <a class="about-meta-link" href="https://larico.dev" target="_blank">larico.dev</a>
+          </div>
+          <div class="about-meta-item">
+            <span class="about-meta-label">Repository</span>
+            <a class="about-meta-link" href="https://github.com/devCodr/mini-browser" target="_blank">GitHub</a>
+          </div>
+          <div class="about-meta-item">
+            <span class="about-meta-label">License</span>
+            <span class="about-meta-val">MIT License &copy; 2025</span>
+          </div>
+          <div class="about-meta-item">
+            <span class="about-meta-label">Native Engine</span>
+            <span class="about-meta-val">WebKit (macOS) / Rust Core</span>
+          </div>
+          <div class="about-meta-item">
+            <span class="about-meta-label">Installer Size</span>
+            <span class="about-meta-val accent-green">4.8 MB (-98.3%)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="modal-settings" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Browser Settings</h3>
+        <button id="btn-close-settings" class="icon-btn close-modal-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-content">
+        <div class="settings-item">
+          <div class="settings-info">
+            <span class="settings-label">Inactivity PIN Lock</span>
+            <span class="settings-desc">Auto-lock browser after a period of idle time</span>
+          </div>
+          <label class="toggle-switch">
+            <input id="setting-lock-toggle" type="checkbox" checked />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-item">
+          <div class="settings-info">
+            <span class="settings-label">Lock immediately on launch</span>
+            <span class="settings-desc">Require PIN as soon as the app opens</span>
+          </div>
+          <label class="toggle-switch">
+            <input id="setting-lock-on-launch" type="checkbox" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-item">
+          <div class="settings-info">
+            <span class="settings-label">Start minimized</span>
+            <span class="settings-desc">Launch quietly in background without sudden popup</span>
+          </div>
+          <label class="toggle-switch">
+            <input id="setting-start-minimized" type="checkbox" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-item">
+          <div class="settings-info">
+            <span class="settings-label">Inactivity Timeout</span>
+            <span class="settings-desc" id="timeout-display">5 minutes</span>
+          </div>
+          <select id="setting-timeout" class="select-input">
+            <option value="60000">1 minute</option>
+            <option value="180000">3 minutes</option>
+            <option value="300000" selected>5 minutes</option>
+            <option value="600000">10 minutes</option>
+            <option value="1800000">30 minutes</option>
+          </select>
+        </div>
+
+        <div class="settings-item-col">
+          <span class="settings-label">Change 6-digit PIN</span>
+          <span class="settings-desc">Current default is 123456</span>
+          <form id="form-change-pin" class="change-pin-form">
+            <input id="input-new-pin" type="password" maxlength="6" pattern="\d{6}" placeholder="Enter new 6 digits" required autocomplete="off" />
+            <button type="submit" class="primary-btn">Update PIN</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Glassmorphic PIN Lock Screen Overlay -->
+  <div id="lock-overlay" class="lock-overlay hidden">
+    <div class="lock-card">
+      <div class="lock-icon-wrapper">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <h2 class="lock-title">MiniBrowser Locked</h2>
+      <p class="lock-subtitle">Enter your 6-digit PIN to resume your sessions</p>
+
+      <!-- PIN Indicator Dots -->
+      <div id="pin-dots" class="pin-dots">
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+      </div>
+
+      <!-- Hidden PIN input for physical keyboard -->
+      <input id="hidden-pin-input" type="password" maxlength="6" inputmode="numeric" pattern="\d*" autofocus />
+
+      <!-- Numeric Keypad -->
+      <div class="keypad">
+        <button class="key-btn" data-key="1">1</button>
+        <button class="key-btn" data-key="2">2</button>
+        <button class="key-btn" data-key="3">3</button>
+        <button class="key-btn" data-key="4">4</button>
+        <button class="key-btn" data-key="5">5</button>
+        <button class="key-btn" data-key="6">6</button>
+        <button class="key-btn" data-key="7">7</button>
+        <button class="key-btn" data-key="8">8</button>
+        <button class="key-btn" data-key="9">9</button>
+        <button class="key-btn key-action" id="btn-pin-clear">C</button>
+        <button class="key-btn" data-key="0">0</button>
+        <button class="key-btn key-action" id="btn-pin-del">⌫</button>
+      </div>
+
+      <div id="pin-error-msg" class="pin-error-msg hidden">Incorrect PIN. Try again.</div>
+    </div>
+  </div>
+
+  <!-- Tab Context Menu (Right click on tabs) -->
+  <div id="tab-context-menu" class="tab-context-menu hidden">
+    <button id="ctx-move-left" class="ctx-item">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 18-6-6 6-6"/></svg>
+      <span>Move Left</span>
+      <kbd>⌥⌘←</kbd>
+    </button>
+    <button id="ctx-move-right" class="ctx-item">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
+      <span>Move Right</span>
+      <kbd>⌥⌘→</kbd>
+    </button>
+    <div class="ctx-divider"></div>
+    <button id="ctx-manage" class="ctx-item">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+      <span>Manage Sessions...</span>
+      <kbd>⌘M</kbd>
+    </button>
+    <button id="ctx-close" class="ctx-item danger">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      <span>Close Session</span>
+      <kbd>⌘W</kbd>
+    </button>
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

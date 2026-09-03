@@ -1,149 +1,109 @@
-# MiniBrowser (Electron)
+# MiniBrowser 🚀
 
-🚀 **MiniBrowser** es un navegador ligero y personalizado construido con **Electron** diseñado para privacidad y productividad. Permite abrir **sesiones independientes por favorito**, reorganizar favoritos con **drag & drop** y bloquear la ventana con un **PIN seguro** tras períodos de inactividad.
+<p align="center">
+  <img src="rust-version/src/icon.png" width="96" height="96" alt="MiniBrowser Logo" style="border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);" />
+</p>
 
-[![Release](https://img.shields.io/github/release/devCodr/mini-browser.svg)](https://github.com/devCodr/mini-browser/releases)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Electron](https://img.shields.io/badge/Electron-41.3.0-blue.svg)](https://electronjs.org/)
+<p align="center">
+  <b>A blazing-fast, lightweight, multi-session desktop browser for managing multiple accounts simultaneously.</b><br />
+  Built natively with Rust & Tauri v2 • Ultra-low memory footprint • Zero cookie collisions
+</p>
 
-## ✨ Características Principales
+<p align="center">
+  <a href="https://github.com/devCodr/mini-browser/releases"><img src="https://img.shields.io/badge/Release-v1.0.0-6366f1?style=flat-square" alt="Release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-10b981?style=flat-square" alt="MIT License"></a>
+  <a href="https://rust-lang.org"><img src="https://img.shields.io/badge/Built%20With-Rust%20%26%20Tauri%20v2-f59e0b?style=flat-square" alt="Rust & Tauri"></a>
+  <a href="https://devcodr.github.io/mini-browser/"><img src="https://img.shields.io/badge/Website-Live%20Demo-3b82f6?style=flat-square" alt="GitHub Pages"></a>
+</p>
 
-- 🔐 **Sesiones aisladas** por favorito con persistencia separada (`persist:...`)
-- 🎯 **Drag & Drop** para reorganizar favoritos intuitivamente
-- 🔒 **Bloqueo automático** por inactividad con PIN personalizable
-- 💾 **Persistencia de datos** local (configuración y favoritos)
-- 🌐 **Integración nativa** - abrir enlaces en navegador predeterminado
-- 🎨 **Interfaz minimalista** y enfocada en la productividad
+---
 
-## 🚀 Descargas
+## 🌐 Live Website & Documentation
+Explore the interactive documentation and feature showcases:
+👉 **[MiniBrowser Official Website & Documentation](https://devcodr.github.io/mini-browser/)**
+👉 **[Full In-Depth User Guide (USER_GUIDE.md)](USER_GUIDE.md)**
 
-### 📦 Releases Automáticos
+---
 
-Descarga la versión más reciente para tu plataforma:
+## ✨ Why MiniBrowser?
 
-👉 **[Ver todos los releases](https://github.com/devCodr/mini-browser/releases)** - Selecciona el archivo adecuado para tu sistema:
+Traditional web browsers share cookies and session caches globally across tabs. MiniBrowser strictly isolates every account into an independent disk partition (`$APP_DATA/sessions/<partition_id>/`).
 
-- **macOS**: `MiniBrowser-*.dmg` (Apple Silicon M1/M2/M3+)
-- **Linux**: `mini-browser_*.deb` (Debian/Ubuntu) o `MiniBrowser-*.AppImage`
-- **Windows**: `MiniBrowser Setup *.exe`
+- 👥 **Multi-Session Isolation**: Run multiple WhatsApp Web, Gmail, Facebook, and Notion accounts concurrently without interference.
+- ⚡ **98% Smaller than Electron**: Native Rust build generates a compact **4.8 MB** installer vs standard 280MB+ Electron bundles.
+- 🚀 **Low Memory Footprint**: Idles at ~50 MB RAM with native system WebKit (macOS) and lazy webview instantiation.
+- 🎯 **4 Ways to Reorder Tabs**:
+  - **Right-click context menu** on any tab (*Move Left / Move Right / Manage / Close*).
+  - **Global shortcuts**: `Cmd + Option + ←` / `Cmd + Option + →`.
+  - **Fluid drag & drop** with real-time live-swapping.
+  - **Session Manager (`Cmd + M`)**: 1-click `[ ↑ ]` and `[ ↓ ]` reordering buttons.
+- 📜 **Horizontal Tabs Wheel Scrolling**: Scroll smoothly left and right across limitless tabs with mouse wheel or trackpad.
+- 🔒 **PIN Security Shield**: Glassmorphic blur overlay with 6-digit SHA-256 PIN lock, inactivity timer, and quiet launch in minimized mode.
+- ⌨️ **Cross-Webview Global Shortcuts**: Native Cocoa application menu accelerators that trigger even while typing inside external websites.
 
-> 📋 **Nota**: Los releases se generan automáticamente con cada nuevo tag en el repositorio. Siempre descarga la última versión disponible.
+---
 
-## ▶️ Uso Rápido
+## 📂 Repository Structure
 
-### Para Usuarios Finales
+```text
+mini-browser/
+├── src/                  ⚡ Frontend UI (HTML5, Vanilla CSS Glassmorphism, JS)
+├── src-tauri/            🦀 Rust backend (Tauri v2, WebKit IPC, multi-session partitions)
+├── docs/                 🌐 Official GitHub Pages landing page & documentation
+├── USER_GUIDE.md         📖 Comprehensive User Guide & documentation
+├── CONTRIBUTING.md       🤝 Guidelines for open-source contributors
+├── CODE_OF_CONDUCT.md    📜 Contributor Covenant Code of Conduct
+├── LICENSE               📄 MIT License
+└── package.json          📦 Project scripts & Tauri CLI
+```
 
-1. Descarga el instalador adecuado para tu sistema desde [releases](https://github.com/devCodr/mini-browser/releases)
-2. Instala y ejecuta MiniBrowser
-3. **➕ Añadir favorito**: Escribe una URL y presiona Enter
-4. **🔄 Reorganizar**: Arrastra los favoritos para cambiar su orden
-5. **🔐 Bloqueo manual**: Menú → _Lock now_
+---
 
-### Para Desarrolladores
+## 🚀 Quick Start
 
+### Prerequisites
+- [Rust](https://rustup.rs/) (1.75+)
+- [Node.js](https://nodejs.org/) (v18+) and `pnpm` (`npm install -g pnpm`)
+
+### Development
 ```bash
-# Clonar repositorio
 git clone https://github.com/devCodr/mini-browser.git
 cd mini-browser
-
-# Instalar dependencias
 pnpm install
-
-# Ejecutar en modo desarrollo
-pnpm start
+pnpm dev
 ```
 
-## 🛠️ Build y Distribución
-
-### Build Completo (Multi-plataforma)
-
+### Production Build
 ```bash
-pnpm run build
+pnpm build
 ```
+Optimized release bundles will be compiled to `src-tauri/target/release/bundle/`:
+- **macOS**: Universal & Apple Silicon DMG / App (`~4.8 MB`)
+- **Windows**: MSI & EXE via WebView2
+- **Linux**: Deb & AppImage via WebKitGTK
 
-### Build Específico por Plataforma
+---
 
-```bash
-# macOS (Apple Silicon optimizado)
-pnpm run package:mac
+## ⌨️ Essential Keyboard Shortcuts
 
-# Linux
-pnpm run package:linux
+| Shortcut | Action | Description |
+| :--- | :--- | :--- |
+| **`Cmd + 1` .. `Cmd + 9`** | Switch Tab | Direct jump to tab #1 through #9 |
+| **`Cmd + Option + ← / →`** | Reorder Tab | Shift active tab left or right |
+| **`Cmd + T`** | New Session | Launch a new isolated private account |
+| **`Cmd + W`** | Close Session | Close active tab immediately |
+| **`Cmd + M`** | Manage Sessions | Open reordering & editing modal |
+| **`Cmd + Option + L`** | Lock App | Engage PIN security shield |
+| **`Cmd + /`** | Help & Guide | Open interactive shortcuts & manual |
 
-# Windows
-pnpm run package:windows
-```
+---
 
-### Generar Iconos
+## 🤝 Contributing
 
-```bash
-pnpm run make:icon
-```
+Contributions are welcome! Please check out [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
 
-## 🗂️ Arquitectura del Proyecto
+---
 
-```
-mini-browser/
-├── main.js              # Proceso principal Electron, menús, overlay PIN
-├── renderer.js          # UI principal, gestión de favoritos, drag & drop
-├── preload.js           # Preload script para seguridad
-├── overlay.html         # Interfaz de bloqueo PIN
-├── welcome.html         # Pantalla de bienvenida inicial
-├── webview-preload.js   # Preload para webviews
-├── overlay-preload.js   # Preload para overlay
-├── package.json         # Configuración del proyecto y scripts
-└── build/               # Recursos de build (iconos, etc.)
-```
-
-## 🔐 Configuración de Seguridad
-
-### PIN y Bloqueo
-
-- **Tiempo de inactividad**: 5 minutos (configurable en `settings.json`)
-- **PIN por defecto**: `123456` (cambiable desde el overlay)
-- **Almacenamiento seguro**: Hash del PIN almacenado localmente
-
-### Datos Persistentes
-
-Los datos se guardan en el directorio de usuario de la aplicación:
-
-- `settings.json`: Preferencias, configuración de PIN y tiempo de inactividad
-- `bookmarks.json`: Lista completa de favoritos con metadatos
-
-## 🔄 Flujo de Trabajo de Releases
-
-El proyecto utiliza **GitHub Actions** para generar releases automáticos optimizados:
-
-1. **Trigger**: Creación de un nuevo tag (ej: `v1.0.1`)
-2. **Build**: Compilación multi-plataforma con `electron-builder`
-   - **macOS**: Apple Silicon (arm64) optimizado para rendimiento nativo
-   - **Linux**: x64 compatible con distribuciones modernas
-   - **Windows**: x64 con instalador NSIS
-3. **Upload**: Generación de assets optimizados para cada plataforma
-4. **Release**: Creación automática del GitHub Release
-
-### Crear Nuevo Release
-
-```bash
-# Crear nuevo tag
-git tag v1.0.1
-git push origin v1.0.1
-
-# El workflow se ejecutará automáticamente
-```
-
-## 🤝 Contribución
-
-¡Las contribuciones son bienvenidas! Por favor:
-
-1. Fork el repositorio
-2. Crea una rama para tu feature (`git checkout -b feature/amazing-feature`)
-3. Commit tus cambios (`git commit -m 'Add amazing feature'`)
-4. Push a la rama (`git push origin feature/amazing-feature`)
-5. Abre un Pull Request
-
-## 📄 Licencia
-
-Este proyecto está bajo la **Licencia MIT** - ver el archivo [LICENSE](LICENSE) para detalles.
-
-© 2025 [Chris Larico](https://larico.dev) - [GitHub](https://github.com/devCodr)
+## 📄 License
+MiniBrowser is an open-source project licensed under the [MIT License](LICENSE).
+Created with ❤️ by **Chris Larico** ([larico.dev](https://larico.dev)).

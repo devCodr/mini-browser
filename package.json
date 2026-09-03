@@ -1,111 +1,17 @@
 {
-  "name": "mini-browser",
+  "name": "mini-browser-rust",
+  "private": true,
   "version": "1.0.0",
-  "main": "main.js",
-  "description": "Custom Mini Browser to private sessions",
-  "author": {
-    "name": "Chris Larico",
-    "email": "chris@larico.dev",
-    "url": "https://larico.dev",
-    "github": "https://github.com/devCodr/mini-browser"
-  },
   "type": "module",
   "scripts": {
-    "start": "electron .",
-    "build": "electron-builder --publish=never",
-    "build:all": "electron-builder --mac --win --linux --publish=never",
-    "package:mac": "electron-packager . MiniBrowser --platform=darwin --arch=universal --out=dist --app-bundle-id=com.larico.minibrowser --overwrite --icon=build/icon.icns",
-    "package:linux": "electron-packager . MiniBrowser --platform=linux --arch=x64 --out=dist --app-bundle-id=com.larico.minibrowser --overwrite --prune=true --icon=icon.png",
-    "package:windows": "electron-packager . MiniBrowser --platform=win32 --arch=x64 --out=dist --app-bundle-id=com.larico.minibrowser --overwrite --prune=true --icon=icon.ico",
-    "make:icon": "./scripts/make-icon.sh",
-    "release": "electron-builder --publish=always"
-  },
-  "dependencies": {
-    "@electron/get": "^5.0.0",
-    "data-uri-to-buffer": "^8.0.0",
-    "debug": "^4.4.3",
-    "fetch-blob": "^4.0.0",
-    "formdata-polyfill": "^4.0.10",
-    "node-domexception": "^2.0.2",
-    "node-fetch": "3.3.2"
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "tauri": "tauri"
   },
   "devDependencies": {
-    "electron": "41.3.0",
-    "electron-builder": "26.8.1",
-    "electron-packager": "^17.1.2"
+    "@tauri-apps/cli": "^2"
   },
-  "build": {
-    "appId": "com.larico.minibrowser",
-    "productName": "MiniBrowser",
-    "copyright": "© 2025 Chris Larico (MIT License)",
-    "directories": {
-      "output": "dist"
-    },
-    "files": [
-      "main.js",
-      "renderer.js",
-      "preload.js",
-      "overlay-preload.js",
-      "webview-preload.js",
-      "index.html",
-      "overlay.html",
-      "welcome.html",
-      "icon.png",
-      "package.json"
-    ],
-    "compression": "maximum",
-    "removePackageScripts": true,
-    "mac": {
-      "icon": "build/icon.icns",
-      "category": "public.app-category.productivity",
-      "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "arm64"
-          ]
-        }
-      ]
-    },
-    "win": {
-      "icon": "icon.ico",
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
-      ]
-    },
-    "linux": {
-      "icon": "icon.png",
-      "category": "Utility",
-      "target": [
-        {
-          "target": "deb",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "AppImage",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
-      "maintainer": "Chris Larico <chris@larico.dev>",
-      "synopsis": "MiniBrowser - Lightweight private browser"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
-    },
-    "publish": {
-      "provider": "github",
-      "owner": "devCodr",
-      "repo": "mini-browser"
-    }
+  "dependencies": {
+    "@tauri-apps/api": "^2.11.1"
   }
 }

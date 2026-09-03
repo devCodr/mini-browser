@@ -1,20 +1,45 @@
-**/.DS_Store 
-*.DS_Store
+# ==============================================================================
+# MiniBrowser — Official .gitignore
+# ==============================================================================
+
+# --- Critical Build Artifacts (Rust & Tauri) ---
+# Rust compiler artifacts (5GB+, 15,000+ files)
+target/
+**/target/
+**/target/**
+src-tauri/target/
+src-tauri/target/**
+src-tauri/gen/
+src-tauri/gen/**
+
+# --- Node & Package Managers ---
+node_modules/
+**/node_modules/
+**/node_modules/**
+dist/
+.dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# --- MiniBrowser App Local Data & Sessions ---
+# Keeps private logins, cookies, and local partitions off GitHub!
+.data/
+.data
+sessions/
+*.log
+
+# --- Operating System Files ---
 .DS_Store
-
-.astro
-.vscode
-node_modules
-dist
-.env
-
-/tmp/
-.tmp_*
-
+**/.DS_Store
+*.DS_Store
 .AppleDouble
-.LSOverride 
-Icon 
-._* 
+.LSOverride
+Icon
+._*
 .DocumentRevisions-V100
 .fseventsd
 .Spotlight-V100
@@ -22,9 +47,35 @@ Icon
 .Trashes
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
-
 .AppleDB
 .AppleDesktop
 Network Trash Folder
 Temporary Items
 .apdisk
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+
+# --- IDEs & Code Editors ---
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# --- Environment & Credentials ---
+.env
+.env.*
+!.env.example
+
+# --- Temporary & Distribution Files ---
+/tmp/
+.tmp_*
+*.dmg
+*.app
+*.exe
+*.msi
+*.deb
+*.AppImage
