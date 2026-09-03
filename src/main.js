@@ -690,6 +690,7 @@ async function lockApp() {
   state.pinBuffer = "";
   updatePinDots();
   pinErrorMsg.classList.add("hidden");
+  pinErrorMsg.style.display = "none";
   lockOverlay.classList.remove("hidden");
 
   try {
@@ -719,6 +720,7 @@ async function handlePinInput(char) {
     state.pinBuffer += char;
     updatePinDots();
     pinErrorMsg.classList.add("hidden");
+    pinErrorMsg.style.display = "none";
 
     if (state.pinBuffer.length === 6) {
       const pinToVerify = state.pinBuffer;
@@ -735,6 +737,7 @@ async function handlePinInput(char) {
 function triggerPinError() {
   lockCard.classList.add("shake");
   pinErrorMsg.classList.remove("hidden");
+  pinErrorMsg.style.display = "block";
   setTimeout(() => {
     lockCard.classList.remove("shake");
     state.pinBuffer = "";
@@ -947,11 +950,15 @@ keyButtons.forEach((btn) => {
 btnPinClear.addEventListener("click", () => {
   state.pinBuffer = "";
   updatePinDots();
+  pinErrorMsg.classList.add("hidden");
+  pinErrorMsg.style.display = "none";
 });
 
 btnPinDel.addEventListener("click", () => {
   state.pinBuffer = state.pinBuffer.slice(0, -1);
   updatePinDots();
+  pinErrorMsg.classList.add("hidden");
+  pinErrorMsg.style.display = "none";
 });
 
 // === Centralized Shortcut Dispatcher ===
