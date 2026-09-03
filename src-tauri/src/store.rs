@@ -19,6 +19,10 @@ pub struct Bookmark {
     pub icon_svg: Option<String>,
 }
 
+fn default_true() -> bool {
+    true
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
     #[serde(rename = "lockEnabled")]
@@ -29,7 +33,7 @@ pub struct Settings {
     pub pin_salt: Option<String>,
     #[serde(rename = "pinHash")]
     pub pin_hash: Option<String>,
-    #[serde(rename = "lockOnLaunch", default)]
+    #[serde(rename = "lockOnLaunch", default = "default_true")]
     pub lock_on_launch: bool,
     #[serde(rename = "startMinimized", default)]
     pub start_minimized: bool,
@@ -42,7 +46,7 @@ impl Default for Settings {
             inactivity_ms: INACTIVITY_DEFAULT_MS,
             pin_salt: None,
             pin_hash: None,
-            lock_on_launch: false,
+            lock_on_launch: true,
             start_minimized: false,
         };
         s.set_pin("123456");

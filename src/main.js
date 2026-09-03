@@ -750,11 +750,14 @@ async function unlockApp() {
   updatePinDots();
   resetInactivityTimer();
 
-  // Restore active session webview
+  // Restore active session webview or open first tab if available
   if (state.activePartition) {
     try {
       await invoke("show_active_session");
     } catch (err) {}
+  } else if (state.bookmarks.length > 0) {
+    const first = state.bookmarks[0];
+    activateSession(first.partition, first.url);
   } else {
     goHome();
   }
@@ -885,7 +888,7 @@ formNewSession.addEventListener("submit", (e) => {
 
 btnSettings.addEventListener("click", () => {
   settingLockToggle.checked = state.settings.lockEnabled;
-  settingLockOnLaunch.checked = !!state.settings.lockOnLaunch;
+  settingLockOnLaunch.checked = state.settings.lockOnLaunch !== false;
   settingStartMinimized.checked = !!state.settings.startMinimized;
   settingTimeout.value = state.settings.inactivityMs;
   timeoutDisplay.textContent = `${state.settings.inactivityMs / 60000} minutes`;
@@ -903,7 +906,11 @@ async function saveUpdatedSettings() {
       startMinimized: settingStartMinimized.checked,
     });
     if (updated) state.settings = updated;
-    resetInactivityTimer();
+    if (!state.settings.lockEnabled) {
+      if (state.inactivityTimer) clearTimeout(state.inactivityTimer);
+    } else {
+      resetInactivityTimer();
+    }
   } catch (err) {
     console.error("Error saving settings:", err);
   }
@@ -1216,8 +1223,9 @@ async function init() {
 
     renderTabs();
 
-    // Only lock immediately on launch if explicitly configured by the user
-    if (state.settings.lockOnLaunch) {
+    // Lock immediately on launch by default whenever lock is enabled (unless explicitly disabled)
+    const shouldLock = state.settings.lockEnabled && state.settings.lockOnLaunch !== false;
+    if (shouldLock) {
       lockApp();
     } else if (state.bookmarks.length > 0) {
       const first = state.bookmarks[0];
