@@ -1,7 +1,7 @@
 # MiniBrowser 🚀
 
 <p align="center">
-  <img src="rust-version/src/icon.png" width="96" height="96" alt="MiniBrowser Logo" style="border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);" />
+  <img src="docs/icon.png" width="96" height="96" alt="MiniBrowser Logo" style="border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);" />
 </p>
 
 <p align="center">
@@ -19,27 +19,29 @@
 ---
 
 ## 🌐 Live Website & Documentation
-Explore the interactive documentation and feature showcases:
-👉 **[MiniBrowser Official Website & Documentation](https://devcodr.github.io/mini-browser/)**
-👉 **[Full In-Depth User Guide (USER_GUIDE.md)](USER_GUIDE.md)**
+Explore the interactive documentation, landing page, and complete user guide:
+- 👉 **[Official Website & Documentation](https://devcodr.github.io/mini-browser/)**
+- 👉 **[Comprehensive User Guide (#docs)](https://devcodr.github.io/mini-browser/#docs)**
+- 👉 **[Contribution Guidelines (CONTRIBUTING.md)](CONTRIBUTING.md)**
 
 ---
 
 ## ✨ Why MiniBrowser?
 
-Traditional web browsers share cookies and session caches globally across tabs. MiniBrowser strictly isolates every account into an independent disk partition (`$APP_DATA/sessions/<partition_id>/`).
+Standard web browsers share cookies and session caches across all tabs and windows. MiniBrowser isolates every account into its own independent disk partition (`$APP_DATA/sessions/<partition_id>/`), preventing cookie collisions and account sign-outs.
 
-- 👥 **Multi-Session Isolation**: Run multiple WhatsApp Web, Gmail, Facebook, and Notion accounts concurrently without interference.
-- ⚡ **98% Smaller than Electron**: Native Rust build generates a compact **4.8 MB** installer vs standard 280MB+ Electron bundles.
-- 🚀 **Low Memory Footprint**: Idles at ~50 MB RAM with native system WebKit (macOS) and lazy webview instantiation.
-- 🎯 **4 Ways to Reorder Tabs**:
+- 👥 **Multi-Session Isolation**: Run multiple WhatsApp Web, Gmail, Facebook, X (Twitter), and Notion accounts concurrently without interference.
+- ⚡ **98% Smaller than Electron**: Native Rust & Tauri v2 build produces a compact **~4.8 MB** release bundle vs. 200MB+ typical Electron apps.
+- 🚀 **Low Memory Footprint**: Idles at **~50 MB RAM** by utilizing system-native WebKit (macOS), WebView2 (Windows), and WebKitGTK (Linux).
+- 🎯 **4 Flexible Ways to Reorder Tabs**:
   - **Right-click context menu** on any tab (*Move Left / Move Right / Manage / Close*).
-  - **Global shortcuts**: `Cmd + Option + ←` / `Cmd + Option + →`.
-  - **Fluid drag & drop** with real-time live-swapping.
+  - **Global shortcuts**: `Cmd + Option + ←` / `Cmd + Option + →` (or `Ctrl + Alt + ← / →`).
+  - **Fluid drag & drop** with live visual reordering.
   - **Session Manager (`Cmd + M`)**: 1-click `[ ↑ ]` and `[ ↓ ]` reordering buttons.
-- 📜 **Horizontal Tabs Wheel Scrolling**: Scroll smoothly left and right across limitless tabs with mouse wheel or trackpad.
-- 🔒 **PIN Security Shield**: Glassmorphic blur overlay with 6-digit SHA-256 PIN lock, inactivity timer, and quiet launch in minimized mode.
-- ⌨️ **Cross-Webview Global Shortcuts**: Native Cocoa application menu accelerators that trigger even while typing inside external websites.
+- 📜 **Horizontal Tabs Wheel Scrolling**: Scroll through dozens of tabs with your trackpad or mouse wheel.
+- 🔒 **PIN Security Shield**: Glassmorphic blur overlay with 6-digit SHA-256 PIN lock, inactivity auto-lock timer, and quiet launch in minimized mode.
+- ⌨️ **Native Menu Bar & Global Accelerators**: Native system application menu with dynamic tab list (`Cmd+1` .. `Cmd+9`), functioning even while typing inside external websites.
+- 🎨 **Custom Sessions & Badges**: Assign unique labels, colored badges, and custom icons to each account.
 
 ---
 
@@ -47,14 +49,14 @@ Traditional web browsers share cookies and session caches globally across tabs. 
 
 ```text
 mini-browser/
+├── docs/                 🌐 GitHub Pages website & interactive documentation center (#docs)
 ├── src/                  ⚡ Frontend UI (HTML5, Vanilla CSS Glassmorphism, JS)
-├── src-tauri/            🦀 Rust backend (Tauri v2, WebKit IPC, multi-session partitions)
-├── docs/                 🌐 Official GitHub Pages landing page & documentation
-├── USER_GUIDE.md         📖 Comprehensive User Guide & documentation
+├── src-tauri/            🦀 Rust backend (Tauri v2, system webviews, multi-session partitions)
+├── .github/workflows/    🤖 Automated build & release workflows (GitHub Actions)
 ├── CONTRIBUTING.md       🤝 Guidelines for open-source contributors
 ├── CODE_OF_CONDUCT.md    📜 Contributor Covenant Code of Conduct
 ├── LICENSE               📄 MIT License
-└── package.json          📦 Project scripts & Tauri CLI
+└── package.json          📦 Scripts & Tauri dependencies
 ```
 
 ---
@@ -63,9 +65,11 @@ mini-browser/
 
 ### Prerequisites
 - [Rust](https://rustup.rs/) (1.75+)
-- [Node.js](https://nodejs.org/) (v18+) and `pnpm` (`npm install -g pnpm`)
+- [Node.js](https://nodejs.org/) (v18+) and [pnpm](https://pnpm.io/) (`npm install -g pnpm`)
 
 ### Development
+Clone the repository and start the development environment:
+
 ```bash
 git clone https://github.com/devCodr/mini-browser.git
 cd mini-browser
@@ -74,36 +78,50 @@ pnpm dev
 ```
 
 ### Production Build
+Compile optimized native release binaries:
+
 ```bash
 pnpm build
 ```
-Optimized release bundles will be compiled to `src-tauri/target/release/bundle/`:
-- **macOS**: Universal & Apple Silicon DMG / App (`~4.8 MB`)
-- **Windows**: MSI & EXE via WebView2
-- **Linux**: Deb & AppImage via WebKitGTK
+
+The compiled release packages will be created in `src-tauri/target/release/bundle/`:
+- **macOS**: Universal & Apple Silicon `.dmg` / `.app` (~4.8 MB)
+- **Windows**: `.msi` and `.exe` installers via WebView2
+- **Linux**: `.deb` and `.AppImage` packages via WebKitGTK
 
 ---
 
 ## ⌨️ Essential Keyboard Shortcuts
 
-| Shortcut | Action | Description |
-| :--- | :--- | :--- |
-| **`Cmd + 1` .. `Cmd + 9`** | Switch Tab | Direct jump to tab #1 through #9 |
-| **`Cmd + Option + ← / →`** | Reorder Tab | Shift active tab left or right |
-| **`Cmd + T`** | New Session | Launch a new isolated private account |
-| **`Cmd + W`** | Close Session | Close active tab immediately |
-| **`Cmd + M`** | Manage Sessions | Open reordering & editing modal |
-| **`Cmd + Option + L`** | Lock App | Engage PIN security shield |
-| **`Cmd + /`** | Help & Guide | Open interactive shortcuts & manual |
+| Shortcut (macOS) | Shortcut (Windows/Linux) | Action | Description |
+| :--- | :--- | :--- | :--- |
+| **`Cmd + 1` .. `Cmd + 9`** | **`Ctrl + 1` .. `Ctrl + 9`** | Switch Tab | Direct jump to tab #1 through #9 |
+| **`Cmd + Option + ← / →`** | **`Ctrl + Alt + ← / →`** | Reorder Tab | Shift active tab left or right |
+| **`Cmd + T`** | **`Ctrl + T`** | New Session | Launch a new isolated private session |
+| **`Cmd + W`** | **`Ctrl + W`** | Close Session | Close the active tab immediately |
+| **`Cmd + M`** | **`Ctrl + M`** | Manage Sessions | Open reordering, editing & badge modal |
+| **`Cmd + R`** | **`Ctrl + R`** | Reload | Reload active webview partition |
+| **`Cmd + H`** | **`Ctrl + H`** | Home | Return to dashboard home |
+| **`Cmd + L`** | **`Ctrl + L`** | Address Bar | Focus address bar for rapid navigation |
+| **`Cmd + Option + L`** | **`Ctrl + Alt + L`** | Lock Browser | Instantly engage PIN security shield |
+| **`Cmd + /`** | **`Ctrl + /`** | Help & Guide | Open interactive shortcuts & user manual |
+
+---
+
+## 🔒 Security & Privacy
+
+- **Zero Data Harvesting**: MiniBrowser communicates strictly between your machine and the sites you visit. No telemetry, no third-party tracking.
+- **Dedicated Disk Partitions**: Each session stores cache, cookies, and local data under `$APP_DATA/com.larico.minibrowser/sessions/<partition_id>/`.
+- **SHA-256 PIN Shield**: Set a 6-digit PIN to prevent unauthorized local access with configurable auto-lock on inactivity.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please check out [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
+Contributions are welcome! Please check out [CONTRIBUTING.md](CONTRIBUTING.md) for details on code style, commit standards, and pull request procedures.
 
 ---
 
 ## 📄 License
-MiniBrowser is an open-source project licensed under the [MIT License](LICENSE).
+MiniBrowser is an open-source project licensed under the [MIT License](LICENSE).  
 Created with ❤️ by **Chris Larico** ([larico.dev](https://larico.dev)).
