@@ -1166,4 +1166,18 @@ async function init() {
   }
 }
 
+// Global external link opener
+document.addEventListener("click", (e) => {
+  const link = e.target.closest('a[href^="http"]');
+  if (link) {
+    e.preventDefault();
+    const url = link.href;
+    if (window.__TAURI__?.opener?.openUrl) {
+      window.__TAURI__.opener.openUrl(url);
+    } else {
+      invoke("plugin:opener|open_url", { url }).catch(() => window.open(url, "_blank"));
+    }
+  }
+});
+
 init();

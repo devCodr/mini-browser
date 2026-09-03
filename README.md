@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <b>A blazing-fast, lightweight, multi-session desktop browser for managing multiple accounts simultaneously.</b><br />
+  <b>A blazing-fast, lightweight, open-source multi-session desktop browser for managing multiple accounts simultaneously.</b><br />
   Built natively with Rust & Tauri v2 • Ultra-low memory footprint • Zero cookie collisions
 </p>
 
@@ -31,7 +31,7 @@ Explore the interactive documentation, landing page, and complete user guide:
 Standard web browsers share cookies and session caches across all tabs and windows. MiniBrowser isolates every account into its own independent disk partition (`$APP_DATA/sessions/<partition_id>/`), preventing cookie collisions and account sign-outs.
 
 - 👥 **Multi-Session Isolation**: Run multiple WhatsApp Web, Gmail, Facebook, X (Twitter), and Notion accounts concurrently without interference.
-- ⚡ **98% Smaller than Electron**: Native Rust & Tauri v2 build produces a compact **~4.8 MB** release bundle vs. 200MB+ typical Electron apps.
+- ⚡ **Ultra-Compact Bundle**: Native Rust & Tauri v2 build produces a lightweight **~4.8 MB** standalone release bundle.
 - 🚀 **Low Memory Footprint**: Idles at **~50 MB RAM** by utilizing system-native WebKit (macOS), WebView2 (Windows), and WebKitGTK (Linux).
 - 🎯 **4 Flexible Ways to Reorder Tabs**:
   - **Right-click context menu** on any tab (*Move Left / Move Right / Manage / Close*).

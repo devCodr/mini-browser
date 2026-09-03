@@ -353,17 +353,46 @@ pub fn run() {
                     let _ = main_window.minimize();
                 }
 
+                #[cfg(target_os = "macos")]
+                {
+                    apply_traffic_lights_inset(&main_window, 16.0, 14.0);
+                    let app_h = app.handle().clone();
+                    std::thread::spawn(move || {
+                        for delay in [50, 150, 300, 600] {
+                            std::thread::sleep(std::time::Duration::from_millis(delay));
+                            let h = app_h.clone();
+                            let _ = app_h.run_on_main_thread(move || {
+                                if let Some(w) = h.get_window("main") {
+                                    apply_traffic_lights_inset(&w, 16.0, 14.0);
+                                }
+                            });
+                        }
+                    });
+                }
+
                 let app_handle = app.handle().clone();
                 main_window.on_window_event(move |event| {
-                    if let WindowEvent::Resized(size) = event {
-                        if let Some(w) = app_handle.get_window("main") {
-                            if let Ok(scale) = w.scale_factor() {
-                                let logical_w = size.width as f64 / scale;
-                                let logical_h = size.height as f64 / scale;
-                                let state: State<AppStateWrapper> = app_handle.state();
-                                state.sessions.sync_bounds(&app_handle, logical_w, logical_h);
+                    match event {
+                        WindowEvent::Resized(size) => {
+                            if let Some(w) = app_handle.get_window("main") {
+                                #[cfg(target_os = "macos")]
+                                apply_traffic_lights_inset(&w, 16.0, 14.0);
+
+                                if let Ok(scale) = w.scale_factor() {
+                                    let logical_w = size.width as f64 / scale;
+                                    let logical_h = size.height as f64 / scale;
+                                    let state: State<AppStateWrapper> = app_handle.state();
+                                    state.sessions.sync_bounds(&app_handle, logical_w, logical_h);
+                                }
                             }
                         }
+                        #[cfg(target_os = "macos")]
+                        WindowEvent::Focused(_) => {
+                            if let Some(w) = app_handle.get_window("main") {
+                                apply_traffic_lights_inset(&w, 16.0, 14.0);
+                            }
+                        }
+                        _ => {}
                     }
                 });
             }
@@ -398,3 +427,75 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+
+#[cfg(target_os = "macos")]
+pub fn apply_traffic_lights_inset(window: &tauri::Window, x: f64, y: f64) {
+    use objc2_app_kit::{NSView, NSWindow, NSWindowButton};
+
+    eprintln!("[TRAFFIC] apply_traffic_lights_inset called with x={}, y={}", x, y);
+    let Ok(ns_window_ptr) = window.ns_window() else {
+        eprintln!("[TRAFFIC] window.ns_window() returned Err");
+        return;
+    };
+    if ns_window_ptr.is_null() {
+        eprintln!("[TRAFFIC] ns_window_ptr is null");
+        return;
+    }
+
+    unsafe {
+        let ns_window: &NSWindow = &*ns_window_ptr.cast();
+        let Some(close) = ns_window.standardWindowButton(NSWindowButton::CloseButton) else {
+            eprintln!("[TRAFFIC] CloseButton not found");
+            return;
+        };
+        let Some(miniaturize) = ns_window.standardWindowButton(NSWindowButton::MiniaturizeButton) else {
+            eprintln!("[TRAFFIC] MiniaturizeButton not found");
+            return;
+        };
+        let zoom = ns_window.standardWindowButton(NSWindowButton::ZoomButton);
+
+        let Some(superview1) = close.superview() else {
+            eprintln!("[TRAFFIC] superview1 not found");
+            return;
+        };
+        let Some(title_bar_container_view) = superview1.superview() else {
+            eprintln!("[TRAFFIC] title_bar_container_view not found");
+            return;
+        };
+
+        let close_rect = NSView::frame(&close);
+        let header_h = 42.0f64;
+
+        let mut title_bar_rect = NSView::frame(&title_bar_container_view);
+        title_bar_rect.size.height = header_h;
+        title_bar_rect.origin.y = ns_window.frame().size.height - header_h;
+        title_bar_container_view.setFrame(title_bar_rect);
+
+        let mut superview1_rect = NSView::frame(&superview1);
+        superview1_rect.size.height = header_h;
+        superview1_rect.origin.y = 0.0;
+        superview1.setFrame(superview1_rect);
+
+        let space_between = if NSView::frame(&miniaturize).origin.x > close_rect.origin.x {
+            NSView::frame(&miniaturize).origin.x - close_rect.origin.x
+        } else {
+            20.0
+        };
+
+        let mut window_buttons = vec![close, miniaturize];
+        if let Some(zoom) = zoom {
+            window_buttons.push(zoom);
+        }
+
+        let button_y = (header_h - close_rect.size.height) / 2.0;
+
+        for (i, button) in window_buttons.into_iter().enumerate() {
+            let mut rect = NSView::frame(&button);
+            rect.origin.x = x + (i as f64 * space_between);
+            rect.origin.y = button_y;
+            button.setFrameOrigin(rect.origin);
+            eprintln!("[TRAFFIC] button {} placed at x={}, y={}", i, rect.origin.x, rect.origin.y);
+        }
+    }
+}
+

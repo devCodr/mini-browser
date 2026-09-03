@@ -1,579 +1,896 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MiniBrowser — Ultra-Lightweight Multi-Session Desktop Browser</title>
-  <meta name="description" content="A blazing-fast, minimalist multi-session desktop browser built natively in Rust & Tauri v2. Run multiple WhatsApp, Gmail, Facebook, and Notion accounts in isolated partitions without cookie leaks." />
-  <link rel="icon" type="image/png" href="icon.png" />
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-</head>
-<body>
-
-  <!-- Navigation Bar -->
-  <header class="navbar">
-    <div class="container nav-container">
-      <a href="#" class="nav-brand">
-        <img src="icon.png" class="brand-icon" alt="MiniBrowser Logo" />
-        <span>MiniBrowser</span>
-      </a>
-      <nav class="nav-links">
-        <a href="#features" class="nav-link">Features</a>
-        <a href="#performance" class="nav-link">Performance</a>
-        <a href="#docs" class="nav-link">Documentation</a>
-        <a href="#docs-shortcuts" class="nav-link">Shortcuts</a>
-        <a href="https://github.com/devCodr/mini-browser" target="_blank" class="btn-github">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-          <span>Star on GitHub</span>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MiniBrowser — Ultra-Lightweight Multi-Session Desktop Browser</title>
+    <meta
+      name="description"
+      content="A blazing-fast, minimalist multi-session desktop browser built natively in Rust & Tauri v2. Run multiple WhatsApp, Gmail, Facebook, and Notion accounts in isolated partitions without cookie leaks."
+    />
+    <link rel="icon" type="image/png" href="icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- Navigation Bar -->
+    <header class="navbar">
+      <div class="container nav-container">
+        <a href="#" class="nav-brand">
+          <img src="icon.png" class="brand-icon" alt="MiniBrowser Logo" />
+          <span>MiniBrowser</span>
         </a>
-      </nav>
-    </div>
-  </header>
-
-  <!-- Hero Section -->
-  <section class="hero">
-    <div class="container">
-      <div class="hero-pill">
-        <span class="dot"></span>
-        <span>Native Rust & Tauri v2 • 4.8 MB Installer • Zero Cookie Collisions</span>
+        <nav class="nav-links">
+          <a href="#features" class="nav-link">Features</a>
+          <a href="#performance" class="nav-link">Performance</a>
+          <a href="#docs" class="nav-link">Documentation</a>
+          <a href="#docs-shortcuts" class="nav-link">Shortcuts</a>
+          <a
+            href="https://github.com/devCodr/mini-browser"
+            target="_blank"
+            class="btn-github"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"
+              />
+            </svg>
+            <span>Star on GitHub</span>
+          </a>
+        </nav>
       </div>
-      <h1 class="hero-title">
-        The Ultra-Lightweight <br />
-        <span class="gradient-text">Multi-Session Desktop Browser</span>
-      </h1>
-      <p class="hero-subtitle">
-        Run multiple WhatsApp, Gmail, Facebook, and Notion accounts in completely isolated disk partitions. Fast, memory-efficient, locked with PIN security, and built with pure Rust.
-      </p>
-      <div class="hero-buttons">
-        <a href="https://github.com/devCodr/mini-browser/releases" class="btn-primary">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          <span>Download for macOS (v1.0.0)</span>
-        </a>
-        <a href="#docs" class="btn-secondary">
-          <span>Read User Guide</span>
-        </a>
-      </div>
+    </header>
 
-      <!-- App Interface Mockup Preview -->
-      <div class="mockup-wrapper">
-        <div class="mockup-header">
-          <div class="mockup-traffic">
-            <span class="red"></span>
-            <span class="yellow"></span>
-            <span class="green"></span>
-          </div>
-          <div class="mockup-url-capsule">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <span>accounts.google.com</span>
-          </div>
-          <div class="mockup-tabs">
-            <div class="mockup-tab">
-              <span>X / Twitter</span>
-              <span class="mockup-badge badge-blue">X1</span>
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="container">
+        <div class="hero-pill">
+          <span class="dot"></span>
+          <span
+            >Native Rust & Tauri v2 • 4.8 MB Installer • Zero Cookie
+            Collisions</span
+          >
+        </div>
+        <h1 class="hero-title">
+          The Ultra-Lightweight <br />
+          <span class="gradient-text">Multi-Session Desktop Browser</span>
+        </h1>
+        <p class="hero-subtitle">
+          Run multiple WhatsApp, Gmail, Facebook, and Notion accounts in
+          completely isolated disk partitions. Fast, memory-efficient, locked
+          with PIN security, and built with pure Rust.
+        </p>
+        <div class="hero-buttons">
+          <a
+            href="https://github.com/devCodr/mini-browser/releases"
+            class="btn-primary"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            <span>Download for macOS (v1.0.0)</span>
+          </a>
+          <a href="#docs" class="btn-secondary">
+            <span>Read User Guide</span>
+          </a>
+        </div>
+
+        <!-- App Interface Mockup Preview -->
+        <div class="mockup-wrapper">
+          <div class="mockup-header">
+            <div class="mockup-traffic">
+              <span class="red"></span>
+              <span class="yellow"></span>
+              <span class="green"></span>
             </div>
-            <div class="mockup-tab active">
-              <span>Gmail Work</span>
-              <span class="mockup-badge badge-red">G1</span>
+            <div class="mockup-url-capsule">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+              >
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              <span>accounts.google.com</span>
             </div>
-            <div class="mockup-tab">
-              <span>Facebook Client</span>
-              <span class="mockup-badge badge-green">F1</span>
+            <div class="mockup-tabs">
+              <div class="mockup-tab">
+                <span>X / Twitter</span>
+                <span class="mockup-badge badge-blue">X1</span>
+              </div>
+              <div class="mockup-tab active">
+                <span>Gmail Work</span>
+                <span class="mockup-badge badge-red">G1</span>
+              </div>
+              <div class="mockup-tab">
+                <span>Facebook Client</span>
+                <span class="mockup-badge badge-green">F1</span>
+              </div>
+            </div>
+          </div>
+          <div class="mockup-body">
+            <div class="mockup-body-content">
+              <div class="mockup-body-icon">
+                <svg
+                  width="28"
+                  height="28"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                >
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+              </div>
+              <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 8px">
+                Multi-Session Isolation Active
+              </h3>
+              <p
+                style="
+                  color: var(--text-muted);
+                  font-size: 14px;
+                  max-width: 460px;
+                "
+              >
+                Cookies, IndexedDB, and WebCrypto tokens are partitioned into
+                individual sandbox folders on disk. No shared state, zero
+                tracking.
+              </p>
             </div>
           </div>
         </div>
-        <div class="mockup-body">
-          <div class="mockup-body-content">
-            <div class="mockup-body-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+    </section>
+
+    <!-- Key Features Grid -->
+    <section id="features" class="section">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-tag">High Performance</div>
+          <h2 class="section-title">Built for Multi-Account Power Users</h2>
+          <p class="section-desc">
+            Designed from the ground up to replace bloated Chromium instances
+            with system-native WebKit engines.
+          </p>
+        </div>
+
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+              >
+                <rect width="18" height="18" x="3" y="3" rx="2" />
+                <path d="M3 9h18M9 21V9" />
+              </svg>
             </div>
-            <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Multi-Session Isolation Active</h3>
-            <p style="color: var(--text-muted); font-size: 14px; max-width: 460px;">
-              Cookies, IndexedDB, and WebCrypto tokens are partitioned into individual sandbox folders on disk. No shared state, zero tracking.
+            <h3 class="feature-title">Real Multi-Session Partitions</h3>
+            <p class="feature-desc">
+              Each session operates inside its own
+              <code>data_directory</code> partition. Log into multiple personal
+              and business accounts without browser clashes.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+              >
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+            </div>
+            <h3 class="feature-title">4.8 MB Native Bundle</h3>
+            <p class="feature-desc">
+              Ultra-compact native standalone release package. Instant launch
+              in 0.25 seconds with ~50 MB baseline RAM footprint.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+              >
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+            </div>
+            <h3 class="feature-title">PIN Security & Auto-Lock</h3>
+            <p class="feature-desc">
+              Glassmorphic blur screen shield protected by SHA-256 PIN. Set
+              auto-lock after idle time or require authentication on app launch.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+              >
+                <path d="m18 15-6-6-6 6" />
+                <path d="m18 9-6-6-6 6" />
+              </svg>
+            </div>
+            <h3 class="feature-title">4 Tab Reorder Workflows</h3>
+            <p class="feature-desc">
+              Right-click context menu, fast global keyboard shortcuts
+              (<code>⌥⌘←/→</code>), smooth mouse drag-and-drop, and 1-click
+              modal arrow buttons.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+              >
+                <rect width="20" height="8" x="2" y="3" rx="2" />
+                <rect width="20" height="8" x="2" y="13" rx="2" />
+              </svg>
+            </div>
+            <h3 class="feature-title">Horizontal Tabs Scrolling</h3>
+            <p class="feature-desc">
+              Scroll limitless tabs with your mouse wheel or trackpad. Smooth
+              edge gradient masking prevents abrupt tab cutoffs.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+              >
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </div>
+            <h3 class="feature-title">Cross-Webview Global Shortcuts</h3>
+            <p class="feature-desc">
+              Powered by native macOS Cocoa application menus.
+              <code>Cmd+1..9</code>, <code>Cmd+T</code>,
+              <code>Cmd+W</code> always trigger, even when typing inside
+              websites.
             </p>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Key Features Grid -->
-  <section id="features" class="section">
-    <div class="container">
-      <div class="section-header">
-        <div class="section-tag">High Performance</div>
-        <h2 class="section-title">Built for Multi-Account Power Users</h2>
-        <p class="section-desc">Designed from the ground up to replace bloated Chromium instances with system-native WebKit engines.</p>
-      </div>
-
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-          </div>
-          <h3 class="feature-title">Real Multi-Session Partitions</h3>
-          <p class="feature-desc">Each session operates inside its own <code>data_directory</code> partition. Log into multiple personal and business accounts without browser clashes.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          </div>
-          <h3 class="feature-title">4.8 MB Native Bundle</h3>
-          <p class="feature-desc">98.3% smaller than standard 289MB Electron builds. Instant launch in 0.25 seconds with ~50 MB baseline RAM footprint.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          </div>
-          <h3 class="feature-title">PIN Security & Auto-Lock</h3>
-          <p class="feature-desc">Glassmorphic blur screen shield protected by SHA-256 PIN. Set auto-lock after idle time or require authentication on app launch.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m18 15-6-6-6 6"/><path d="m18 9-6-6-6 6"/></svg>
-          </div>
-          <h3 class="feature-title">4 Tab Reorder Workflows</h3>
-          <p class="feature-desc">Right-click context menu, fast global keyboard shortcuts (<code>⌥⌘←/→</code>), smooth mouse drag-and-drop, and 1-click modal arrow buttons.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect width="20" height="8" x="2" y="3" rx="2"/><rect width="20" height="8" x="2" y="13" rx="2"/></svg>
-          </div>
-          <h3 class="feature-title">Horizontal Tabs Scrolling</h3>
-          <p class="feature-desc">Scroll limitless tabs with your mouse wheel or trackpad. Smooth edge gradient masking prevents abrupt tab cutoffs.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          </div>
-          <h3 class="feature-title">Cross-Webview Global Shortcuts</h3>
-          <p class="feature-desc">Powered by native macOS Cocoa application menus. <code>Cmd+1..9</code>, <code>Cmd+T</code>, <code>Cmd+W</code> always trigger, even when typing inside websites.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Performance & Engineering Comparison -->
-  <section id="performance" class="section" style="background: rgba(255, 255, 255, 0.015);">
-    <div class="container">
-      <div class="section-header">
-        <div class="section-tag">Performance & Benchmarks</div>
-        <h2 class="section-title">Engineered to Outperform Electron</h2>
-        <p class="section-desc">Why running system-native WebKit via Rust and Tauri v2 is fundamentally superior to bundling entire Chromium browsers.</p>
-      </div>
-
-      <!-- High-Impact Key Metrics -->
-      <div class="metrics-grid">
-        <div class="metric-card">
-          <div class="metric-val gradient-text">4.8 MB</div>
-          <div class="metric-label">Release Installer Size</div>
-          <p class="metric-desc">98.3% lighter than 289MB Electron builds. Downloads in seconds.</p>
-        </div>
-        <div class="metric-card">
-          <div class="metric-val gradient-text">~50 MB</div>
-          <div class="metric-label">Baseline Idle RAM</div>
-          <p class="metric-desc">Leaves memory free for your demanding development and creative tasks.</p>
-        </div>
-        <div class="metric-card">
-          <div class="metric-val gradient-text">&lt; 0.25s</div>
-          <div class="metric-label">Cold Launch Speed</div>
-          <p class="metric-desc">Starts instantly without Chromium boot overhead or heavy JS runtimes.</p>
-        </div>
-        <div class="metric-card">
-          <div class="metric-val gradient-text">100%</div>
-          <div class="metric-label">Partition Isolation</div>
-          <p class="metric-desc">Strict sandboxed disk partitions for zero cross-account state leakage.</p>
-        </div>
-      </div>
-
-      <!-- Comparative Table -->
-      <div class="table-wrapper" style="margin-top: 36px;">
-        <table class="shortcuts-table comparison-table">
-          <thead>
-            <tr>
-              <th style="width: 32%;">Feature / Metric</th>
-              <th style="width: 34%; color: var(--accent-light);">MiniBrowser (Rust &amp; Tauri v2)</th>
-              <th style="width: 34%; color: #9496a8;">Traditional Electron Browsers</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Binary / Installer Size</strong></td>
-              <td><span class="badge-pill badge-pill-green">~4.8 MB</span> (Native universal release)</td>
-              <td>250 MB – 380 MB+ (Bundled Chromium)</td>
-            </tr>
-            <tr>
-              <td><strong>Idle Memory Usage</strong></td>
-              <td><span class="badge-pill badge-pill-green">~50 MB RAM</span></td>
-              <td>280 MB – 650 MB+ per profile</td>
-            </tr>
-            <tr>
-              <td><strong>Multi-Session Handling</strong></td>
-              <td><span class="badge-pill badge-pill-green">Autonomous disk partitions</span> (Zero cookie leaks)</td>
-              <td>Global shared profile or heavy duplicate windows</td>
-            </tr>
-            <tr>
-              <td><strong>Rendering Engine</strong></td>
-              <td>System WebKit (macOS) / WebView2 (Windows)</td>
-              <td>Bundled Chromium Blink instance</td>
-            </tr>
-            <tr>
-              <td><strong>Security Shield</strong></td>
-              <td>SHA-256 PIN screen blur &amp; idle auto-lock</td>
-              <td>No built-in locking overlay</td>
-            </tr>
-            <tr>
-              <td><strong>Global App Shortcuts</strong></td>
-              <td>Native OS Cocoa / system menu accelerators</td>
-              <td>Interception blocked while inside external inputs</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-
-
-  <!-- User Documentation & Complete User Guide Center -->
-  <section id="docs" class="docs-section">
-    <div class="container">
-      <div class="section-header">
-        <div class="section-tag">Official Documentation & User Guide</div>
-        <h2 class="section-title">Everything You Need to Master MiniBrowser</h2>
-        <p class="section-desc">Complete user manual, multi-session partition architecture, security workflows, tab organization, and troubleshooting guide.</p>
-      </div>
-
-      <!-- Quick Navigation Sticky Pills -->
-      <div class="docs-nav-sticky">
-        <div class="docs-nav-pills">
-          <a href="#docs-architecture" class="docs-nav-pill active">🧠 Architecture</a>
-          <a href="#docs-reordering" class="docs-nav-pill">🎯 Tab Reordering (4 Ways)</a>
-          <a href="#docs-badges" class="docs-nav-pill">🏷️ Badges & Profiles</a>
-          <a href="#docs-security" class="docs-nav-pill">🔒 PIN Security & Auto-Lock</a>
-          <a href="#docs-shortcuts" class="docs-nav-pill">⌨️ Complete Shortcuts</a>
-          <a href="#docs-building" class="docs-nav-pill">🚀 Build & Setup</a>
-          <a href="#docs-faq" class="docs-nav-pill">❓ FAQ & Troubleshooting</a>
-        </div>
-      </div>
-
-      <!-- Chapter 1: Multi-Session Architecture -->
-      <div id="docs-architecture" class="doc-chapter">
-        <div class="doc-chapter-header">
-          <div class="doc-chapter-icon">🧠</div>
-          <div>
-            <h3 class="doc-chapter-title">Multi-Session Architecture & Partitioning</h3>
-            <p style="color: var(--text-muted); font-size: 14px;">How MiniBrowser isolates multiple accounts without cookie or session collisions.</p>
-          </div>
-        </div>
-
-        <div class="doc-card">
-          <h3>The Problem with Traditional Browsers</h3>
-          <p>
-            Standard browsers (Chrome, Safari, Brave, Edge) share the browser cookie jar, LocalStorage, and IndexedDB globally across all open tabs and windows. Opening two tabs for WhatsApp Web or Gmail results in one account overriding the other, forcing users to juggle private/incognito windows or sluggish multiple profile instances that each consume hundreds of megabytes of RAM.
+    <!-- Performance & Engineering Comparison -->
+    <section
+      id="performance"
+      class="section"
+      style="background: rgba(255, 255, 255, 0.015)"
+    >
+      <div class="container">
+        <div class="section-header">
+          <div class="section-tag">Performance & Benchmarks</div>
+          <h2 class="section-title">Engineered for Pure Native Speed</h2>
+          <p class="section-desc">
+            Why running system-native WebKit via Rust and Tauri v2 is
+            fundamentally fast, secure, and memory-efficient.
           </p>
-
-          <h3>How MiniBrowser Solves It</h3>
-          <p>
-            MiniBrowser strictly sandboxes every account into an independent, persistent disk partition on your local filesystem:
-          </p>
-          <div class="code-box">
-            <div class="code-box-header"><span>Filesystem Partition Layout</span><span>macOS / Linux / Windows</span></div>
-            <pre><code>$APP_DATA/sessions/
-├── whatsapp-personal/    👉 Cookies, IndexedDB, WebCrypto Keys, Cache
-├── whatsapp-work/        👉 Completely separate sandbox partition
-├── gmail-corporate/      👉 Separate Google authentication tokens
-└── facebook-client/      👉 Zero cross-site tracking or shared cache</code></pre>
-          </div>
-
-          <div class="callout callout-tip">
-            <div class="callout-icon">💡</div>
-            <div class="callout-body">
-              <strong>Native Rust & Tauri v2 Performance</strong>
-              Unlike Electron browsers that spawn a full Chromium process (~280 MB+ RAM) per profile, MiniBrowser leverages system-native web engines (WebKit on macOS, WebView2 on Windows, WebKitGTK on Linux). The entire app idles at just ~50 MB RAM and the installer is only <strong>4.8 MB</strong>.
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Chapter 2: Tab & Session Organization Workflows -->
-      <div id="docs-reordering" class="doc-chapter">
-        <div class="doc-chapter-header">
-          <div class="doc-chapter-icon">🎯</div>
-          <div>
-            <h3 class="doc-chapter-title">Tab & Session Organization (4 Reordering Workflows)</h3>
-            <p style="color: var(--text-muted); font-size: 14px;">Organize dozens of tabs smoothly with multiple intuitive workflows.</p>
-          </div>
         </div>
 
-        <div class="doc-card">
-          <p>MiniBrowser gives you 4 distinct ways to sort and manage tabs based on your preferred workflow:</p>
-
-          <div class="steps-container">
-            <div class="step-item">
-              <div class="step-item-num">1</div>
-              <h4>Right-Click Context Menu</h4>
-              <p>Right-click (or <kbd>Ctrl</kbd> + click on Mac) any tab to reveal options: <strong>Move Left</strong>, <strong>Move Right</strong>, <strong>Manage Sessions</strong>, or <strong>Close Session</strong>.</p>
-            </div>
-
-            <div class="step-item">
-              <div class="step-item-num">2</div>
-              <h4>Global Shortcuts</h4>
-              <p>Press <kbd>Cmd</kbd> + <kbd>Option</kbd> + <kbd>&larr;</kbd> or <kbd>&rarr;</kbd> (<kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>&larr;/&rarr;</kbd>). Registered natively in the OS menu bar so they trigger even while typing inside websites.</p>
-            </div>
-
-            <div class="step-item">
-              <div class="step-item-num">3</div>
-              <h4>Fluid Drag & Drop</h4>
-              <p>Click and hold any tab in the top bar, then drag left or right. Other tabs automatically part in real-time to preview the new layout before releasing.</p>
-            </div>
-
-            <div class="step-item">
-              <div class="step-item-num">4</div>
-              <h4>Session Manager (<kbd>Cmd + M</kbd>)</h4>
-              <p>Open the management modal to view all sessions vertically. Use 1-click <kbd>&uarr;</kbd> and <kbd>&darr;</kbd> buttons, rename tabs, change badges, or delete.</p>
-            </div>
+        <!-- High-Impact Key Metrics -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-val gradient-text">4.8 MB</div>
+            <div class="metric-label">Release Installer Size</div>
+            <p class="metric-desc">
+              Ultra-compact native standalone release. Downloads in seconds.
+            </p>
           </div>
-
-          <div class="callout callout-info">
-            <div class="callout-icon">📜</div>
-            <div class="callout-body">
-              <strong>Horizontal Tabs Wheel & Trackpad Scrolling</strong>
-              When managing 10 or more open accounts, the tab bar automatically enables horizontal scrolling. Simply hover over the header and scroll your mouse wheel or perform a two-finger trackpad swipe. Left and right edge gradient masks ensure seamless navigation without abrupt visual cutoffs.
-            </div>
+          <div class="metric-card">
+            <div class="metric-val gradient-text">~50 MB</div>
+            <div class="metric-label">Baseline Idle RAM</div>
+            <p class="metric-desc">
+              Leaves memory free for your demanding development and creative
+              tasks.
+            </p>
           </div>
-        </div>
-      </div>
-
-      <!-- Chapter 3: Custom Badges & Profiles -->
-      <div id="docs-badges" class="doc-chapter">
-        <div class="doc-chapter-header">
-          <div class="doc-chapter-icon">🏷️</div>
-          <div>
-            <h3 class="doc-chapter-title">Managing Accounts & Custom Badges</h3>
-            <p style="color: var(--text-muted); font-size: 14px;">Color-code and tag tabs to instantly distinguish between personal and client accounts.</p>
+          <div class="metric-card">
+            <div class="metric-val gradient-text">&lt; 0.25s</div>
+            <div class="metric-label">Cold Launch Speed</div>
+            <p class="metric-desc">
+              Starts instantly without Chromium boot overhead or heavy JS
+              runtimes.
+            </p>
+          </div>
+          <div class="metric-card">
+            <div class="metric-val gradient-text">100%</div>
+            <div class="metric-label">Partition Isolation</div>
+            <p class="metric-desc">
+              Strict sandboxed disk partitions for zero cross-account state
+              leakage.
+            </p>
           </div>
         </div>
 
-        <div class="doc-card">
-          <p>
-            When managing multiple accounts on the same platform (such as 3 WhatsApps or 2 Gmail inboxes), tab titles can look identical. MiniBrowser solves this with <strong>Custom Session Badges & Colors</strong>:
-          </p>
-
-          <div class="badge-sample-row">
-            <div class="badge-sample">
-              <span>WhatsApp Personal</span>
-              <span class="badge-pill badge-pill-green">W1</span>
-            </div>
-            <div class="badge-sample">
-              <span>WhatsApp Support</span>
-              <span class="badge-pill badge-pill-green">W2</span>
-            </div>
-            <div class="badge-sample">
-              <span>Gmail Corporate</span>
-              <span class="badge-pill badge-pill-red">G-WORK</span>
-            </div>
-            <div class="badge-sample">
-              <span>X / Twitter</span>
-              <span class="badge-pill badge-pill-blue">X1</span>
-            </div>
-            <div class="badge-sample">
-              <span>Notion Workspace</span>
-              <span class="badge-pill badge-pill-purple">DEV</span>
-            </div>
-          </div>
-
-          <h3>How to Customize a Session</h3>
-          <ol>
-            <li>Press <kbd>Cmd + M</kbd> (or <kbd>Ctrl + M</kbd>) to open the <strong>Session Manager</strong>.</li>
-            <li>Click the pencil icon (<kbd>✏</kbd>) next to any session.</li>
-            <li>Enter a custom title (e.g. <em>"WhatsApp Operations"</em>) and a concise badge code (e.g. <em>"W2"</em>).</li>
-            <li>Select an accent color (Green, Red, Blue, Purple, Amber, Cyan).</li>
-            <li>Click <strong>Save</strong>. The top tab bar and native macOS menu immediately update with your badge!</li>
-          </ol>
-        </div>
-      </div>
-
-      <!-- Chapter 4: Security Shield & Auto-Lock -->
-      <div id="docs-security" class="doc-chapter">
-        <div class="doc-chapter-header">
-          <div class="doc-chapter-icon">🔒</div>
-          <div>
-            <h3 class="doc-chapter-title">PIN Security Shield & Auto-Lock</h3>
-            <p style="color: var(--text-muted); font-size: 14px;">Protect your sensitive chats, confidential inboxes, and workspaces from unauthorized local access.</p>
-          </div>
-        </div>
-
-        <div class="doc-card">
-          <p>
-            MiniBrowser includes a built-in cryptographic security layer with a 6-digit SHA-256 PIN shield and full UI blur masking:
-          </p>
-
-          <div class="steps-container">
-            <div class="step-item">
-              <div class="step-item-num">⏱️</div>
-              <h4>Inactivity Auto-Lock</h4>
-              <p>Configure an idle timer (1, 5, 15, 30, or 60 minutes) in Settings. When no input is detected, the browser automatically engages the lock overlay.</p>
-            </div>
-            <div class="step-item">
-              <div class="step-item-num">🚀</div>
-              <h4>Lock on Launch</h4>
-              <p>Require your 6-digit PIN before any web sessions or tab contents are revealed upon launching the application.</p>
-            </div>
-            <div class="step-item">
-              <div class="step-item-num">👁️</div>
-              <h4>Discreet Minimized Start</h4>
-              <p>Enable "Start Minimized" to let the app start quietly in the background without abruptly flashing windows on your desktop.</p>
-            </div>
-            <div class="step-item">
-              <div class="step-item-num">⚡</div>
-              <h4>Emergency Instant Lock</h4>
-              <p>Hit <kbd>Cmd</kbd> + <kbd>Option</kbd> + <kbd>L</kbd> (<kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>L</kbd>) anytime to immediately conceal all webviews behind the glass shield.</p>
-            </div>
-          </div>
-
-          <div class="callout callout-security">
-            <div class="callout-icon">🛡️</div>
-            <div class="callout-body">
-              <strong>Factory Default PIN & Setup</strong>
-              The default factory PIN is <code>123456</code>. You can change this to any 6-digit passcode anytime by clicking the Settings gear icon (<kbd>⚙️</kbd>) and selecting <em>"Change PIN"</em>. The hash is saved locally using SHA-256 with salt.
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Chapter 5: Complete Shortcuts Table -->
-      <div id="docs-shortcuts" class="doc-chapter">
-        <div class="doc-chapter-header">
-          <div class="doc-chapter-icon">⌨️</div>
-          <div>
-            <h3 class="doc-chapter-title">Complete Keyboard Shortcuts Reference</h3>
-            <p style="color: var(--text-muted); font-size: 14px;">Master keyboard navigation across macOS, Windows, and Linux.</p>
-          </div>
-        </div>
-
-        <div class="table-wrapper">
-          <table class="shortcuts-table">
+        <!-- Comparative Table -->
+        <div class="table-wrapper" style="margin-top: 36px">
+          <table class="shortcuts-table comparison-table">
             <thead>
               <tr>
-                <th>macOS</th>
-                <th>Windows / Linux</th>
-                <th>Action</th>
-                <th>Description</th>
+                <th style="width: 32%">Feature / Metric</th>
+                <th style="width: 34%; color: var(--accent-light)">
+                  MiniBrowser (Rust &amp; Tauri v2)
+                </th>
+                <th style="width: 34%; color: #9496a8">
+                  Traditional Heavy Browsers
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td><kbd>Cmd</kbd> + <kbd>1</kbd> .. <kbd>9</kbd></td>
-                <td><kbd>Ctrl</kbd> + <kbd>1</kbd> .. <kbd>9</kbd></td>
-                <td><strong>Switch Tab</strong></td>
-                <td>Jump directly to tab #1 through #9</td>
+                <td><strong>Binary / Installer Size</strong></td>
+                <td>
+                  <span class="badge-pill badge-pill-green">~4.8 MB</span>
+                  (Native universal release)
+                </td>
+                <td>250 MB – 380 MB+ (Bundled Chromium)</td>
               </tr>
               <tr>
-                <td><kbd>Cmd</kbd> + <kbd>Option</kbd> + <kbd>&larr;</kbd> / <kbd>&rarr;</kbd></td>
-                <td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>&larr;</kbd> / <kbd>&rarr;</kbd></td>
-                <td><strong>Reorder Tab</strong></td>
-                <td>Shift active tab one slot left or right</td>
+                <td><strong>Idle Memory Usage</strong></td>
+                <td>
+                  <span class="badge-pill badge-pill-green">~50 MB RAM</span>
+                </td>
+                <td>280 MB – 650 MB+ per profile</td>
               </tr>
               <tr>
-                <td><kbd>Cmd</kbd> + <kbd>T</kbd> / <kbd>Cmd</kbd> + <kbd>N</kbd></td>
-                <td><kbd>Ctrl</kbd> + <kbd>T</kbd> / <kbd>Ctrl</kbd> + <kbd>N</kbd></td>
-                <td><strong>New Session</strong></td>
-                <td>Create and launch a new isolated account</td>
+                <td><strong>Multi-Session Handling</strong></td>
+                <td>
+                  <span class="badge-pill badge-pill-green"
+                    >Autonomous disk partitions</span
+                  >
+                  (Zero cookie leaks)
+                </td>
+                <td>Global shared profile or heavy duplicate windows</td>
               </tr>
               <tr>
-                <td><kbd>Cmd</kbd> + <kbd>W</kbd></td>
-                <td><kbd>Ctrl</kbd> + <kbd>W</kbd></td>
-                <td><strong>Close Session</strong></td>
-                <td>Close active tab immediately</td>
+                <td><strong>Rendering Engine</strong></td>
+                <td>System WebKit (macOS) / WebView2 (Windows)</td>
+                <td>Bundled Chromium Blink instance</td>
               </tr>
               <tr>
-                <td><kbd>Cmd</kbd> + <kbd>M</kbd></td>
-                <td><kbd>Ctrl</kbd> + <kbd>M</kbd></td>
-                <td><strong>Manage Sessions</strong></td>
-                <td>Open session reordering & management modal</td>
+                <td><strong>Security Shield</strong></td>
+                <td>SHA-256 PIN screen blur &amp; idle auto-lock</td>
+                <td>No built-in locking overlay</td>
               </tr>
               <tr>
-                <td><kbd>Cmd</kbd> + <kbd>L</kbd></td>
-                <td><kbd>Ctrl</kbd> + <kbd>L</kbd></td>
-                <td><strong>Address Bar</strong></td>
-                <td>Focus address bar for quick navigation or search</td>
-              </tr>
-              <tr>
-                <td><kbd>Cmd</kbd> + <kbd>H</kbd></td>
-                <td><kbd>Ctrl</kbd> + <kbd>H</kbd></td>
-                <td><strong>Home / Dashboard</strong></td>
-                <td>Return to welcome dashboard and presets</td>
-              </tr>
-              <tr>
-                <td><kbd>Cmd</kbd> + <kbd>R</kbd></td>
-                <td><kbd>Ctrl</kbd> + <kbd>R</kbd></td>
-                <td><strong>Reload</strong></td>
-                <td>Refresh the active webpage</td>
-              </tr>
-              <tr>
-                <td><kbd>Cmd</kbd> + <kbd>[</kbd> / <kbd>]</kbd></td>
-                <td><kbd>Alt</kbd> + <kbd>&larr;</kbd> / <kbd>&rarr;</kbd></td>
-                <td><strong>Navigation History</strong></td>
-                <td>Go backward or forward in browsing history</td>
-              </tr>
-              <tr>
-                <td><kbd>Cmd</kbd> + <kbd>+</kbd> / <kbd>-</kbd> / <kbd>0</kbd></td>
-                <td><kbd>Ctrl</kbd> + <kbd>+</kbd> / <kbd>-</kbd> / <kbd>0</kbd></td>
-                <td><strong>Zoom Controls</strong></td>
-                <td>Zoom in, zoom out, or reset zoom to 100%</td>
-              </tr>
-              <tr>
-                <td><kbd>Cmd</kbd> + <kbd>Option</kbd> + <kbd>L</kbd></td>
-                <td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>L</kbd></td>
-                <td><strong>Lock Browser</strong></td>
-                <td>Immediately engage the PIN security shield</td>
-              </tr>
-              <tr>
-                <td><kbd>Cmd</kbd> + <kbd>/</kbd></td>
-                <td><kbd>Ctrl</kbd> + <kbd>/</kbd></td>
-                <td><strong>Help & Guide</strong></td>
-                <td>Open interactive cheatsheet & guide modal</td>
-              </tr>
-              <tr>
-                <td><kbd>Esc</kbd></td>
-                <td><kbd>Esc</kbd></td>
-                <td><strong>Dismiss</strong></td>
-                <td>Close open modals, popups, or context menus</td>
+                <td><strong>Global App Shortcuts</strong></td>
+                <td>Native OS Cocoa / system menu accelerators</td>
+                <td>Interception blocked while inside external inputs</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
+    </section>
 
-      <!-- Chapter 6: Developer Setup & Compiling from Source -->
-      <div id="docs-building" class="doc-chapter">
-        <div class="doc-chapter-header">
-          <div class="doc-chapter-icon">🚀</div>
-          <div>
-            <h3 class="doc-chapter-title">Installation & Compiling from Source</h3>
-            <p style="color: var(--text-muted); font-size: 14px;">Build and run MiniBrowser on macOS, Windows, and Linux.</p>
+    <!-- User Documentation & Complete User Guide Center -->
+    <section id="docs" class="docs-section">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-tag">Official Documentation & User Guide</div>
+          <h2 class="section-title">
+            Everything You Need to Master MiniBrowser
+          </h2>
+          <p class="section-desc">
+            Complete user manual, multi-session partition architecture, security
+            workflows, tab organization, and troubleshooting guide.
+          </p>
+        </div>
+
+        <!-- Quick Navigation Sticky Pills -->
+        <div class="docs-nav-sticky">
+          <div class="docs-nav-pills">
+            <a href="#docs-architecture" class="docs-nav-pill active"
+              >🧠 Architecture</a
+            >
+            <a href="#docs-reordering" class="docs-nav-pill"
+              >🎯 Tab Reordering (4 Ways)</a
+            >
+            <a href="#docs-badges" class="docs-nav-pill"
+              >🏷️ Badges & Profiles</a
+            >
+            <a href="#docs-security" class="docs-nav-pill"
+              >🔒 PIN Security & Auto-Lock</a
+            >
+            <a href="#docs-shortcuts" class="docs-nav-pill"
+              >⌨️ Complete Shortcuts</a
+            >
+            <a href="#docs-building" class="docs-nav-pill">🚀 Build & Setup</a>
+            <a href="#docs-faq" class="docs-nav-pill"
+              >❓ FAQ & Troubleshooting</a
+            >
           </div>
         </div>
 
-        <div class="doc-card">
-          <h3>Prerequisites</h3>
-          <ul>
-            <li><strong>Rust (1.75+)</strong>: Install via <code>curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh</code></li>
-            <li><strong>Node.js (v18+) & pnpm</strong>: <code>npm install -g pnpm</code></li>
-            <li><strong>Platform dependencies</strong> (macOS Xcode Command Line Tools, Windows Visual Studio C++ Build Tools, or Linux <code>libwebkit2gtk-4.1-dev</code>).</li>
-          </ul>
+        <!-- Chapter 1: Multi-Session Architecture -->
+        <div id="docs-architecture" class="doc-chapter">
+          <div class="doc-chapter-header">
+            <div class="doc-chapter-icon">🧠</div>
+            <div>
+              <h3 class="doc-chapter-title">
+                Multi-Session Architecture & Partitioning
+              </h3>
+              <p style="color: var(--text-muted); font-size: 14px">
+                How MiniBrowser isolates multiple accounts without cookie or
+                session collisions.
+              </p>
+            </div>
+          </div>
 
-          <h3>Development Mode</h3>
-          <div class="code-box">
-            <div class="code-box-header"><span>Terminal</span><span>bash / zsh</span></div>
-            <pre><code># 1. Clone the repository
+          <div class="doc-card">
+            <h3>The Problem with Traditional Browsers</h3>
+            <p>
+              Standard browsers (Chrome, Safari, Brave, Edge) share the browser
+              cookie jar, LocalStorage, and IndexedDB globally across all open
+              tabs and windows. Opening two tabs for WhatsApp Web or Gmail
+              results in one account overriding the other, forcing users to
+              juggle private/incognito windows or sluggish multiple profile
+              instances that each consume hundreds of megabytes of RAM.
+            </p>
+
+            <h3>How MiniBrowser Solves It</h3>
+            <p>
+              MiniBrowser strictly sandboxes every account into an independent,
+              persistent disk partition on your local filesystem:
+            </p>
+            <div class="code-box">
+              <div class="code-box-header">
+                <span>Filesystem Partition Layout</span
+                ><span>macOS / Linux / Windows</span>
+              </div>
+              <pre><code>$APP_DATA/sessions/
+├── whatsapp-personal/    👉 Cookies, IndexedDB, WebCrypto Keys, Cache
+├── whatsapp-work/        👉 Completely separate sandbox partition
+├── gmail-corporate/      👉 Separate Google authentication tokens
+└── facebook-client/      👉 Zero cross-site tracking or shared cache</code></pre>
+            </div>
+
+            <div class="callout callout-tip">
+              <div class="callout-icon">💡</div>
+              <div class="callout-body">
+                <strong>Native Rust & Tauri v2 Performance</strong>
+                MiniBrowser leverages system-native web engines (WebKit on
+                macOS, WebView2 on Windows, WebKitGTK on Linux). The entire app
+                idles at just ~50 MB RAM and the standalone installer is only
+                <strong>4.8 MB</strong>.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chapter 2: Tab & Session Organization Workflows -->
+        <div id="docs-reordering" class="doc-chapter">
+          <div class="doc-chapter-header">
+            <div class="doc-chapter-icon">🎯</div>
+            <div>
+              <h3 class="doc-chapter-title">
+                Tab & Session Organization (4 Reordering Workflows)
+              </h3>
+              <p style="color: var(--text-muted); font-size: 14px">
+                Organize dozens of tabs smoothly with multiple intuitive
+                workflows.
+              </p>
+            </div>
+          </div>
+
+          <div class="doc-card">
+            <p>
+              MiniBrowser gives you 4 distinct ways to sort and manage tabs
+              based on your preferred workflow:
+            </p>
+
+            <div class="steps-container">
+              <div class="step-item">
+                <div class="step-item-num">1</div>
+                <h4>Right-Click Context Menu</h4>
+                <p>
+                  Right-click (or <kbd>Ctrl</kbd> + click on Mac) any tab to
+                  reveal options: <strong>Move Left</strong>,
+                  <strong>Move Right</strong>, <strong>Manage Sessions</strong>,
+                  or <strong>Close Session</strong>.
+                </p>
+              </div>
+
+              <div class="step-item">
+                <div class="step-item-num">2</div>
+                <h4>Global Shortcuts</h4>
+                <p>
+                  Press <kbd>Cmd</kbd> + <kbd>Option</kbd> +
+                  <kbd>&larr;</kbd> or <kbd>&rarr;</kbd> (<kbd>Ctrl</kbd> +
+                  <kbd>Alt</kbd> + <kbd>&larr;/&rarr;</kbd>). Registered
+                  natively in the OS menu bar so they trigger even while typing
+                  inside websites.
+                </p>
+              </div>
+
+              <div class="step-item">
+                <div class="step-item-num">3</div>
+                <h4>Fluid Drag & Drop</h4>
+                <p>
+                  Click and hold any tab in the top bar, then drag left or
+                  right. Other tabs automatically part in real-time to preview
+                  the new layout before releasing.
+                </p>
+              </div>
+
+              <div class="step-item">
+                <div class="step-item-num">4</div>
+                <h4>Session Manager (<kbd>Cmd + M</kbd>)</h4>
+                <p>
+                  Open the management modal to view all sessions vertically. Use
+                  1-click <kbd>&uarr;</kbd> and <kbd>&darr;</kbd> buttons,
+                  rename tabs, change badges, or delete.
+                </p>
+              </div>
+            </div>
+
+            <div class="callout callout-info">
+              <div class="callout-icon">📜</div>
+              <div class="callout-body">
+                <strong>Horizontal Tabs Wheel & Trackpad Scrolling</strong>
+                When managing 10 or more open accounts, the tab bar
+                automatically enables horizontal scrolling. Simply hover over
+                the header and scroll your mouse wheel or perform a two-finger
+                trackpad swipe. Left and right edge gradient masks ensure
+                seamless navigation without abrupt visual cutoffs.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chapter 3: Custom Badges & Profiles -->
+        <div id="docs-badges" class="doc-chapter">
+          <div class="doc-chapter-header">
+            <div class="doc-chapter-icon">🏷️</div>
+            <div>
+              <h3 class="doc-chapter-title">
+                Managing Accounts & Custom Badges
+              </h3>
+              <p style="color: var(--text-muted); font-size: 14px">
+                Color-code and tag tabs to instantly distinguish between
+                personal and client accounts.
+              </p>
+            </div>
+          </div>
+
+          <div class="doc-card">
+            <p>
+              When managing multiple accounts on the same platform (such as 3
+              WhatsApps or 2 Gmail inboxes), tab titles can look identical.
+              MiniBrowser solves this with
+              <strong>Custom Session Badges & Colors</strong>:
+            </p>
+
+            <div class="badge-sample-row">
+              <div class="badge-sample">
+                <span>WhatsApp Personal</span>
+                <span class="badge-pill badge-pill-green">W1</span>
+              </div>
+              <div class="badge-sample">
+                <span>WhatsApp Support</span>
+                <span class="badge-pill badge-pill-green">W2</span>
+              </div>
+              <div class="badge-sample">
+                <span>Gmail Corporate</span>
+                <span class="badge-pill badge-pill-red">G-WORK</span>
+              </div>
+              <div class="badge-sample">
+                <span>X / Twitter</span>
+                <span class="badge-pill badge-pill-blue">X1</span>
+              </div>
+              <div class="badge-sample">
+                <span>Notion Workspace</span>
+                <span class="badge-pill badge-pill-purple">DEV</span>
+              </div>
+            </div>
+
+            <h3>How to Customize a Session</h3>
+            <ol>
+              <li>
+                Press <kbd>Cmd + M</kbd> (or <kbd>Ctrl + M</kbd>) to open the
+                <strong>Session Manager</strong>.
+              </li>
+              <li>Click the pencil icon (<kbd>✏</kbd>) next to any session.</li>
+              <li>
+                Enter a custom title (e.g. <em>"WhatsApp Operations"</em>) and a
+                concise badge code (e.g. <em>"W2"</em>).
+              </li>
+              <li>
+                Select an accent color (Green, Red, Blue, Purple, Amber, Cyan).
+              </li>
+              <li>
+                Click <strong>Save</strong>. The top tab bar and native macOS
+                menu immediately update with your badge!
+              </li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- Chapter 4: Security Shield & Auto-Lock -->
+        <div id="docs-security" class="doc-chapter">
+          <div class="doc-chapter-header">
+            <div class="doc-chapter-icon">🔒</div>
+            <div>
+              <h3 class="doc-chapter-title">PIN Security Shield & Auto-Lock</h3>
+              <p style="color: var(--text-muted); font-size: 14px">
+                Protect your sensitive chats, confidential inboxes, and
+                workspaces from unauthorized local access.
+              </p>
+            </div>
+          </div>
+
+          <div class="doc-card">
+            <p>
+              MiniBrowser includes a built-in cryptographic security layer with
+              a 6-digit SHA-256 PIN shield and full UI blur masking:
+            </p>
+
+            <div class="steps-container">
+              <div class="step-item">
+                <div class="step-item-num">⏱️</div>
+                <h4>Inactivity Auto-Lock</h4>
+                <p>
+                  Configure an idle timer (1, 5, 15, 30, or 60 minutes) in
+                  Settings. When no input is detected, the browser automatically
+                  engages the lock overlay.
+                </p>
+              </div>
+              <div class="step-item">
+                <div class="step-item-num">🚀</div>
+                <h4>Lock on Launch</h4>
+                <p>
+                  Require your 6-digit PIN before any web sessions or tab
+                  contents are revealed upon launching the application.
+                </p>
+              </div>
+              <div class="step-item">
+                <div class="step-item-num">👁️</div>
+                <h4>Discreet Minimized Start</h4>
+                <p>
+                  Enable "Start Minimized" to let the app start quietly in the
+                  background without abruptly flashing windows on your desktop.
+                </p>
+              </div>
+              <div class="step-item">
+                <div class="step-item-num">⚡</div>
+                <h4>Emergency Instant Lock</h4>
+                <p>
+                  Hit <kbd>Cmd</kbd> + <kbd>Option</kbd> + <kbd>L</kbd> (<kbd
+                    >Ctrl</kbd
+                  >
+                  + <kbd>Alt</kbd> + <kbd>L</kbd>) anytime to immediately
+                  conceal all webviews behind the glass shield.
+                </p>
+              </div>
+            </div>
+
+            <div class="callout callout-security">
+              <div class="callout-icon">🛡️</div>
+              <div class="callout-body">
+                <strong>Factory Default PIN & Setup</strong>
+                The default factory PIN is <code>123456</code>. You can change
+                this to any 6-digit passcode anytime by clicking the Settings
+                gear icon (<kbd>⚙️</kbd>) and selecting <em>"Change PIN"</em>.
+                The hash is saved locally using SHA-256 with salt.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chapter 5: Complete Shortcuts Table -->
+        <div id="docs-shortcuts" class="doc-chapter">
+          <div class="doc-chapter-header">
+            <div class="doc-chapter-icon">⌨️</div>
+            <div>
+              <h3 class="doc-chapter-title">
+                Complete Keyboard Shortcuts Reference
+              </h3>
+              <p style="color: var(--text-muted); font-size: 14px">
+                Master keyboard navigation across macOS, Windows, and Linux.
+              </p>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="shortcuts-table">
+              <thead>
+                <tr>
+                  <th>macOS</th>
+                  <th>Windows / Linux</th>
+                  <th>Action</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><kbd>Cmd</kbd> + <kbd>1</kbd> .. <kbd>9</kbd></td>
+                  <td><kbd>Ctrl</kbd> + <kbd>1</kbd> .. <kbd>9</kbd></td>
+                  <td><strong>Switch Tab</strong></td>
+                  <td>Jump directly to tab #1 through #9</td>
+                </tr>
+                <tr>
+                  <td>
+                    <kbd>Cmd</kbd> + <kbd>Option</kbd> + <kbd>&larr;</kbd> /
+                    <kbd>&rarr;</kbd>
+                  </td>
+                  <td>
+                    <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>&larr;</kbd> /
+                    <kbd>&rarr;</kbd>
+                  </td>
+                  <td><strong>Reorder Tab</strong></td>
+                  <td>Shift active tab one slot left or right</td>
+                </tr>
+                <tr>
+                  <td>
+                    <kbd>Cmd</kbd> + <kbd>T</kbd> / <kbd>Cmd</kbd> +
+                    <kbd>N</kbd>
+                  </td>
+                  <td>
+                    <kbd>Ctrl</kbd> + <kbd>T</kbd> / <kbd>Ctrl</kbd> +
+                    <kbd>N</kbd>
+                  </td>
+                  <td><strong>New Session</strong></td>
+                  <td>Create and launch a new isolated account</td>
+                </tr>
+                <tr>
+                  <td><kbd>Cmd</kbd> + <kbd>W</kbd></td>
+                  <td><kbd>Ctrl</kbd> + <kbd>W</kbd></td>
+                  <td><strong>Close Session</strong></td>
+                  <td>Close active tab immediately</td>
+                </tr>
+                <tr>
+                  <td><kbd>Cmd</kbd> + <kbd>M</kbd></td>
+                  <td><kbd>Ctrl</kbd> + <kbd>M</kbd></td>
+                  <td><strong>Manage Sessions</strong></td>
+                  <td>Open session reordering & management modal</td>
+                </tr>
+                <tr>
+                  <td><kbd>Cmd</kbd> + <kbd>L</kbd></td>
+                  <td><kbd>Ctrl</kbd> + <kbd>L</kbd></td>
+                  <td><strong>Address Bar</strong></td>
+                  <td>Focus address bar for quick navigation or search</td>
+                </tr>
+                <tr>
+                  <td><kbd>Cmd</kbd> + <kbd>H</kbd></td>
+                  <td><kbd>Ctrl</kbd> + <kbd>H</kbd></td>
+                  <td><strong>Home / Dashboard</strong></td>
+                  <td>Return to welcome dashboard and presets</td>
+                </tr>
+                <tr>
+                  <td><kbd>Cmd</kbd> + <kbd>R</kbd></td>
+                  <td><kbd>Ctrl</kbd> + <kbd>R</kbd></td>
+                  <td><strong>Reload</strong></td>
+                  <td>Refresh the active webpage</td>
+                </tr>
+                <tr>
+                  <td><kbd>Cmd</kbd> + <kbd>[</kbd> / <kbd>]</kbd></td>
+                  <td>
+                    <kbd>Alt</kbd> + <kbd>&larr;</kbd> / <kbd>&rarr;</kbd>
+                  </td>
+                  <td><strong>Navigation History</strong></td>
+                  <td>Go backward or forward in browsing history</td>
+                </tr>
+                <tr>
+                  <td>
+                    <kbd>Cmd</kbd> + <kbd>+</kbd> / <kbd>-</kbd> / <kbd>0</kbd>
+                  </td>
+                  <td>
+                    <kbd>Ctrl</kbd> + <kbd>+</kbd> / <kbd>-</kbd> / <kbd>0</kbd>
+                  </td>
+                  <td><strong>Zoom Controls</strong></td>
+                  <td>Zoom in, zoom out, or reset zoom to 100%</td>
+                </tr>
+                <tr>
+                  <td><kbd>Cmd</kbd> + <kbd>Option</kbd> + <kbd>L</kbd></td>
+                  <td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>L</kbd></td>
+                  <td><strong>Lock Browser</strong></td>
+                  <td>Immediately engage the PIN security shield</td>
+                </tr>
+                <tr>
+                  <td><kbd>Cmd</kbd> + <kbd>/</kbd></td>
+                  <td><kbd>Ctrl</kbd> + <kbd>/</kbd></td>
+                  <td><strong>Help & Guide</strong></td>
+                  <td>Open interactive cheatsheet & guide modal</td>
+                </tr>
+                <tr>
+                  <td><kbd>Esc</kbd></td>
+                  <td><kbd>Esc</kbd></td>
+                  <td><strong>Dismiss</strong></td>
+                  <td>Close open modals, popups, or context menus</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Chapter 6: Developer Setup & Compiling from Source -->
+        <div id="docs-building" class="doc-chapter">
+          <div class="doc-chapter-header">
+            <div class="doc-chapter-icon">🚀</div>
+            <div>
+              <h3 class="doc-chapter-title">
+                Installation & Compiling from Source
+              </h3>
+              <p style="color: var(--text-muted); font-size: 14px">
+                Build and run MiniBrowser on macOS, Windows, and Linux.
+              </p>
+            </div>
+          </div>
+
+          <div class="doc-card">
+            <h3>Prerequisites</h3>
+            <ul>
+              <li>
+                <strong>Rust (1.75+)</strong>: Install via
+                <code
+                  >curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs |
+                  sh</code
+                >
+              </li>
+              <li>
+                <strong>Node.js (v18+) & pnpm</strong>:
+                <code>npm install -g pnpm</code>
+              </li>
+              <li>
+                <strong>Platform dependencies</strong> (macOS Xcode Command Line
+                Tools, Windows Visual Studio C++ Build Tools, or Linux
+                <code>libwebkit2gtk-4.1-dev</code>).
+              </li>
+            </ul>
+
+            <h3>Development Mode</h3>
+            <div class="code-box">
+              <div class="code-box-header">
+                <span>Terminal</span><span>bash / zsh</span>
+              </div>
+              <pre><code># 1. Clone the repository
 git clone https://github.com/devCodr/mini-browser.git
 cd mini-browser
 
@@ -582,164 +899,257 @@ pnpm install
 
 # 3. Launch hot-reloading development server
 pnpm dev</code></pre>
-          </div>
+            </div>
 
-          <h3>Production Release Build</h3>
-          <p>To compile optimized production binaries, run:</p>
-          <div class="code-box">
-            <div class="code-box-header"><span>Terminal</span><span>bash / zsh</span></div>
-            <pre><code>pnpm build</code></pre>
-          </div>
-          <p>
-            Tauri will output native standalone packages to <code>src-tauri/target/release/bundle/</code>:
-          </p>
-          <ul>
-            <li><strong>macOS</strong>: Apple Silicon & Universal <code>.dmg</code> and <code>.app</code> (~4.8 MB)</li>
-            <li><strong>Windows</strong>: <code>.msi</code> installer and standalone <code>.exe</code></li>
-            <li><strong>Linux</strong>: <code>.deb</code> package and portable <code>.AppImage</code></li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- Chapter 7: FAQ & Troubleshooting -->
-      <div id="docs-faq" class="doc-chapter">
-        <div class="doc-chapter-header">
-          <div class="doc-chapter-icon">❓</div>
-          <div>
-            <h3 class="doc-chapter-title">Frequently Asked Questions & Troubleshooting</h3>
-            <p style="color: var(--text-muted); font-size: 14px;">Common scenarios, permission requests, and configuration tips.</p>
-          </div>
-        </div>
-
-        <div class="reorder-grid">
-          <div class="doc-card">
-            <h3>🔑 macOS Keychain "WebCrypto Key" Dialog</h3>
+            <h3>Production Release Build</h3>
+            <p>To compile optimized production binaries, run:</p>
+            <div class="code-box">
+              <div class="code-box-header">
+                <span>Terminal</span><span>bash / zsh</span>
+              </div>
+              <pre><code>pnpm build</code></pre>
+            </div>
             <p>
-              WhatsApp Web uses the modern W3C WebCrypto API to store end-to-end encryption master keys. WebKit on macOS delegates this storage to your native <strong>macOS Keychain</strong>. When the prompt appears:
-            </p>
-            <p>
-              Select <strong>"Always Allow"</strong> and input your Mac password once. This allows WhatsApp Web to store encryption keys persistently without prompting on every startup.
-            </p>
-          </div>
-
-          <div class="doc-card">
-            <h3>✉️ Google Sign-In ("Browser not secure")</h3>
-            <p>
-              Standard automated browsers trigger Google's untrusted browser warning. MiniBrowser uses genuine Safari 18 User-Agent signatures and routes directly to Google's official sign-in endpoint:
-            </p>
-            <p>
-              Type <code>gmail.com</code> into the address bar or click the Gmail preset; it connects seamlessly to <code>accounts.google.com/ServiceLogin</code> without automation flags.
-            </p>
-          </div>
-
-          <div class="doc-card">
-            <h3>📁 Where is my session data stored?</h3>
-            <p>
-              All cookies, local storage, indexed databases, and credentials are saved locally in:
+              Tauri will output native standalone packages to
+              <code>src-tauri/target/release/bundle/</code>:
             </p>
             <ul>
-              <li><strong>macOS</strong>: <code>~/Library/Application Support/com.larico.minibrowser/sessions/</code></li>
-              <li><strong>Windows</strong>: <code>%APPDATA%\com.larico.minibrowser\sessions\</code></li>
-              <li><strong>Linux</strong>: <code>~/.config/com.larico.minibrowser/sessions/</code></li>
+              <li>
+                <strong>macOS</strong>: Apple Silicon & Universal
+                <code>.dmg</code> and <code>.app</code> (~4.8 MB)
+              </li>
+              <li>
+                <strong>Windows</strong>: <code>.msi</code> installer and
+                standalone <code>.exe</code>
+              </li>
+              <li>
+                <strong>Linux</strong>: <code>.deb</code> package and portable
+                <code>.AppImage</code>
+              </li>
             </ul>
-            <p>There is zero external telemetry or cloud sync. Your data never leaves your computer.</p>
+          </div>
+        </div>
+
+        <!-- Chapter 7: FAQ & Troubleshooting -->
+        <div id="docs-faq" class="doc-chapter">
+          <div class="doc-chapter-header">
+            <div class="doc-chapter-icon">❓</div>
+            <div>
+              <h3 class="doc-chapter-title">
+                Frequently Asked Questions & Troubleshooting
+              </h3>
+              <p style="color: var(--text-muted); font-size: 14px">
+                Common scenarios, permission requests, and configuration tips.
+              </p>
+            </div>
           </div>
 
-          <div class="doc-card">
-            <h3>🛡️ What if I forget my PIN?</h3>
-            <p>
-              Because your security PIN is hashed with SHA-256 locally on your computer, you can reset it by navigating to your user data folder and opening <code>settings.json</code>. You can reset <code>"lock_enabled": false</code> or remove the hashed PIN to regain access.
-            </p>
-          </div>
+          <div class="reorder-grid">
+            <div class="doc-card">
+              <h3>🔑 macOS Keychain "WebCrypto Key" Dialog</h3>
+              <p>
+                WhatsApp Web uses the modern W3C WebCrypto API to store
+                end-to-end encryption master keys. WebKit on macOS delegates
+                this storage to your native <strong>macOS Keychain</strong>.
+                When the prompt appears:
+              </p>
+              <p>
+                Select <strong>"Always Allow"</strong> and input your Mac
+                password once. This allows WhatsApp Web to store encryption keys
+                persistently without prompting on every startup.
+              </p>
+            </div>
 
-          <div class="doc-card">
-            <h3>🔊 Multiple audio playback across sessions</h3>
-            <p>
-              Each session partition acts as an autonomous browser instance. You can stream media, receive audio notifications from WhatsApp Web, and run webinars in separate tabs without audio muting each other.
-            </p>
-          </div>
+            <div class="doc-card">
+              <h3>✉️ Google Sign-In ("Browser not secure")</h3>
+              <p>
+                Standard automated browsers trigger Google's untrusted browser
+                warning. MiniBrowser uses genuine Safari 18 User-Agent
+                signatures and routes directly to Google's official sign-in
+                endpoint:
+              </p>
+              <p>
+                Type <code>gmail.com</code> into the address bar or click the
+                Gmail preset; it connects seamlessly to
+                <code>accounts.google.com/ServiceLogin</code> without automation
+                flags.
+              </p>
+            </div>
 
-          <div class="doc-card">
-            <h3>🧹 How do I completely clear a session?</h3>
-            <p>
-              Press <kbd>Cmd + M</kbd> to open the Session Manager and click the trash can icon (<kbd>🗑</kbd>). MiniBrowser will close the active webview and purge that session's bookmarks and partition data.
-            </p>
+            <div class="doc-card">
+              <h3>📁 Where is my session data stored?</h3>
+              <p>
+                All cookies, local storage, indexed databases, and credentials
+                are saved locally in:
+              </p>
+              <ul>
+                <li>
+                  <strong>macOS</strong>:
+                  <code
+                    >~/Library/Application
+                    Support/com.larico.minibrowser/sessions/</code
+                  >
+                </li>
+                <li>
+                  <strong>Windows</strong>:
+                  <code>%APPDATA%\com.larico.minibrowser\sessions\</code>
+                </li>
+                <li>
+                  <strong>Linux</strong>:
+                  <code>~/.config/com.larico.minibrowser/sessions/</code>
+                </li>
+              </ul>
+              <p>
+                There is zero external telemetry or cloud sync. Your data never
+                leaves your computer.
+              </p>
+            </div>
+
+            <div class="doc-card">
+              <h3>🛡️ What if I forget my PIN?</h3>
+              <p>
+                Because your security PIN is hashed with SHA-256 locally on your
+                computer, you can reset it by navigating to your user data
+                folder and opening <code>settings.json</code>. You can reset
+                <code>"lock_enabled": false</code> or remove the hashed PIN to
+                regain access.
+              </p>
+            </div>
+
+            <div class="doc-card">
+              <h3>🔊 Multiple audio playback across sessions</h3>
+              <p>
+                Each session partition acts as an autonomous browser instance.
+                You can stream media, receive audio notifications from WhatsApp
+                Web, and run webinars in separate tabs without audio muting each
+                other.
+              </p>
+            </div>
+
+            <div class="doc-card">
+              <h3>🧹 How do I completely clear a session?</h3>
+              <p>
+                Press <kbd>Cmd + M</kbd> to open the Session Manager and click
+                the trash can icon (<kbd>🗑</kbd>). MiniBrowser will close the
+                active webview and purge that session's bookmarks and partition
+                data.
+              </p>
+            </div>
           </div>
         </div>
       </div>
+    </section>
 
-    </div>
-  </section>
-
-  <!-- Pre-Footer CTA -->
-  <section class="cta-section">
-    <div class="container">
-      <div class="cta-card">
-        <div class="section-tag" style="color: #a5b4fc;">Get Started Today</div>
-        <h2 class="cta-title">Isolate Your Accounts in Seconds</h2>
-        <p class="cta-desc">Enjoy blazing-fast multi-session browsing with zero cookie collisions, minimal RAM consumption, and complete local privacy.</p>
-        <div class="hero-buttons" style="margin-bottom: 0;">
-          <a href="https://github.com/devCodr/mini-browser/releases" class="btn-primary">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            <span>Download MiniBrowser (macOS v1.0.0)</span>
-          </a>
-          <a href="#docs" class="btn-secondary">
-            <span>Explore Full Documentation</span>
-          </a>
+    <!-- Pre-Footer CTA -->
+    <section class="cta-section">
+      <div class="container">
+        <div class="cta-card">
+          <div class="section-tag" style="color: #a5b4fc">
+            Get Started Today
+          </div>
+          <h2 class="cta-title">Isolate Your Accounts in Seconds</h2>
+          <p class="cta-desc">
+            Enjoy blazing-fast multi-session browsing with zero cookie
+            collisions, minimal RAM consumption, and complete local privacy.
+          </p>
+          <div class="hero-buttons" style="margin-bottom: 0">
+            <a
+              href="https://github.com/devCodr/mini-browser/releases"
+              class="btn-primary"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span>Download MiniBrowser (macOS v1.0.0)</span>
+            </a>
+            <a href="#docs" class="btn-secondary">
+              <span>Explore Full Documentation</span>
+            </a>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Footer -->
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-content">
-        <div class="footer-copy">
-          <strong>MiniBrowser</strong> • Open Source Multi-Session Browser under the <a href="https://github.com/devCodr/mini-browser/blob/main/LICENSE" target="_blank" style="text-decoration: underline;">MIT License</a>.<br />
-          Crafted with care by <a href="https://larico.dev" target="_blank" style="color: var(--accent-light); font-weight: 600;">Chris Larico</a>.
-        </div>
-        <div class="footer-links">
-          <a href="https://github.com/devCodr/mini-browser" target="_blank">GitHub Repository</a>
-          <a href="#docs">User Guide & Docs</a>
-          <a href="https://github.com/devCodr/mini-browser/blob/main/CONTRIBUTING.md" target="_blank">Contributing</a>
-          <a href="https://larico.dev" target="_blank">Developer Website</a>
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-copy">
+            <strong>MiniBrowser</strong> • Open Source Multi-Session Browser
+            under the
+            <a
+              href="https://github.com/devCodr/mini-browser/blob/main/LICENSE"
+              target="_blank"
+              style="text-decoration: underline"
+              >MIT License</a
+            >.<br />
+            Crafted with care by
+            <a
+              href="https://larico.dev"
+              target="_blank"
+              style="color: var(--accent-light); font-weight: 600"
+              >Chris Larico</a
+            >.
+          </div>
+          <div class="footer-links">
+            <a href="https://github.com/devCodr/mini-browser" target="_blank"
+              >GitHub Repository</a
+            >
+            <a href="#docs">User Guide & Docs</a>
+            <a
+              href="https://github.com/devCodr/mini-browser/blob/main/CONTRIBUTING.md"
+              target="_blank"
+              >Contributing</a
+            >
+            <a href="https://larico.dev" target="_blank">Developer Website</a>
+          </div>
         </div>
       </div>
-    </div>
-  </footer>
+    </footer>
 
-  <!-- Quick Nav Scroll Spy Script -->
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const pills = document.querySelectorAll('.docs-nav-pill');
-      const chapters = document.querySelectorAll('.doc-chapter');
+    <!-- Quick Nav Scroll Spy Script -->
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const pills = document.querySelectorAll(".docs-nav-pill");
+        const chapters = document.querySelectorAll(".doc-chapter");
 
-      const observerOptions = {
-        root: null,
-        rootMargin: '-100px 0px -60% 0px',
-        threshold: 0
-      };
+        const observerOptions = {
+          root: null,
+          rootMargin: "-100px 0px -60% 0px",
+          threshold: 0,
+        };
 
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const id = entry.target.getAttribute('id');
-            pills.forEach(pill => {
-              if (pill.getAttribute('href') === `#${id}`) {
-                pill.classList.add('active');
-                pill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-              } else {
-                pill.classList.remove('active');
-              }
-            });
-          }
-        });
-      }, observerOptions);
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const id = entry.target.getAttribute("id");
+              pills.forEach((pill) => {
+                if (pill.getAttribute("href") === `#${id}`) {
+                  pill.classList.add("active");
+                  pill.scrollIntoView({
+                    behavior: "smooth",
+                    block: "nearest",
+                    inline: "center",
+                  });
+                } else {
+                  pill.classList.remove("active");
+                }
+              });
+            }
+          });
+        }, observerOptions);
 
-      chapters.forEach(chapter => observer.observe(chapter));
-    });
-  </script>
-
-</body>
+        chapters.forEach((chapter) => observer.observe(chapter));
+      });
+    </script>
+  </body>
 </html>
