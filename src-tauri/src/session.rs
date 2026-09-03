@@ -106,9 +106,89 @@ impl SessionManager {
         let partition_for_notif = partition.to_string();
 
         let init_script = r##"
-            try {
-                Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-            } catch(e) {}
+            // === Chrome Fingerprint: defeat embedded webview detection by Google, etc. ===
+            (function() {
+                // 1. Remove webdriver flag
+                try { Object.defineProperty(navigator, 'webdriver', { get: () => undefined }); } catch(e) {}
+
+                // 2. Inject window.chrome object (Google checks this first)
+                if (!window.chrome) {
+                    var chrome = {
+                        app: {
+                            isInstalled: false,
+                            InstallState: { DISABLED: 'disabled', INSTALLED: 'installed', NOT_INSTALLED: 'not_installed' },
+                            RunningState: { CANNOT_RUN: 'cannot_run', READY_TO_RUN: 'ready_to_run', RUNNING: 'running' }
+                        },
+                        csi: function() { return { startE: Date.now(), onloadT: Date.now(), pageT: Date.now(), tran: 15 }; },
+                        loadTimes: function() {
+                            return {
+                                commitLoadTime: Date.now() / 1000,
+                                connectionInfo: 'h2',
+                                finishDocumentLoadTime: Date.now() / 1000,
+                                finishLoadTime: Date.now() / 1000,
+                                firstPaintAfterLoadTime: 0,
+                                firstPaintTime: Date.now() / 1000,
+                                navigationType: 'Other',
+                                npnNegotiatedProtocol: 'h2',
+                                requestTime: Date.now() / 1000,
+                                startLoadTime: Date.now() / 1000,
+                                wasAlternateProtocolAvailable: false,
+                                wasFetchedViaSpdy: true,
+                                wasNpnNegotiated: true
+                            };
+                        },
+                        runtime: {
+                            OnInstalledReason: { CHROME_UPDATE: 'chrome_update', INSTALL: 'install', SHARED_MODULE_UPDATE: 'shared_module_update', UPDATE: 'update' },
+                            OnRestartRequiredReason: { APP_UPDATE: 'app_update', OS_UPDATE: 'os_update', PERIODIC: 'periodic' },
+                            PlatformArch: { ARM: 'arm', ARM64: 'arm64', MIPS: 'mips', MIPS64: 'mips64', X86_32: 'x86-32', X86_64: 'x86-64' },
+                            PlatformNaclArch: { ARM: 'arm', MIPS: 'mips', MIPS64: 'mips64', X86_32: 'x86-32', X86_64: 'x86-64' },
+                            PlatformOs: { ANDROID: 'android', CROS: 'cros', LINUX: 'linux', MAC: 'mac', OPENBSD: 'openbsd', WIN: 'win' },
+                            RequestUpdateCheckStatus: { NO_UPDATE: 'no_update', THROTTLED: 'throttled', UPDATE_AVAILABLE: 'update_available' },
+                            id: undefined
+                        }
+                    };
+                    try {
+                        Object.defineProperty(window, 'chrome', { value: chrome, writable: false, enumerable: true, configurable: false });
+                    } catch(e) { window.chrome = chrome; }
+                }
+
+                // 3. Realistic plugins list (Chrome has these)
+                try {
+                    var pluginData = [
+                        { name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer', description: 'Portable Document Format', mimeTypes: [{ type: 'application/x-google-chrome-pdf', suffixes: 'pdf', description: 'Portable Document Format' }] },
+                        { name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai', description: '', mimeTypes: [{ type: 'application/pdf', suffixes: 'pdf', description: '' }] },
+                        { name: 'Native Client', filename: 'internal-nacl-plugin', description: '', mimeTypes: [{ type: 'application/x-nacl', suffixes: '', description: 'Native Client Executable' }, { type: 'application/x-pnacl', suffixes: '', description: 'Portable Native Client Executable' }] }
+                    ];
+                    var pluginArray = pluginData.map(function(p) {
+                        var plugin = Object.create(Plugin.prototype);
+                        Object.defineProperty(plugin, 'name', { value: p.name });
+                        Object.defineProperty(plugin, 'filename', { value: p.filename });
+                        Object.defineProperty(plugin, 'description', { value: p.description });
+                        return plugin;
+                    });
+                    Object.defineProperty(navigator, 'plugins', { get: function() { return pluginArray; }, configurable: true });
+                    Object.defineProperty(navigator, 'mimeTypes', { get: function() { return []; }, configurable: true });
+                } catch(e) {}
+
+                // 4. Languages - real Chrome sends multiple
+                try {
+                    Object.defineProperty(navigator, 'languages', { get: function() { return ['es-MX', 'es', 'en-US', 'en']; }, configurable: true });
+                } catch(e) {}
+
+                // 5. Realistic hardware concurrency and device memory
+                try { Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8, configurable: true }); } catch(e) {}
+                try { if (!navigator.deviceMemory) Object.defineProperty(navigator, 'deviceMemory', { get: () => 8, configurable: true }); } catch(e) {}
+
+                // 6. Patch toString on key functions to look native
+                try {
+                    var origToString = Function.prototype.toString;
+                    Function.prototype.toString = function() {
+                        if (this === Function.prototype.toString) return 'function toString() { [native code] }';
+                        return origToString.call(this);
+                    };
+                } catch(e) {}
+            })();
+
 
             // === Native Notification Bridge ===
             (function() {
