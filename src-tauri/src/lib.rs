@@ -319,6 +319,50 @@ fn update_settings(
     Ok(settings)
 }
 
+#[tauri::command]
+fn get_platform() -> String {
+    #[cfg(target_os = "macos")]
+    return "macos".to_string();
+    #[cfg(target_os = "windows")]
+    return "windows".to_string();
+    #[cfg(target_os = "linux")]
+    return "linux".to_string();
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
+    return "unknown".to_string();
+}
+
+#[tauri::command]
+fn minimize_window(app: AppHandle) -> Result<(), String> {
+    if let Some(w) = app.get_window("main") {
+        let _ = w.minimize();
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn toggle_maximize_window(app: AppHandle) -> Result<bool, String> {
+    if let Some(w) = app.get_window("main") {
+        let is_max = w.is_maximized().unwrap_or(false);
+        if is_max {
+            let _ = w.unmaximize();
+            Ok(false)
+        } else {
+            let _ = w.maximize();
+            Ok(true)
+        }
+    } else {
+        Ok(false)
+    }
+}
+
+#[tauri::command]
+fn close_window(app: AppHandle) -> Result<(), String> {
+    if let Some(w) = app.get_window("main") {
+        let _ = w.close();
+    }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -349,6 +393,11 @@ pub fn run() {
             });
 
             if let Some(main_window) = app.get_window("main") {
+                #[cfg(not(target_os = "macos"))]
+                {
+                    let _ = main_window.set_decorations(false);
+                }
+
                 if initial_settings.start_minimized {
                     let _ = main_window.minimize();
                 }
@@ -401,6 +450,10 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_state,
+            get_platform,
+            minimize_window,
+            toggle_maximize_window,
+            close_window,
             activate_session,
             deactivate_all,
             hide_active_session,

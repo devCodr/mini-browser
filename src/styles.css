@@ -69,6 +69,63 @@ body {
   -webkit-app-region: drag;
 }
 
+/* Platform specific adaptations */
+body.is-macos .traffic-spacer {
+  display: block;
+}
+
+body.is-macos .window-controls {
+  display: none !important;
+}
+
+body.is-windows .traffic-spacer,
+body.is-linux .traffic-spacer {
+  display: none !important;
+}
+
+body.is-windows .window-controls,
+body.is-linux .window-controls {
+  display: flex !important;
+}
+
+body.is-windows .header,
+body.is-linux .header {
+  padding-right: 0;
+}
+
+/* Windows / Linux Caption Buttons (Min, Max, Close) */
+.window-controls {
+  display: none;
+  align-items: center;
+  height: 100%;
+  margin-left: 4px;
+  -webkit-app-region: no-drag;
+}
+
+.win-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  width: 42px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  -webkit-app-region: no-drag;
+}
+
+.win-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+.win-btn.win-close:hover {
+  background: #e81123 !important;
+  color: #ffffff !important;
+}
+
 .header > *:not(.traffic-spacer):not(.drag-spacer) {
   -webkit-app-region: no-drag;
 }

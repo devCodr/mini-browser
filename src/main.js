@@ -1138,9 +1138,75 @@ listen("session-navigated", (event) => {
   }
 });
 
+// Platform & Window Controls setup
+async function setupPlatformUI() {
+  let platform = "macos";
+  try {
+    platform = await invoke("get_platform");
+  } catch (e) {
+    const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+    const isWin = navigator.platform.toUpperCase().indexOf("WIN") >= 0;
+    platform = isMac ? "macos" : isWin ? "windows" : "linux";
+  }
+
+  document.body.classList.remove("is-macos", "is-windows", "is-linux");
+  document.body.classList.add(`is-${platform}`);
+
+  const engineVal = document.getElementById("about-engine-val");
+  if (engineVal) {
+    if (platform === "windows") {
+      engineVal.textContent = "WebView2 (Windows) / Rust Core";
+    } else if (platform === "linux") {
+      engineVal.textContent = "WebKitGTK (Linux) / Rust Core";
+    } else {
+      engineVal.textContent = "WebKit (macOS) / Rust Core";
+    }
+  }
+
+  // If not macOS, update shortcut text across UI tooltips & modal
+  if (platform !== "macos") {
+    document.querySelectorAll("[title]").forEach((el) => {
+      const t = el.getAttribute("title");
+      if (t && (t.includes("Cmd") || t.includes("Option"))) {
+        el.setAttribute("title", t.replace(/Cmd/g, "Ctrl").replace(/Option/g, "Alt"));
+      }
+    });
+
+    document.querySelectorAll("#modal-shortcuts kbd").forEach((el) => {
+      if (el.textContent.trim() === "Cmd") {
+        el.textContent = "Ctrl";
+      } else if (el.textContent.trim() === "Opt") {
+        el.textContent = "Alt";
+      }
+    });
+  }
+
+  // Window controls for Windows and Linux
+  const btnMin = document.getElementById("win-min");
+  const btnMax = document.getElementById("win-max");
+  const btnClose = document.getElementById("win-close");
+
+  if (btnMin) {
+    btnMin.onclick = () => {
+      invoke("minimize_window").catch(console.error);
+    };
+  }
+  if (btnMax) {
+    btnMax.onclick = () => {
+      invoke("toggle_maximize_window").catch(console.error);
+    };
+  }
+  if (btnClose) {
+    btnClose.onclick = () => {
+      invoke("close_window").catch(console.error);
+    };
+  }
+}
+
 // === Initialize ===
 async function init() {
   console.log("Initializing MiniBrowser Rust Edition...");
+  await setupPlatformUI();
   try {
     const rawState = await invoke("get_state");
     if (rawState) {

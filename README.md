@@ -13,6 +13,7 @@
   <a href="https://github.com/devCodr/mini-browser/releases"><img src="https://img.shields.io/badge/Release-v1.0.0-6366f1?style=flat-square" alt="Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-10b981?style=flat-square" alt="MIT License"></a>
   <a href="https://rust-lang.org"><img src="https://img.shields.io/badge/Built%20With-Rust%20%26%20Tauri%20v2-f59e0b?style=flat-square" alt="Rust & Tauri"></a>
+  <a href="https://github.com/devCodr/mini-browser/releases"><img src="https://img.shields.io/badge/Platform-macOS%20%7C%20Windows%20%7C%20Linux-blue?style=flat-square" alt="Platforms"></a>
   <a href="https://devcodr.github.io/mini-browser/"><img src="https://img.shields.io/badge/Website-Live%20Demo-3b82f6?style=flat-square" alt="GitHub Pages"></a>
 </p>
 
@@ -31,16 +32,22 @@ Explore the interactive documentation, landing page, and complete user guide:
 Standard web browsers share cookies and session caches across all tabs and windows. MiniBrowser isolates every account into its own independent disk partition (`$APP_DATA/sessions/<partition_id>/`), preventing cookie collisions and account sign-outs.
 
 - 👥 **Multi-Session Isolation**: Run multiple WhatsApp Web, Gmail, Facebook, X (Twitter), and Notion accounts concurrently without interference.
-- ⚡ **Ultra-Compact Bundle**: Native Rust & Tauri v2 build produces a lightweight **~4.8 MB** standalone release bundle.
-- 🚀 **Low Memory Footprint**: Idles at **~50 MB RAM** by utilizing system-native WebKit (macOS), WebView2 (Windows), and WebKitGTK (Linux).
+- ⚡ **Cross-Platform & Ultra-Compact**: Fully supported on **macOS**, **Windows**, and **Linux**. Standalone packages ~4.8 MB.
+- 🚀 **Low Memory Footprint**: Idles at **~50 MB RAM** by utilizing system-native web engines:
+  - **macOS**: Apple WebKit (WKWebView)
+  - **Windows**: Microsoft Edge WebView2 (Chromium)
+  - **Linux**: WebKitGTK (`webkit2gtk-4.1`)
+- 🖥️ **Adaptive Window Controls**:
+  - **macOS**: Seamless traffic lights integrated directly into the glassmorphic header.
+  - **Windows & Linux**: Custom frameless title bar with native-style Minimize, Maximize/Restore, and Close controls.
 - 🎯 **4 Flexible Ways to Reorder Tabs**:
   - **Right-click context menu** on any tab (*Move Left / Move Right / Manage / Close*).
-  - **Global shortcuts**: `Cmd + Option + ←` / `Cmd + Option + →` (or `Ctrl + Alt + ← / →`).
+  - **Global shortcuts**: `Cmd + Option + ← / →` (macOS) or `Ctrl + Alt + ← / →` (Windows/Linux).
   - **Fluid drag & drop** with live visual reordering.
-  - **Session Manager (`Cmd + M`)**: 1-click `[ ↑ ]` and `[ ↓ ]` reordering buttons.
+  - **Session Manager (`Cmd + M` / `Ctrl + M`)**: 1-click `[ ↑ ]` and `[ ↓ ]` reordering buttons.
 - 📜 **Horizontal Tabs Wheel Scrolling**: Scroll through dozens of tabs with your trackpad or mouse wheel.
 - 🔒 **PIN Security Shield**: Glassmorphic blur overlay with 6-digit SHA-256 PIN lock, inactivity auto-lock timer, and quiet launch in minimized mode.
-- ⌨️ **Native Menu Bar & Global Accelerators**: Native system application menu with dynamic tab list (`Cmd+1` .. `Cmd+9`), functioning even while typing inside external websites.
+- ⌨️ **Native Menu Bar & Global Accelerators**: Dynamic menu shortcuts (`Cmd/Ctrl+1` .. `Cmd/Ctrl+9`), functioning even while focused inside external websites.
 - 🎨 **Custom Sessions & Badges**: Assign unique labels, colored badges, and custom icons to each account.
 
 ---
@@ -52,7 +59,7 @@ mini-browser/
 ├── docs/                 🌐 GitHub Pages website & interactive documentation center (#docs)
 ├── src/                  ⚡ Frontend UI (HTML5, Vanilla CSS Glassmorphism, JS)
 ├── src-tauri/            🦀 Rust backend (Tauri v2, system webviews, multi-session partitions)
-├── .github/workflows/    🤖 Automated build & release workflows (GitHub Actions)
+├── .github/workflows/    🤖 Multi-platform build & release workflows (macOS, Windows, Linux)
 ├── CONTRIBUTING.md       🤝 Guidelines for open-source contributors
 ├── CODE_OF_CONDUCT.md    📜 Contributor Covenant Code of Conduct
 ├── LICENSE               📄 MIT License
@@ -66,6 +73,14 @@ mini-browser/
 ### Prerequisites
 - [Rust](https://rustup.rs/) (1.75+)
 - [Node.js](https://nodejs.org/) (v18+) and [pnpm](https://pnpm.io/) (`npm install -g pnpm`)
+
+#### Platform Requirements
+- **macOS**: Xcode Command Line Tools (`xcode-select --install`).
+- **Windows**: [C++ Build Tools for Visual Studio](https://visualstudio.microsoft.com/visual-cpp-build-tools/) and Microsoft Edge WebView2 (installed by default on Windows 10/11).
+- **Linux (Ubuntu / Debian)**:
+  ```bash
+  sudo apt update && sudo apt install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libsoup-3.0-dev libjavascriptcoregtk-4.1-dev build-essential
+  ```
 
 ### Development
 Clone the repository and start the development environment:
