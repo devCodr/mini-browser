@@ -104,6 +104,12 @@ The compiled release packages will be created in `src-tauri/target/release/bundl
 - **Windows**: `.msi` and `.exe` installers via WebView2
 - **Linux**: `.deb` and `.AppImage` packages via WebKitGTK
 
+> [!TIP]
+> **macOS Installation Note**: If macOS displays `“MiniBrowser.app” is damaged and can’t be opened`, this is caused by Apple Gatekeeper quarantining open-source software downloaded from browsers without an Apple Developer ID signature. Run this single command in Terminal to unlock it:
+> ```bash
+> xattr -cr /Applications/MiniBrowser.app
+> ```
+
 ---
 
 ## ⌨️ Essential Keyboard Shortcuts
