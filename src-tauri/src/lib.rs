@@ -133,6 +133,31 @@ fn open_in_new_session(app: AppHandle, url: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn toggle_devtools(app: AppHandle, state: State<'_, AppStateWrapper>) -> Result<(), String> {
+    #[cfg(any(debug_assertions, feature = "devtools"))]
+    {
+        if let Some(label) = state.sessions.get_active_label() {
+            if let Some(wv) = app.get_webview(&label) {
+                if wv.is_devtools_open() {
+                    wv.close_devtools();
+                } else {
+                    wv.open_devtools();
+                }
+                return Ok(());
+            }
+        }
+        if let Some(main_wv) = app.get_webview("main") {
+            if main_wv.is_devtools_open() {
+                main_wv.close_devtools();
+            } else {
+                main_wv.open_devtools();
+            }
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
 fn start_dragging(window: tauri::Window) -> Result<(), String> {
     window.start_dragging().map_err(|e| e.to_string())
 }
@@ -240,6 +265,7 @@ fn update_bookmark_meta(
     title: Option<String>,
     badge: Option<String>,
     color: Option<String>,
+    icon_svg: Option<String>,
 ) -> Result<Vec<Bookmark>, String> {
     let store = state.store.lock().unwrap();
     let mut bookmarks = store.load_bookmarks();
@@ -247,6 +273,10 @@ fn update_bookmark_meta(
         if let Some(t) = title { b.title = t; }
         b.badge = badge;
         b.color = color;
+        if let Some(icon) = icon_svg {
+            let trimmed = icon.trim().to_string();
+            b.icon_svg = if trimmed.is_empty() { None } else { Some(trimmed) };
+        }
         store.save_bookmarks(&bookmarks);
         rebuild_menu(&app, &bookmarks);
     }
@@ -498,6 +528,7 @@ pub fn run() {
             set_inactivity_ms,
             open_in_default_browser,
             open_in_new_session,
+            toggle_devtools,
             update_settings,
             lock_now
         ])

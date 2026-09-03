@@ -101,23 +101,51 @@ impl SessionManager {
         let data_dir = store.session_data_dir(partition);
         let part_clone = partition.to_string();
         let app_handle_clone = app.clone();
+        let app_handle_new_win = app.clone();
 
         let init_script = r##"
             try {
                 Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
             } catch(e) {}
 
+            function sendHostAction(action, data) {
+                try {
+                    var query = [];
+                    if (data) {
+                        for (var k in data) {
+                            if (Object.prototype.hasOwnProperty.call(data, k) && data[k] !== undefined && data[k] !== null) {
+                                query.push(encodeURIComponent(k) + '=' + encodeURIComponent(data[k]));
+                            }
+                        }
+                    }
+                    var actionUrl = 'minibrowser-action://' + action + (query.length ? '?' + query.join('&') : '');
+                    window.location.href = actionUrl;
+                } catch (err) {
+                    console.error('sendHostAction failed:', err);
+                }
+            }
+
             window.addEventListener('keydown', function(e) {
+                if (e.key === 'F12') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    sendHostAction('inspect');
+                    return;
+                }
                 var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
                 var mod = isMac ? e.metaKey : e.ctrlKey;
                 if (mod) {
                     var k = e.key.toLowerCase();
+                    if ((e.altKey || e.shiftKey) && (k === 'i' || k === 'c')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        sendHostAction('inspect');
+                        return;
+                    }
                     if ((e.key >= '1' && e.key <= '9') || ['t', 'n', 'w', 'm', 'h', 'r', 'l', '/', '[', ']', '+', '=', '-'].indexOf(k) !== -1) {
                         e.preventDefault();
                         e.stopPropagation();
-                        if (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke) {
-                            window.__TAURI_INTERNALS__.invoke('handle_child_shortcut', { key: e.key, alt: e.altKey, shift: e.shiftKey });
-                        }
+                        sendHostAction('shortcut', { key: e.key, alt: e.altKey, shift: e.shiftKey });
                     }
                 }
             }, true);
@@ -169,20 +197,14 @@ impl SessionManager {
                             icon: '🌐',
                             label: 'Open in Default Browser',
                             action: function() {
-                                if (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke) {
-                                    window.__TAURI_INTERNALS__.invoke('open_in_default_browser', { url: targetUrl });
-                                } else {
-                                    window.open(targetUrl, '_blank');
-                                }
+                                sendHostAction('open-default-browser', { url: targetUrl });
                             }
                         });
                         items.push({
                             icon: '🔗',
                             label: 'Open in New Session Tab',
                             action: function() {
-                                if (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke) {
-                                    window.__TAURI_INTERNALS__.invoke('open_in_new_session', { url: targetUrl });
-                                }
+                                sendHostAction('open-new-session', { url: targetUrl });
                             }
                         });
                         items.push({
@@ -272,12 +294,20 @@ impl SessionManager {
                             label: 'Open Page in Default Browser',
                             action: function() {
                                 var curUrl = window.location.href;
-                                if (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke) {
-                                    window.__TAURI_INTERNALS__.invoke('open_in_default_browser', { url: curUrl });
-                                }
+                                sendHostAction('open-default-browser', { url: curUrl });
                             }
                         });
                     }
+
+                    items.push({ separator: true });
+                    items.push({
+                        icon: '🔍',
+                        label: 'Inspect Element',
+                        shortcut: isMac ? 'Cmd+Opt+I' : 'F12',
+                        action: function() {
+                            sendHostAction('inspect');
+                        }
+                    });
 
                     e.preventDefault();
 
@@ -329,11 +359,63 @@ impl SessionManager {
             })();
         "##;
 
+        let label_nav = label.clone();
+        let label_new_win = label.clone();
+
         let builder = WebviewBuilder::new(&label, WebviewUrl::External(parsed_url))
+            .devtools(true)
             .data_directory(data_dir)
             .user_agent(USER_AGENT)
             .initialization_script(init_script)
             .on_navigation(move |url| {
+                if url.scheme() == "minibrowser-action" {
+                    let action = url.host_str().unwrap_or("");
+                    let mut params = std::collections::HashMap::new();
+                    for (k, v) in url.query_pairs() {
+                        params.insert(k.to_string(), v.to_string());
+                    }
+                    match action {
+                        "open-default-browser" => {
+                            if let Some(target_url) = params.get("url") {
+                                use tauri_plugin_opener::OpenerExt;
+                                let _ = app_handle_clone.opener().open_url(target_url, None::<&str>);
+                            }
+                        }
+                        "open-new-session" => {
+                            if let Some(target_url) = params.get("url") {
+                                let _ = app_handle_clone.emit("open-new-session-url", target_url);
+                            }
+                        }
+                        "shortcut" => {
+                            let key = params.get("key").cloned().unwrap_or_default();
+                            let alt = params.get("alt").map(|v| v == "true").unwrap_or(false);
+                            let shift = params.get("shift").map(|v| v == "true").unwrap_or(false);
+                            let _ = app_handle_clone.emit(
+                                "trigger-shortcut",
+                                serde_json::json!({
+                                    "key": key,
+                                    "alt": alt,
+                                    "shift": shift,
+                                }),
+                            );
+                        }
+                        "inspect" => {
+                            if let Some(wv) = app_handle_clone.get_webview(&label_nav) {
+                                #[cfg(any(debug_assertions, feature = "devtools"))]
+                                {
+                                    if wv.is_devtools_open() {
+                                        wv.close_devtools();
+                                    } else {
+                                        wv.open_devtools();
+                                    }
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                    return false;
+                }
+
                 let _ = app_handle_clone.emit(
                     "session-navigated",
                     serde_json::json!({
@@ -342,6 +424,46 @@ impl SessionManager {
                     }),
                 );
                 true
+            })
+            .on_new_window(move |url, _features| {
+                if url.scheme() == "minibrowser-action" {
+                    let action = url.host_str().unwrap_or("");
+                    let mut params = std::collections::HashMap::new();
+                    for (k, v) in url.query_pairs() {
+                        params.insert(k.to_string(), v.to_string());
+                    }
+                    match action {
+                        "open-default-browser" => {
+                            if let Some(target_url) = params.get("url") {
+                                use tauri_plugin_opener::OpenerExt;
+                                let _ = app_handle_new_win.opener().open_url(target_url, None::<&str>);
+                            }
+                        }
+                        "open-new-session" => {
+                            if let Some(target_url) = params.get("url") {
+                                let _ = app_handle_new_win.emit("open-new-session-url", target_url);
+                            }
+                        }
+                        "inspect" => {
+                            if let Some(wv) = app_handle_new_win.get_webview(&label_new_win) {
+                                #[cfg(any(debug_assertions, feature = "devtools"))]
+                                {
+                                    if wv.is_devtools_open() {
+                                        wv.close_devtools();
+                                    } else {
+                                        wv.open_devtools();
+                                    }
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                    return tauri::webview::NewWindowResponse::Deny;
+                }
+
+                // Normal target="_blank" links open in a new session tab
+                let _ = app_handle_new_win.emit("open-new-session-url", url.to_string());
+                tauri::webview::NewWindowResponse::Deny
             });
 
         let webview = window
@@ -463,5 +585,9 @@ impl SessionManager {
         if let Some(wv) = app.get_webview(&label) {
             let _ = wv.set_zoom(factor);
         }
+    }
+
+    pub fn get_active_label(&self) -> Option<String> {
+        self.active_label.lock().unwrap().clone()
     }
 }

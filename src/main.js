@@ -245,9 +245,38 @@ function nextPartition(domain) {
   return `persist:${domain}${max >= 1 ? max + 1 : ""}`;
 }
 
-function autoBadge(urlStr) {
-  const d = getDomain(urlStr);
-  return d.substring(0, 4).toUpperCase();
+function getBadgePrefix(urlStr, suggestedPrefix = "") {
+  if (suggestedPrefix) {
+    const letters = suggestedPrefix.replace(/[0-9]/g, "").trim().toUpperCase();
+    if (letters) return letters;
+  }
+  const domain = getDomain(urlStr || "").toLowerCase();
+  if (domain.includes("whatsapp")) return "W";
+  if (domain.includes("facebook") || domain.includes("fb.com")) return "F";
+  if (domain.includes("google") || domain.includes("gmail")) return "G";
+  if (domain.includes("twitter") || domain === "x.com" || domain.includes("x.com")) return "X";
+  if (domain.includes("notion")) return "N";
+  if (domain.includes("github")) return "GH";
+  if (domain.includes("slack")) return "S";
+  if (domain.includes("discord")) return "D";
+  if (domain.includes("youtube")) return "Y";
+  if (domain.includes("linkedin")) return "L";
+  if (domain.includes("instagram")) return "IG";
+  if (domain.includes("tiktok")) return "TT";
+  if (domain.includes("telegram") || domain.includes("t.me")) return "TG";
+
+  const clean = domain.replace(/[^a-zA-Z]/g, "");
+  return (clean.substring(0, 2) || "S").toUpperCase();
+}
+
+function generateUniqueBadge(urlStr, suggestedPrefix = "") {
+  const prefix = getBadgePrefix(urlStr, suggestedPrefix);
+  const existingBadges = (state.bookmarks || []).map((b) => (b.badge || "").trim().toUpperCase());
+  let num = 1;
+  while (existingBadges.includes(`${prefix}${num}`)) {
+    num++;
+  }
+  return `${prefix}${num}`;
 }
 
 function normalizeUrl(rawUrl) {
@@ -272,6 +301,49 @@ function normalizeUrl(rawUrl) {
   return url;
 }
 
+function createBookmarkIconElement(bm, className) {
+  const domain = getDomain(bm.url || "");
+  const iconVal = (bm.iconSvg || "").trim();
+
+  // 1. Raw inline SVG (<svg ...)
+  if (iconVal.toLowerCase().includes("<svg")) {
+    const span = document.createElement("span");
+    span.className = className;
+    const startIdx = iconVal.toLowerCase().indexOf("<svg");
+    const endIdx = iconVal.toLowerCase().indexOf("</svg>");
+    if (startIdx !== -1 && endIdx !== -1) {
+      span.innerHTML = iconVal.slice(startIdx, endIdx + 6);
+    } else {
+      span.innerHTML = iconVal;
+    }
+    const svg = span.querySelector("svg");
+    if (svg) {
+      svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    }
+    return span;
+  }
+
+  // 2. Image URL or Data URI (http, https, data:image/...)
+  if (iconVal.startsWith("http://") || iconVal.startsWith("https://") || iconVal.startsWith("data:image/")) {
+    const img = document.createElement("img");
+    img.className = className;
+    img.src = iconVal;
+    img.onerror = () => {
+      img.src = `https://www.google.com/s2/favicons?sz=32&domain=${domain}`;
+    };
+    return img;
+  }
+
+  // 3. Default fallback: Google favicon service
+  const img = document.createElement("img");
+  img.className = className;
+  img.src = `https://www.google.com/s2/favicons?sz=32&domain=${domain}`;
+  img.onerror = () => {
+    img.style.display = "none";
+  };
+  return img;
+}
+
 // === Render Tabs with Drag & Drop Reordering ===
 function renderTabs() {
   tabsBar.innerHTML = "";
@@ -284,20 +356,22 @@ function renderTabs() {
     tab.dataset.index = idx;
     tab.title = `${bm.title || bm.url} (Cmd+${idx + 1})`;
 
-    // Favicon or Domain Initial
+    // Favicon or Custom Icon (SVG / Image)
     const domain = getDomain(bm.url);
-    const favicon = document.createElement("img");
-    favicon.className = "tab-favicon";
-    favicon.src = `https://www.google.com/s2/favicons?sz=32&domain=${domain}`;
-    favicon.onerror = () => {
-      favicon.style.display = "none";
-    };
+    const favicon = createBookmarkIconElement(bm, "tab-favicon");
     tab.appendChild(favicon);
 
-    // Title / Domain
-    const titleSpan = document.createElement("span");
-    titleSpan.textContent = bm.title || domain;
-    tab.appendChild(titleSpan);
+    // Title / Domain (if title is empty string, show ONLY the icon!)
+    const isTitleExplicitlyEmpty = bm.title !== undefined && bm.title !== null && bm.title.trim() === "";
+
+    if (!isTitleExplicitlyEmpty) {
+      const titleSpan = document.createElement("span");
+      titleSpan.className = "tab-title";
+      titleSpan.textContent = (bm.title !== undefined && bm.title !== null) ? bm.title : domain;
+      tab.appendChild(titleSpan);
+    } else {
+      tab.classList.add("tab-icon-only");
+    }
 
     // Badge if set
     if (bm.badge) {
@@ -412,11 +486,15 @@ function renderManageSessionsList() {
     row.dataset.partition = bm.partition;
 
     const domain = getDomain(bm.url);
+    const faviconEl = createBookmarkIconElement(bm, "session-manage-favicon");
+
+    const displayTitle = (bm.title !== undefined && bm.title !== null && bm.title.trim() !== "")
+      ? bm.title
+      : `${domain} (Icon only)`;
 
     row.innerHTML = `
-      <img class="session-manage-favicon" src="https://www.google.com/s2/favicons?sz=32&domain=${domain}" onerror="this.style.display='none'" />
       <div class="session-manage-info">
-        <span class="session-manage-title">${bm.title || domain}</span>
+        <span class="session-manage-title">${displayTitle}</span>
         <span class="session-manage-url">${bm.url}</span>
       </div>
       <span class="session-manage-badge" style="background: ${bm.color ? bm.color + '22' : 'rgba(99, 102, 241, 0.15)'}; color: ${bm.color || '#6366f1'};">${bm.badge || 'WEB'}</span>
@@ -430,7 +508,7 @@ function renderManageSessionsList() {
         <button class="sm-btn btn-open-session" title="Open Session">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         </button>
-        <button class="sm-btn btn-edit-session" title="Edit Name & Badge">
+        <button class="sm-btn btn-edit-session" title="Edit Name, Icon & Badge">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
         </button>
         <button class="sm-btn danger btn-del-session" title="Delete Session">
@@ -438,6 +516,7 @@ function renderManageSessionsList() {
         </button>
       </div>
     `;
+    row.prepend(faviconEl);
 
     // Move Up Button (Direct 1-Click Reorder)
     const upBtn = row.querySelector(".btn-move-up");
@@ -558,14 +637,32 @@ function renderManageSessionsList() {
       }
       editPanel = document.createElement("div");
       editPanel.className = "session-edit-panel";
+
+      let customIconVal = bm.iconSvg || "";
+
       editPanel.innerHTML = `
         <div class="edit-row">
           <label>Title</label>
-          <input type="text" class="edit-title" value="${bm.title || ''}" placeholder="Session title" />
+          <input type="text" class="edit-title" value="${bm.title !== undefined && bm.title !== null ? bm.title : ''}" placeholder="Leave empty to show icon only" />
         </div>
         <div class="edit-row">
           <label>Badge</label>
-          <input type="text" class="edit-badge" value="${bm.badge || ''}" maxlength="5" placeholder="e.g. W1, G2, Work" />
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="session-manage-badge" style="background: ${bm.color ? bm.color + '22' : 'rgba(99, 102, 241, 0.15)'}; color: ${bm.color || '#6366f1'};">${bm.badge || 'WEB'}</span>
+            <span style="font-size: 11px; color: var(--text-muted);">(Auto unique partition)</span>
+          </div>
+        </div>
+        <div class="edit-row">
+          <label>Icon</label>
+          <div class="edit-icon-container">
+            <div class="edit-icon-preview-box" title="Icon preview"></div>
+            <input type="text" class="edit-icon-input" value="${customIconVal.toLowerCase().includes('<svg') ? 'Custom SVG' : customIconVal}" placeholder="Paste SVG (<svg...), image URL, or upload" />
+            <label class="edit-icon-btn edit-icon-upload-label" title="Upload SVG or image file">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <input type="file" class="edit-icon-file" accept=".svg,.png,.jpg,.jpeg,.webp,image/*" style="display:none;" />
+            </label>
+            <button class="edit-icon-btn edit-icon-reset-btn" type="button" title="Reset to default favicon">✕</button>
+          </div>
         </div>
         <div class="edit-actions">
           <button class="edit-btn-cancel">Cancel</button>
@@ -573,15 +670,61 @@ function renderManageSessionsList() {
         </div>
       `;
 
+      const previewBox = editPanel.querySelector(".edit-icon-preview-box");
+      const iconInput = editPanel.querySelector(".edit-icon-input");
+      const fileInput = editPanel.querySelector(".edit-icon-file");
+      const resetBtn = editPanel.querySelector(".edit-icon-reset-btn");
+
+      const updatePreview = () => {
+        previewBox.innerHTML = "";
+        previewBox.appendChild(createBookmarkIconElement({ url: bm.url, iconSvg: customIconVal }, "edit-preview-icon"));
+      };
+      updatePreview();
+
+      iconInput.addEventListener("input", () => {
+        customIconVal = iconInput.value.trim();
+        updatePreview();
+      });
+
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files[0];
+        if (file) {
+          if (file.type === "image/svg+xml" || file.name.toLowerCase().endsWith(".svg")) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              customIconVal = ev.target.result;
+              iconInput.value = "Custom SVG (" + file.name + ")";
+              updatePreview();
+            };
+            reader.readAsText(file);
+          } else {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              customIconVal = ev.target.result;
+              iconInput.value = "Image (" + file.name + ")";
+              updatePreview();
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+      });
+
+      resetBtn.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        customIconVal = "";
+        iconInput.value = "";
+        updatePreview();
+      });
+
       editPanel.querySelector(".edit-btn-cancel").addEventListener("click", () => editPanel.remove());
       editPanel.querySelector(".edit-btn-save").addEventListener("click", async () => {
-        const newTitle = editPanel.querySelector(".edit-title").value.trim() || bm.title;
-        const newBadge = editPanel.querySelector(".edit-badge").value.trim().toUpperCase() || bm.badge;
+        const newTitle = editPanel.querySelector(".edit-title").value.trim();
         const updated = await invoke("update_bookmark_meta", {
           partition: bm.partition,
           title: newTitle,
-          badge: newBadge,
+          badge: bm.badge,
           color: bm.color || "#6366f1",
+          iconSvg: customIconVal || "",
         });
         state.bookmarks = updated;
         renderTabs();
@@ -633,8 +776,8 @@ async function createSession(urlStr, titleStr, badgeStr, colorStr) {
 
   const domain = domainSlug(url);
   const partition = nextPartition(domain);
-  const badge = (badgeStr || autoBadge(url)).substring(0, 4).toUpperCase();
-  const title = titleStr.trim() || getDomain(url);
+  const badge = (badgeStr || generateUniqueBadge(url)).substring(0, 5).toUpperCase();
+  const title = (titleStr !== undefined && titleStr !== null) ? titleStr.trim() : getDomain(url);
   const color = colorStr || "#6366f1";
 
   try {
@@ -821,26 +964,56 @@ document.querySelectorAll(".preset-card").forEach((card) => {
   card.addEventListener("click", () => {
     const url = card.dataset.url;
     const title = card.dataset.title;
-    const badge = card.dataset.badge;
+    const badge = generateUniqueBadge(url, card.dataset.badge);
     const color = card.dataset.color;
     createSession(url, title, badge, color);
   });
 });
 
-// Custom launch form on dashboard
+// Custom launch form on dashboard -> Opens New Session Modal!
 formCustomLaunch.addEventListener("submit", (e) => {
   e.preventDefault();
   const url = inputCustomUrl.value.trim();
-  if (url) {
-    createSession(url, "", "", "");
-    inputCustomUrl.value = "";
-  }
+  inputCustomUrl.value = "";
+  openNewSessionModal(url);
 });
 
 // === Modals Management ===
-function openNewSessionModal() {
+function openNewSessionModal(prefillUrl = "") {
+  const urlInput = document.getElementById("new-session-url");
+  const titleInput = document.getElementById("new-session-title");
+  const badgeInput = document.getElementById("new-session-badge");
+
+  if (prefillUrl) {
+    urlInput.value = prefillUrl;
+    titleInput.value = getDomain(prefillUrl);
+    badgeInput.value = generateUniqueBadge(prefillUrl);
+  } else {
+    urlInput.value = "";
+    titleInput.value = "";
+    badgeInput.value = generateUniqueBadge("https://example.com");
+  }
+
   showModal(modalNewSession);
-  setTimeout(() => document.getElementById("new-session-url").focus(), 60);
+  setTimeout(() => {
+    if (prefillUrl) {
+      titleInput.focus();
+    } else {
+      urlInput.focus();
+    }
+  }, 60);
+}
+
+// Dynamic unique badge calculation as the user types URL
+const newSessionUrlInput = document.getElementById("new-session-url");
+if (newSessionUrlInput) {
+  newSessionUrlInput.addEventListener("input", (e) => {
+    const badgeInput = document.getElementById("new-session-badge");
+    const val = e.target.value.trim();
+    if (badgeInput) {
+      badgeInput.value = generateUniqueBadge(val || "https://example.com");
+    }
+  });
 }
 
 function openManageSessionsModal() {
@@ -857,7 +1030,7 @@ function toggleShortcutsModal() {
 }
 
 // Header Button Listeners
-btnNewSession.addEventListener("click", openNewSessionModal);
+btnNewSession.addEventListener("click", () => openNewSessionModal());
 btnCloseModal.addEventListener("click", () => hideModal(modalNewSession));
 btnCancelModal.addEventListener("click", () => hideModal(modalNewSession));
 
@@ -872,17 +1045,15 @@ btnManageAdd.addEventListener("click", () => {
 btnShortcuts.addEventListener("click", toggleShortcutsModal);
 btnCloseShortcuts.addEventListener("click", () => hideModal(modalShortcuts));
 
-
-
 btnAbout.addEventListener("click", () => showModal(modalAbout));
 btnCloseAbout.addEventListener("click", () => hideModal(modalAbout));
 
 formNewSession.addEventListener("submit", (e) => {
   e.preventDefault();
-  const url = document.getElementById("new-session-url").value;
-  const title = document.getElementById("new-session-title").value;
-  const badge = document.getElementById("new-session-badge").value;
-  const color = document.querySelector('input[name="session-color"]:checked')?.value;
+  const url = document.getElementById("new-session-url").value.trim();
+  const title = document.getElementById("new-session-title").value.trim();
+  const badge = document.getElementById("new-session-badge").value.trim() || generateUniqueBadge(url);
+  const color = document.querySelector('input[name="session-color"]:checked')?.value || "#6366f1";
 
   hideModal(modalNewSession);
   createSession(url, title, badge, color);
@@ -1026,6 +1197,10 @@ function executeShortcut(key, { alt = false, shift = false } = {}) {
   else if (k === "/") {
     toggleShortcutsModal();
   }
+  // Toggle DevTools: Cmd + Opt + I / Ctrl + Shift + I
+  else if (k === "i" && (alt || shift)) {
+    invoke("toggle_devtools").catch(console.error);
+  }
   // Zoom
   else if (k === "=" || k === "+") {
     changeZoom(0.1);
@@ -1066,6 +1241,12 @@ window.addEventListener("keydown", (e) => {
 
   const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
   const mod = isMac ? e.metaKey : e.ctrlKey;
+
+  if (e.key === "F12" || (mod && (e.altKey || e.shiftKey) && e.key.toLowerCase() === "i")) {
+    e.preventDefault();
+    invoke("toggle_devtools").catch(console.error);
+    return;
+  }
 
   if (mod) {
     e.preventDefault();

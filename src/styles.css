@@ -423,12 +423,29 @@ kbd {
   box-shadow: 0 0 10px rgba(99, 102, 241, 0.15);
 }
 
+.tab-item.tab-icon-only {
+  padding: 0 8px;
+  gap: 4px;
+  min-width: 32px;
+  justify-content: center;
+}
+
 .tab-favicon {
   width: 16px;
   height: 16px;
   border-radius: 4px;
   flex-shrink: 0;
   object-fit: cover;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-favicon svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+  flex-shrink: 0;
 }
 
 .tab-badge {
@@ -633,9 +650,17 @@ kbd {
   background: rgba(37, 211, 102, 0.15);
   color: #25d366;
 }
-.preset-icon-wrapper.gmail {
-  background: rgba(234, 67, 53, 0.15);
-  color: #ea4335;
+.preset-icon-wrapper.telegram {
+  background: rgba(36, 161, 222, 0.15);
+  color: #24a1de;
+}
+.preset-icon-wrapper.instagram {
+  background: rgba(225, 48, 108, 0.15);
+  color: #e1306c;
+}
+.preset-icon-wrapper.tiktok {
+  background: rgba(254, 44, 85, 0.15);
+  color: #fe2c55;
 }
 .preset-icon-wrapper.facebook {
   background: rgba(24, 119, 242, 0.15);
@@ -644,6 +669,18 @@ kbd {
 .preset-icon-wrapper.x-twitter {
   background: rgba(255, 255, 255, 0.1);
   color: #ffffff;
+}
+.preset-icon-wrapper.discord {
+  background: rgba(88, 101, 242, 0.15);
+  color: #5865f2;
+}
+.preset-icon-wrapper.youtube {
+  background: rgba(255, 0, 0, 0.15);
+  color: #ff0000;
+}
+.preset-icon-wrapper.gmail {
+  background: rgba(234, 67, 53, 0.15);
+  color: #ea4335;
 }
 
 .preset-info {
@@ -1036,7 +1073,7 @@ kbd {
 .lock-logo-img {
   width: 72px;
   height: 72px;
-  border-radius: 18px;
+  border-radius: 50%;
   box-shadow:
     0 10px 28px rgba(0, 0, 0, 0.5),
     0 0 24px rgba(99, 102, 241, 0.25);
@@ -1255,9 +1292,20 @@ kbd {
 }
 
 .session-manage-favicon {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  object-fit: cover;
+}
+
+.session-manage-favicon svg {
   width: 20px;
   height: 20px;
-  border-radius: 5px;
+  display: block;
   flex-shrink: 0;
 }
 
@@ -1372,6 +1420,80 @@ kbd {
 
 .edit-row input[type="text"]:focus {
   border-color: var(--accent-primary);
+}
+
+/* Edit Icon Container */
+.edit-icon-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.edit-icon-preview-box {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.edit-icon-preview-box img,
+.edit-icon-preview-box svg {
+  width: 18px;
+  height: 18px;
+  object-fit: cover;
+  display: block;
+}
+
+.edit-icon-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 11px;
+  color: var(--text-primary);
+  outline: none;
+  font-family: inherit;
+  min-width: 0;
+}
+
+.edit-icon-input:focus {
+  border-color: var(--accent-primary);
+}
+
+.edit-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.edit-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-color: var(--border-hover);
+}
+
+.edit-icon-reset-btn {
+  font-size: 12px;
+  background: transparent;
 }
 
 .edit-actions {
