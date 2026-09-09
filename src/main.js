@@ -1326,24 +1326,25 @@ if (inputConfirmReset) {
 }
 
 if (btnExecuteFactoryReset) {
-  btnExecuteFactoryReset.addEventListener("click", async () => {
-    if (!confirm("⚠️ Are you COMPLETELY sure you want to factory reset MiniBrowser?\n\nThis will permanently delete all active sessions, accounts, cookies, and bookmarks. The PIN will be restored to 123456.")) {
-      return;
+  btnExecuteFactoryReset.addEventListener("click", async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
     }
+    const val = inputConfirmReset ? inputConfirmReset.value.trim().toUpperCase() : "";
+    if (val !== "RESET") return;
+
+    btnExecuteFactoryReset.disabled = true;
+    btnExecuteFactoryReset.textContent = "Resetting...";
+
     try {
-      const freshState = await invoke("factory_reset");
-      if (freshState) {
-        state.settings = freshState.settings;
-        state.bookmarks = freshState.bookmarks || [];
-      }
-      state.activePartition = null;
-      renderTabs();
+      await invoke("factory_reset");
       hideModal(modalRecovery);
-      unlockApp();
-      goHome();
-      alert("MiniBrowser has been reset to factory defaults.\nThe default PIN is 123456.");
+      window.location.reload();
     } catch (err) {
-      alert("Error during factory reset: " + err);
+      console.error("Factory reset failed:", err);
+      btnExecuteFactoryReset.disabled = false;
+      btnExecuteFactoryReset.textContent = "Factory Reset All Data";
     }
   });
 }
