@@ -23,6 +23,10 @@ fn default_true() -> bool {
     true
 }
 
+fn default_pin_length() -> usize {
+    6
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
     #[serde(rename = "lockEnabled")]
@@ -37,6 +41,8 @@ pub struct Settings {
     pub lock_on_launch: bool,
     #[serde(rename = "startMinimized", default)]
     pub start_minimized: bool,
+    #[serde(rename = "pinLength", default = "default_pin_length")]
+    pub pin_length: usize,
 }
 
 impl Default for Settings {
@@ -48,6 +54,7 @@ impl Default for Settings {
             pin_hash: None,
             lock_on_launch: true,
             start_minimized: false,
+            pin_length: 6,
         };
         s.set_pin("123456");
         s
@@ -62,6 +69,7 @@ impl Settings {
         let hash = sha256_hash(pin, &salt);
         self.pin_salt = Some(salt);
         self.pin_hash = Some(hash);
+        self.pin_length = pin.len();
     }
 
     pub fn verify_pin(&self, pin: &str) -> bool {

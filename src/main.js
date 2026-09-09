@@ -770,7 +770,7 @@ async function goHome() {
   }
 }
 
-async function createSession(urlStr, titleStr, badgeStr, colorStr) {
+async function createSession(urlStr, titleStr, badgeStr, colorStr, iconSvgStr = null) {
   const url = normalizeUrl(urlStr);
   if (!url) return;
 
@@ -787,7 +787,7 @@ async function createSession(urlStr, titleStr, badgeStr, colorStr) {
       partition,
       badge,
       color,
-      iconSvg: null,
+      iconSvg: iconSvgStr || null,
     });
     state.bookmarks = list;
     renderTabs();
@@ -827,10 +827,32 @@ function resetInactivityTimer() {
   }, state.settings.inactivityMs || 300000);
 }
 
+function renderPinDots() {
+  const pinDotsContainer = document.getElementById("pin-dots");
+  if (!pinDotsContainer) return;
+  const targetLen = state.settings.pinLength || 6;
+  pinDotsContainer.innerHTML = "";
+  for (let i = 0; i < targetLen; i++) {
+    const dot = document.createElement("span");
+    dot.className = "pin-dot";
+    pinDotsContainer.appendChild(dot);
+  }
+}
+
 async function lockApp() {
   if (state.isLocked) return;
   state.isLocked = true;
   state.pinBuffer = "";
+
+  const targetLen = state.settings.pinLength || 6;
+  const lockSubtitle = document.querySelector(".lock-subtitle");
+  if (lockSubtitle) {
+    lockSubtitle.textContent = `Enter your ${targetLen}-digit PIN to resume your sessions`;
+  }
+  if (hiddenPinInput) {
+    hiddenPinInput.maxLength = targetLen;
+  }
+  renderPinDots();
   updatePinDots();
   pinErrorMsg.classList.add("hidden");
   pinErrorMsg.style.display = "none";
@@ -849,7 +871,8 @@ async function lockApp() {
 }
 
 function updatePinDots() {
-  pinDots.forEach((dot, i) => {
+  const dots = document.querySelectorAll("#pin-dots .pin-dot");
+  dots.forEach((dot, i) => {
     if (i < state.pinBuffer.length) {
       dot.classList.add("filled");
     } else {
@@ -859,13 +882,14 @@ function updatePinDots() {
 }
 
 async function handlePinInput(char) {
-  if (state.pinBuffer.length < 6) {
+  const targetLen = state.settings.pinLength || 6;
+  if (state.pinBuffer.length < targetLen) {
     state.pinBuffer += char;
     updatePinDots();
     pinErrorMsg.classList.add("hidden");
     pinErrorMsg.style.display = "none";
 
-    if (state.pinBuffer.length === 6) {
+    if (state.pinBuffer.length === targetLen) {
       const pinToVerify = state.pinBuffer;
       const isValid = await invoke("verify_pin", { pin: pinToVerify });
       if (isValid) {
@@ -966,7 +990,8 @@ document.querySelectorAll(".preset-card").forEach((card) => {
     const title = card.dataset.title;
     const badge = generateUniqueBadge(url, card.dataset.badge);
     const color = card.dataset.color;
-    createSession(url, title, badge, color);
+    const iconSvg = card.querySelector(".preset-icon-wrapper svg")?.outerHTML || null;
+    createSession(url, title, badge, color, iconSvg);
   });
 });
 
@@ -1103,11 +1128,18 @@ settingTimeout.addEventListener("change", (e) => {
 formChangePin.addEventListener("submit", async (e) => {
   e.preventDefault();
   const pin = inputNewPin.value.trim();
-  if (pin.length === 6) {
-    await invoke("set_pin", { pin });
-    inputNewPin.value = "";
-    alert("PIN successfully updated!");
-    hideModal(modalSettings);
+  if ((pin.length === 4 || pin.length === 6) && /^\d+$/.test(pin)) {
+    try {
+      await invoke("set_pin", { pin });
+      state.settings.pinLength = pin.length;
+      inputNewPin.value = "";
+      alert(`PIN successfully updated to ${pin.length} digits!`);
+      hideModal(modalSettings);
+    } catch (err) {
+      alert("Error setting PIN: " + err);
+    }
+  } else {
+    alert("PIN must be exactly 4 or 6 numeric digits.");
   }
 });
 
@@ -1225,6 +1257,14 @@ window.addEventListener("keydown", (e) => {
     } else if (e.key === "Escape") {
       state.pinBuffer = "";
       updatePinDots();
+    } else if (e.key === "Enter") {
+      if (state.pinBuffer.length === 4 || state.pinBuffer.length === 6) {
+        const pinToVerify = state.pinBuffer;
+        invoke("verify_pin", { pin: pinToVerify }).then((isValid) => {
+          if (isValid) unlockApp();
+          else triggerPinError();
+        });
+      }
     }
     return;
   }
@@ -1422,8 +1462,8 @@ async function init() {
 
     renderTabs();
 
-    // Lock immediately on launch by default whenever lock is enabled (unless explicitly disabled)
-    const shouldLock = state.settings.lockEnabled && state.settings.lockOnLaunch !== false;
+    // Lock immediately on launch by default (independent of inactivity timer)
+    const shouldLock = state.settings.lockOnLaunch !== false;
     if (shouldLock) {
       lockApp();
     } else if (state.bookmarks.length > 0) {
@@ -1438,6 +1478,23 @@ async function init() {
     console.error("Initialization error:", err);
   }
 }
+
+// System sleep / suspend detection from Rust watchdog
+listen("system-sleep-lock", () => {
+  lockApp();
+});
+
+// Heartbeat watchdog for browser suspend detection
+let lastHeartbeat = Date.now();
+setInterval(() => {
+  const now = Date.now();
+  const diff = now - lastHeartbeat;
+  lastHeartbeat = now;
+  // If timer gap is >3000ms (when expecting 1000ms), system was sleeping/suspended
+  if (diff > 3000) {
+    lockApp();
+  }
+}, 1000);
 
 // Global external link opener
 document.addEventListener("click", (e) => {

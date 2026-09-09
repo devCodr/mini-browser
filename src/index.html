@@ -111,6 +111,17 @@
             <span class="preset-badge" style="background: rgba(37, 211, 102, 0.15); color: #25D366;">W1</span>
           </button>
 
+          <button class="preset-card" data-url="https://mail.google.com" data-title="Gmail Accounts" data-badge="G1" data-color="#EA4335">
+            <div class="preset-icon-wrapper gmail">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.272H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"/></svg>
+            </div>
+            <div class="preset-info">
+              <span class="preset-title">Gmail Accounts</span>
+              <span class="preset-desc">Google Workspace & Mail</span>
+            </div>
+            <span class="preset-badge" style="background: rgba(234, 67, 53, 0.15); color: #EA4335;">G1</span>
+          </button>
+
           <button class="preset-card" data-url="https://web.telegram.org" data-title="Telegram Web" data-badge="TG1" data-color="#24A1DE">
             <div class="preset-icon-wrapper telegram">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>
@@ -440,10 +451,10 @@
         </div>
 
         <div class="settings-item-col">
-          <span class="settings-label">Change 6-digit PIN</span>
-          <span class="settings-desc">Current default is 123456</span>
+          <span class="settings-label">Change PIN (4 or 6 digits)</span>
+          <span class="settings-desc">Supports 4 or 6 numeric digits (e.g. 1234 or 123456)</span>
           <form id="form-change-pin" class="change-pin-form">
-            <input id="input-new-pin" type="password" maxlength="6" pattern="\d{6}" placeholder="Enter new 6 digits" required autocomplete="off" />
+            <input id="input-new-pin" type="password" minlength="4" maxlength="6" pattern="\d{4}|\d{6}" placeholder="Enter new 4 or 6 digits" required autocomplete="off" />
             <button type="submit" class="primary-btn">Update PIN</button>
           </form>
         </div>
@@ -462,7 +473,7 @@
         </div>
       </div>
       <h2 class="lock-title">MiniBrowser Locked</h2>
-      <p class="lock-subtitle">Enter your 6-digit PIN to resume your sessions</p>
+      <p class="lock-subtitle">Enter your PIN to resume your sessions</p>
 
       <!-- Default PIN & Security Recommendation Notice -->
       <div class="lock-default-pin-notice">
@@ -470,7 +481,7 @@
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
           <span>Default PIN: <strong class="default-pin-code">123456</strong></span>
         </div>
-        <span class="pin-recommend-text">We strongly recommend changing your PIN in <strong>Settings</strong> (⚙️) after unlocking.</span>
+        <span class="pin-recommend-text">Supports 4 or 6-digit PIN. Change anytime in <strong>Settings</strong> (⚙️).</span>
       </div>
 
       <!-- PIN Indicator Dots -->

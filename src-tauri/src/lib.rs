@@ -322,9 +322,13 @@ fn verify_pin(state: State<'_, AppStateWrapper>, pin: String) -> bool {
 
 #[tauri::command]
 fn set_pin(state: State<'_, AppStateWrapper>, pin: String) -> Result<bool, String> {
+    let clean = pin.trim();
+    if (clean.len() != 4 && clean.len() != 6) || !clean.chars().all(|c| c.is_ascii_digit()) {
+        return Err("PIN must be either 4 or 6 numeric digits".to_string());
+    }
     let store = state.store.lock().unwrap();
     let mut settings = store.load_settings();
-    settings.set_pin(&pin);
+    settings.set_pin(clean);
     store.save_settings(&settings);
     Ok(true)
 }
@@ -498,6 +502,22 @@ pub fn run() {
                     }
                 });
             }
+
+            // Background watchdog to detect system sleep / suspend / lid close
+            let app_h_sleep = app.handle().clone();
+            std::thread::spawn(move || {
+                let mut last_tick = std::time::Instant::now();
+                loop {
+                    std::thread::sleep(std::time::Duration::from_millis(1000));
+                    let elapsed = last_tick.elapsed();
+                    last_tick = std::time::Instant::now();
+                    if elapsed > std::time::Duration::from_millis(3000) {
+                        let state: State<AppStateWrapper> = app_h_sleep.state();
+                        state.sessions.hide_active(&app_h_sleep);
+                        let _ = app_h_sleep.emit("system-sleep-lock", ());
+                    }
+                }
+            });
 
             Ok(())
         })

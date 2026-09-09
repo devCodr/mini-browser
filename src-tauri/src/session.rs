@@ -8,10 +8,53 @@ use tauri::{
 pub const HEADER_HEIGHT: f64 = 42.0;
 
 #[cfg(target_os = "macos")]
-pub const USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Safari/605.1.15";
+pub const CHROME_USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
+
+#[cfg(target_os = "macos")]
+pub const APPLE_WEBKIT_USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Safari/605.1.15";
 
 #[cfg(not(target_os = "macos"))]
-pub const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
+pub const CHROME_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
+
+#[cfg(not(target_os = "macos"))]
+pub const APPLE_WEBKIT_USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Safari/605.1.15";
+
+pub const USER_AGENT: &str = CHROME_USER_AGENT;
+
+pub fn is_google_service(url: &str, partition: &str) -> bool {
+    let url_lower = url.to_lowercase();
+    let part_lower = partition.to_lowercase();
+    url_lower.contains("google.")
+        || url_lower.contains("gmail.com")
+        || url_lower.contains("accounts.google")
+        || url_lower.contains("mail.google")
+        || url_lower.contains("gstatic.com")
+        || url_lower.contains("googleusercontent.com")
+        || part_lower.contains("google")
+        || part_lower.contains("gmail")
+}
+
+pub fn get_user_agent_for_session(url: &str, partition: &str) -> &'static str {
+    if is_google_service(url, partition) {
+        APPLE_WEBKIT_USER_AGENT
+    } else {
+        CHROME_USER_AGENT
+    }
+}
+
+pub fn partition_to_uuid_bytes(partition: &str) -> [u8; 16] {
+    use sha2::Digest;
+    let mut hasher = sha2::Sha256::new();
+    hasher.update(partition.as_bytes());
+    let result = hasher.finalize();
+    let mut bytes = [0u8; 16];
+    bytes.copy_from_slice(&result[0..16]);
+    // Set UUID version 5 (name-based SHA)
+    bytes[6] = (bytes[6] & 0x0f) | 0x50;
+    // Set variant to RFC 4122 (0b10xxxxxx)
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    bytes
+}
 
 pub struct SessionManager {
     active_label: Mutex<Option<String>>,
@@ -38,6 +81,10 @@ impl SessionManager {
             .map(|c| if c.is_alphanumeric() { c } else { '_' })
             .collect();
         format!("wv_{}", safe)
+    }
+
+    pub fn partition_to_uuid_bytes(partition: &str) -> [u8; 16] {
+        partition_to_uuid_bytes(partition)
     }
 
     pub fn activate_session(
@@ -111,8 +158,15 @@ impl SessionManager {
                 // 1. Remove webdriver flag
                 try { Object.defineProperty(navigator, 'webdriver', { get: () => undefined }); } catch(e) {}
 
-                // 2. Inject window.chrome object (Google checks this first)
-                if (!window.chrome) {
+                // Check if current site is Google/Gmail to keep WebKit environment clean
+                var isGoogle = false;
+                try {
+                    var host = window.location.hostname || '';
+                    isGoogle = host.indexOf('google.') !== -1 || host.indexOf('gmail.com') !== -1 || host.indexOf('gstatic.com') !== -1;
+                } catch(e) {}
+
+                // 2. Inject window.chrome object (Google checks this first; non-Google sites get Chrome object)
+                if (!isGoogle && !window.chrome) {
                     var chrome = {
                         app: {
                             isInstalled: false,
@@ -504,10 +558,14 @@ impl SessionManager {
         let label_nav = label.clone();
         let label_new_win = label.clone();
 
+        let selected_user_agent = get_user_agent_for_session(&raw_url, partition);
+        let uuid_bytes = Self::partition_to_uuid_bytes(partition);
+
         let builder = WebviewBuilder::new(&label, WebviewUrl::External(parsed_url))
             .devtools(true)
             .data_directory(data_dir)
-            .user_agent(USER_AGENT)
+            .data_store_identifier(uuid_bytes)
+            .user_agent(selected_user_agent)
             .initialization_script(init_script)
             .on_navigation(move |url| {
                 if url.scheme() == "minibrowser-action" {
