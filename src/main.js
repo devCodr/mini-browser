@@ -1204,11 +1204,11 @@ if (formSecurityQuestion) {
       await invoke("set_security_question", { question: q, answer: a });
       state.settings.securityQuestion = q;
       inputSecurityAnswer.value = "";
-      securityQuestionStatus.textContent = "(Configurada ✓)";
+      securityQuestionStatus.textContent = "(Configured ✓)";
       securityQuestionStatus.style.color = "#10b981";
-      alert("¡Pregunta de seguridad guardada con éxito!");
+      alert("Security question saved successfully!");
     } catch (err) {
-      alert("Error guardando pregunta: " + err);
+      alert("Error saving security question: " + err);
     }
   });
 }
@@ -1299,7 +1299,7 @@ if (btnSaveRecoveryPin) {
     const answer = inputRecoveryAnswer.value.trim();
     const newPin = inputRecoveryNewPin.value.trim();
     if ((newPin.length !== 4 && newPin.length !== 6) || !/^\d+$/.test(newPin)) {
-      alert("El nuevo PIN debe ser exactamente de 4 o 6 números.");
+      alert("The new PIN must be exactly 4 or 6 numeric digits.");
       return;
     }
     try {
@@ -1307,9 +1307,9 @@ if (btnSaveRecoveryPin) {
       state.settings.pinLength = newPin.length;
       hideModal(modalRecovery);
       unlockApp();
-      alert(`¡PIN actualizado a ${newPin.length} dígitos y aplicación desbloqueada!`);
+      alert(`PIN successfully updated to ${newPin.length} digits and browser unlocked!`);
     } catch (err) {
-      alert("Error restableciendo PIN: " + err);
+      alert("Error resetting PIN: " + err);
     }
   });
 }
@@ -1323,7 +1323,7 @@ if (inputConfirmReset) {
 
 if (btnExecuteFactoryReset) {
   btnExecuteFactoryReset.addEventListener("click", async () => {
-    if (!confirm("⚠️ ¿Estás COMPLETAMENTE seguro de restablecer MiniBrowser de fábrica?\n\nEsta acción borrará todas tus sesiones activas, cuentas, cookies y marcadores. El PIN volverá a ser 123456.")) {
+    if (!confirm("⚠️ Are you COMPLETELY sure you want to factory reset MiniBrowser?\n\nThis will permanently delete all active sessions, accounts, cookies, and bookmarks. The PIN will be restored to 123456.")) {
       return;
     }
     try {
@@ -1337,9 +1337,9 @@ if (btnExecuteFactoryReset) {
       hideModal(modalRecovery);
       unlockApp();
       goHome();
-      alert("MiniBrowser ha sido restablecido a los valores de fábrica.\nEl PIN por defecto es 123456.");
+      alert("MiniBrowser has been reset to factory defaults.\nThe default PIN is 123456.");
     } catch (err) {
-      alert("Error al restablecer de fábrica: " + err);
+      alert("Error during factory reset: " + err);
     }
   });
 }

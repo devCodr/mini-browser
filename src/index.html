@@ -464,16 +464,16 @@
           <span class="settings-desc">Used to recover access without losing your data if you forget your PIN</span>
           <form id="form-security-question" class="change-pin-form" style="display: flex; flex-direction: column; gap: 8px;">
             <select id="select-security-question" class="select-input">
-              <option value="¿Cuál es el nombre de tu primera mascota?">¿Cuál es el nombre de tu primera mascota?</option>
-              <option value="¿En qué ciudad naciste?">¿En qué ciudad naciste?</option>
-              <option value="¿Cuál es tu comida favorita?">¿Cuál es tu comida favorita?</option>
-              <option value="¿Cuál es el nombre de tu mejor amigo de la infancia?">¿Cuál es el nombre de tu mejor amigo de la infancia?</option>
-              <option value="custom">Pregunta personalizada...</option>
+              <option value="What was the name of your first pet?">What was the name of your first pet?</option>
+              <option value="In what city were you born?">In what city were you born?</option>
+              <option value="What is your favorite food?">What is your favorite food?</option>
+              <option value="What was the name of your childhood best friend?">What was the name of your childhood best friend?</option>
+              <option value="custom">Custom question...</option>
             </select>
-            <input id="input-custom-question" type="text" placeholder="Escribe tu propia pregunta..." class="hidden" autocomplete="off" />
-            <input id="input-security-answer" type="text" placeholder="Tu respuesta secreta" required autocomplete="off" />
+            <input id="input-custom-question" type="text" placeholder="Type your custom question..." class="hidden" autocomplete="off" />
+            <input id="input-security-answer" type="text" placeholder="Your secret answer" required autocomplete="off" />
             <div style="display: flex; gap: 10px; align-items: center; margin-top: 4px;">
-              <button type="submit" class="primary-btn">Guardar Pregunta</button>
+              <button type="submit" class="primary-btn">Save Question</button>
               <span id="security-question-status" style="font-size: 11px; color: var(--text-muted);"></span>
             </div>
           </form>
@@ -534,7 +534,7 @@
       </div>
 
       <div id="pin-error-msg" class="pin-error-msg hidden" style="display: none;">Incorrect PIN. Try again.</div>
-      <button id="btn-forgot-pin" class="forgot-pin-btn" type="button">¿Olvidaste tu PIN?</button>
+      <button id="btn-forgot-pin" class="forgot-pin-btn" type="button">Forgot your PIN?</button>
     </div>
   </div>
 
@@ -567,43 +567,43 @@
   <div id="modal-recovery" class="modal-backdrop hidden">
     <div class="modal-card recovery-modal-card">
       <div class="modal-header">
-        <h2 class="modal-title">Recuperación de PIN</h2>
+        <h2 class="modal-title">PIN Recovery &amp; Reset</h2>
         <button id="btn-close-recovery" class="modal-close-btn">&times;</button>
       </div>
 
       <!-- Recovery Tabs -->
       <div class="recovery-tabs">
-        <button id="tab-btn-recovery-question" class="recovery-tab active" type="button">Pregunta Secreta</button>
-        <button id="tab-btn-recovery-reset" class="recovery-tab" type="button">Restablecimiento Total</button>
+        <button id="tab-btn-recovery-question" class="recovery-tab active" type="button">Security Question</button>
+        <button id="tab-btn-recovery-reset" class="recovery-tab" type="button">Factory Reset</button>
       </div>
 
       <!-- Panel 1: Security Question -->
       <div id="panel-recovery-question" class="recovery-panel">
         <div id="recovery-no-question" class="recovery-notice hidden">
-          <p>No tienes configurada una pregunta de seguridad.</p>
-          <p style="margin-top: 6px; font-size: 12px; opacity: 0.85;">Puedes usar la pestaña <strong>Restablecimiento Total</strong> para restablecer la aplicación.</p>
+          <p>You haven't configured a security question yet.</p>
+          <p style="margin-top: 6px; font-size: 12px; opacity: 0.85;">You can use the <strong>Factory Reset</strong> tab to restore the application.</p>
         </div>
 
         <div id="recovery-has-question" class="recovery-panel">
           <div class="recovery-field-group">
-            <label class="recovery-label">Tu pregunta de seguridad:</label>
+            <label class="recovery-label">Your security question:</label>
             <div id="recovery-question-display" class="recovery-question-box"></div>
           </div>
           <div class="recovery-field-group">
-            <label class="recovery-label">Respuesta secreta:</label>
-            <input id="input-recovery-answer" type="text" class="custom-url-input" placeholder="Escribe tu respuesta..." autocomplete="off" />
+            <label class="recovery-label">Secret answer:</label>
+            <input id="input-recovery-answer" type="text" class="custom-url-input" placeholder="Type your answer..." autocomplete="off" />
           </div>
-          <button id="btn-verify-recovery-answer" class="primary-btn" type="button" style="width: 100%;">Verificar Respuesta</button>
-          <div id="recovery-answer-error" class="pin-error-msg hidden" style="display: none; text-align: center;">Respuesta incorrecta. Inténtalo de nuevo.</div>
+          <button id="btn-verify-recovery-answer" class="primary-btn" type="button" style="width: 100%;">Verify Answer</button>
+          <div id="recovery-answer-error" class="pin-error-msg hidden" style="display: none; text-align: center;">Incorrect answer. Please try again.</div>
 
           <!-- Revealed upon correct answer -->
           <div id="recovery-new-pin-section" class="hidden" style="margin-top: 12px; padding-top: 14px; border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 10px;">
-            <div style="color: #10b981; font-size: 13px; font-weight: 500;">✓ Respuesta correcta. Asigna tu nuevo PIN:</div>
+            <div style="color: #10b981; font-size: 13px; font-weight: 500;">✓ Correct answer. Set your new PIN:</div>
             <div class="recovery-field-group">
-              <label class="recovery-label">Nuevo PIN (4 o 6 números):</label>
-              <input id="input-recovery-new-pin" type="password" maxlength="6" minlength="4" class="custom-url-input" placeholder="Nuevo PIN (ej. 1234 o 123456)" autocomplete="off" />
+              <label class="recovery-label">New PIN (4 or 6 digits):</label>
+              <input id="input-recovery-new-pin" type="password" maxlength="6" minlength="4" class="custom-url-input" placeholder="New PIN (e.g. 1234 or 123456)" autocomplete="off" />
             </div>
-            <button id="btn-save-recovery-pin" class="primary-btn" type="button" style="width: 100%; background: #10b981;">Guardar PIN y Desbloquear</button>
+            <button id="btn-save-recovery-pin" class="primary-btn" type="button" style="width: 100%; background: #10b981;">Save PIN &amp; Unlock</button>
           </div>
         </div>
       </div>
@@ -613,23 +613,23 @@
         <div class="danger-warning-card">
           <div class="danger-icon">⚠️</div>
           <div>
-            <strong style="color: #ef4444; font-size: 13px;">ADVERTENCIA: Borrado Total de Datos</strong>
+            <strong style="color: #ef4444; font-size: 13px;">WARNING: Complete Data Wipe</strong>
             <p style="font-size: 12px; margin-top: 5px; color: var(--text-secondary); line-height: 1.45;">
-              Restablecer la aplicación eliminará <strong>permanentemente</strong> todas las sesiones abiertas (WhatsApp, Gmail, Facebook, etc.), cookies guardadas, pestañas y configuraciones.
+              Resetting the application will <strong>permanently</strong> erase all active sessions (WhatsApp, Gmail, Facebook, etc.), saved cookies, tabs, and custom settings.
             </p>
             <p style="font-size: 12px; margin-top: 5px; color: var(--text-muted);">
-              MiniBrowser volverá a su estado inicial de fábrica con el PIN predeterminado (<strong>123456</strong>).
+              MiniBrowser will return to its initial factory state with the default PIN (<strong>123456</strong>).
             </p>
           </div>
         </div>
 
         <div class="recovery-field-group" style="margin-top: 14px;">
-          <label class="recovery-label">Para confirmar, escribe <strong style="color: #ef4444;">RESET</strong> a continuación:</label>
-          <input id="input-confirm-reset" type="text" class="custom-url-input" placeholder='Escribe "RESET"' autocomplete="off" style="text-align: center; font-weight: 700; letter-spacing: 2px;" />
+          <label class="recovery-label">To confirm, type <strong style="color: #ef4444;">RESET</strong> below:</label>
+          <input id="input-confirm-reset" type="text" class="custom-url-input" placeholder='Type "RESET"' autocomplete="off" style="text-align: center; font-weight: 700; letter-spacing: 2px;" />
         </div>
 
         <button id="btn-execute-factory-reset" class="danger-btn" type="button" style="width: 100%; margin-top: 14px;" disabled>
-          Restablecer Todo de Fábrica
+          Factory Reset All Data
         </button>
       </div>
     </div>

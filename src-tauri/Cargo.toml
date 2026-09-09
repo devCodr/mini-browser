@@ -1,6 +1,6 @@
 [package]
 name = "mini-browser"
-version = "1.0.2"
+version = "1.0.3"
 description = "Lightweight Multi-Session Private Browser in Rust"
 authors = ["you"]
 edition = "2021"
