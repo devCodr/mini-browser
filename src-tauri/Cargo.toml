@@ -1,6 +1,6 @@
 [package]
 name = "mini-browser"
-version = "1.0.5"
+version = "1.0.6"
 description = "Lightweight Multi-Session Private Browser in Rust"
 authors = ["you"]
 edition = "2021"
@@ -32,6 +32,7 @@ getrandom = "0.2"
 dirs = "6"
 url = "2"
 tauri-plugin-notification = "2"
+auto-launch = "0.6.0"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2-app-kit = { version = "0.3", features = ["NSWindow", "NSView", "NSButton"] }

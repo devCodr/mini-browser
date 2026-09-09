@@ -41,6 +41,8 @@ pub struct Settings {
     pub lock_on_launch: bool,
     #[serde(rename = "startMinimized", default)]
     pub start_minimized: bool,
+    #[serde(rename = "autoLaunch", default)]
+    pub auto_launch: bool,
     #[serde(rename = "pinLength", default = "default_pin_length")]
     pub pin_length: usize,
     #[serde(rename = "securityQuestion", skip_serializing_if = "Option::is_none")]
@@ -60,6 +62,7 @@ impl Default for Settings {
             pin_hash: None,
             lock_on_launch: true,
             start_minimized: false,
+            auto_launch: false,
             pin_length: 6,
             security_question: None,
             security_answer_hash: None,

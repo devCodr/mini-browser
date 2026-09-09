@@ -13,6 +13,7 @@ let state = {
     inactivityMs: 300000,
     lockOnLaunch: false,
     startMinimized: false,
+    autoLaunch: false,
   },
   bookmarks: [],
   activePartition: null,
@@ -66,6 +67,7 @@ const btnCloseSettings = document.getElementById("btn-close-settings");
 const settingLockToggle = document.getElementById("setting-lock-toggle");
 const settingLockOnLaunch = document.getElementById("setting-lock-on-launch");
 const settingStartMinimized = document.getElementById("setting-start-minimized");
+const settingAutoLaunch = document.getElementById("setting-auto-launch");
 const settingTimeout = document.getElementById("setting-timeout");
 const timeoutDisplay = document.getElementById("timeout-display");
 const formChangePin = document.getElementById("form-change-pin");
@@ -1118,14 +1120,15 @@ btnSettings.addEventListener("click", () => {
   settingLockToggle.checked = state.settings.lockEnabled;
   settingLockOnLaunch.checked = state.settings.lockOnLaunch !== false;
   settingStartMinimized.checked = !!state.settings.startMinimized;
+  if (settingAutoLaunch) settingAutoLaunch.checked = !!state.settings.autoLaunch;
   settingTimeout.value = state.settings.inactivityMs;
   timeoutDisplay.textContent = `${state.settings.inactivityMs / 60000} minutes`;
 
   if (state.settings.securityQuestion) {
-    securityQuestionStatus.textContent = "(Configurada ✓)";
+    securityQuestionStatus.textContent = "(Configured ✓)";
     securityQuestionStatus.style.color = "#10b981";
   } else {
-    securityQuestionStatus.textContent = "(Sin configurar)";
+    securityQuestionStatus.textContent = "(Not configured)";
     securityQuestionStatus.style.color = "var(--text-muted)";
   }
 
@@ -1141,6 +1144,7 @@ async function saveUpdatedSettings() {
       inactivityMs: parseInt(settingTimeout.value, 10),
       lockOnLaunch: settingLockOnLaunch.checked,
       startMinimized: settingStartMinimized.checked,
+      autoLaunch: settingAutoLaunch ? settingAutoLaunch.checked : false,
     });
     if (updated) state.settings = updated;
     if (!state.settings.lockEnabled) {
@@ -1156,6 +1160,7 @@ async function saveUpdatedSettings() {
 settingLockToggle.addEventListener("change", saveUpdatedSettings);
 settingLockOnLaunch.addEventListener("change", saveUpdatedSettings);
 settingStartMinimized.addEventListener("change", saveUpdatedSettings);
+if (settingAutoLaunch) settingAutoLaunch.addEventListener("change", saveUpdatedSettings);
 
 settingTimeout.addEventListener("change", (e) => {
   const ms = parseInt(e.target.value, 10);
@@ -1669,6 +1674,13 @@ async function init() {
     }
 
     renderTabs();
+
+    // Start minimized if enabled
+    if (state.settings.startMinimized) {
+      try {
+        await invoke("minimize_window");
+      } catch (_) {}
+    }
 
     // Lock immediately on launch by default (independent of inactivity timer)
     const shouldLock = state.settings.lockOnLaunch !== false;

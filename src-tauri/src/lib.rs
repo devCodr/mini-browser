@@ -357,6 +357,31 @@ fn lock_now(app: AppHandle, state: State<'_, AppStateWrapper>) -> Result<(), Str
     Ok(())
 }
 
+fn configure_auto_launch(enabled: bool) -> Result<(), String> {
+    let current_exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    let mut app_path = current_exe.to_string_lossy().to_string();
+
+    #[cfg(target_os = "macos")]
+    {
+        if let Some(idx) = app_path.find(".app/Contents/MacOS") {
+            app_path = app_path[..idx + 4].to_string();
+        }
+    }
+
+    let auto = auto_launch::AutoLaunchBuilder::new()
+        .set_app_name("MiniBrowser")
+        .set_app_path(&app_path)
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    if enabled {
+        let _ = auto.enable();
+    } else {
+        let _ = auto.disable();
+    }
+    Ok(())
+}
+
 #[tauri::command]
 fn update_settings(
     state: State<'_, AppStateWrapper>,
@@ -364,6 +389,7 @@ fn update_settings(
     inactivity_ms: u64,
     lock_on_launch: bool,
     start_minimized: bool,
+    auto_launch: Option<bool>,
 ) -> Result<store::Settings, String> {
     let store = state.store.lock().unwrap();
     let mut settings = store.load_settings();
@@ -371,6 +397,12 @@ fn update_settings(
     settings.inactivity_ms = inactivity_ms.max(60000);
     settings.lock_on_launch = lock_on_launch;
     settings.start_minimized = start_minimized;
+    if let Some(al) = auto_launch {
+        if settings.auto_launch != al {
+            settings.auto_launch = al;
+            let _ = configure_auto_launch(al);
+        }
+    }
     store.save_settings(&settings);
     Ok(settings)
 }
@@ -521,6 +553,13 @@ pub fn run() {
 
                 if initial_settings.start_minimized {
                     let _ = main_window.minimize();
+                    let main_w_min = main_window.clone();
+                    std::thread::spawn(move || {
+                        for delay in [60, 150, 300, 600] {
+                            std::thread::sleep(std::time::Duration::from_millis(delay));
+                            let _ = main_w_min.minimize();
+                        }
+                    });
                 }
 
                 #[cfg(target_os = "macos")]
