@@ -1259,21 +1259,36 @@ kbd {
   background: transparent;
   border: none;
   color: var(--accent, #6366f1);
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
   text-decoration: underline;
-  opacity: 0.85;
-  transition: opacity 0.2s ease;
+  opacity: 0.9;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+  -webkit-app-region: no-drag;
+  position: relative;
+  z-index: 1010;
 }
 
 .forgot-pin-btn:hover {
   opacity: 1;
+  background: rgba(99, 102, 241, 0.1);
+  color: #818cf8;
+}
+
+#modal-recovery {
+  z-index: 2000;
 }
 
 .recovery-modal-card {
   width: 480px;
   max-width: 92vw;
   padding: 24px;
+  position: relative;
+  z-index: 2001;
+  -webkit-app-region: no-drag;
 }
 
 .recovery-tabs {

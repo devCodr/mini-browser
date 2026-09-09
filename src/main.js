@@ -1215,12 +1215,16 @@ if (formSecurityQuestion) {
 
 // === PIN Recovery Modal Handling ===
 if (btnForgotPin) {
-  btnForgotPin.addEventListener("click", async () => {
-    let question = state.settings.securityQuestion;
+  btnForgotPin.addEventListener("click", async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    let question = state.settings?.securityQuestion;
     if (!question) {
       try {
         question = await invoke("get_security_question");
-        if (question) state.settings.securityQuestion = question;
+        if (question && state.settings) state.settings.securityQuestion = question;
       } catch (_) {}
     }
 
@@ -1561,7 +1565,8 @@ function resetZoom() {
 });
 
 // Close modals on backdrop click
-[modalNewSession, modalManageSessions, modalShortcuts, modalAbout, modalSettings].forEach((m) => {
+[modalNewSession, modalManageSessions, modalShortcuts, modalAbout, modalSettings, modalRecovery].forEach((m) => {
+  if (!m) return;
   m.addEventListener("click", (e) => {
     if (e.target === m) hideModal(m);
   });
