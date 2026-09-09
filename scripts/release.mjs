@@ -59,6 +59,11 @@ cargoToml = cargoToml.replace(/^version\s*=\s*"[^"]+"/m, `version = "${newVersio
 fs.writeFileSync(cargoTomlPath, cargoToml);
 console.log(`✓ Updated ${path.relative(rootDir, cargoTomlPath)}`);
 
+// Update Cargo.lock
+try {
+  execSync('cargo check --quiet', { stdio: 'inherit', cwd: path.join(rootDir, 'src-tauri') });
+} catch (_) {}
+
 // 6. Git commit & tag
 if (!skipGit) {
   try {
