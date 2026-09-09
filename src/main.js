@@ -40,6 +40,9 @@ const btnNewSession = document.getElementById("btn-new-session");
 const btnManageSessions = document.getElementById("btn-manage-sessions");
 const btnLock = document.getElementById("btn-lock");
 const btnShortcuts = document.getElementById("btn-shortcuts");
+const btnDownloads = document.getElementById("btn-downloads");
+const downloadBadge = document.getElementById("download-badge");
+const downloadToastContainer = document.getElementById("download-toast-container");
 const btnAbout = document.getElementById("btn-about");
 const btnSettings = document.getElementById("btn-settings");
 const welcomeView = document.getElementById("welcome-view");
@@ -1101,6 +1104,16 @@ btnManageAdd.addEventListener("click", () => {
 btnShortcuts.addEventListener("click", toggleShortcutsModal);
 btnCloseShortcuts.addEventListener("click", () => hideModal(modalShortcuts));
 
+if (btnDownloads) {
+  btnDownloads.addEventListener("click", async () => {
+    try {
+      await invoke("open_downloads_folder");
+    } catch (err) {
+      console.error("Failed to open downloads folder:", err);
+    }
+  });
+}
+
 btnAbout.addEventListener("click", () => showModal(modalAbout));
 btnCloseAbout.addEventListener("click", () => hideModal(modalAbout));
 
@@ -1594,6 +1607,65 @@ listen("open-new-session-url", (event) => {
     const badge = domain.replace(/[^a-zA-Z0-9]/g, "").slice(0, 2).toUpperCase() || "NW";
     createSession(url, domain, badge, "#6366f1");
   }
+});
+
+// Download Toast & Status Indicator
+function showDownloadToast(filename, path) {
+  if (!downloadToastContainer) return;
+
+  if (downloadBadge) {
+    downloadBadge.classList.remove("hidden");
+    downloadBadge.classList.add("active-pulse");
+    setTimeout(() => {
+      downloadBadge.classList.remove("active-pulse");
+    }, 4000);
+  }
+
+  const toast = document.createElement("div");
+  toast.className = "download-toast";
+  toast.innerHTML = `
+    <div class="download-toast-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="download-toast-content">
+      <div class="download-toast-title">Descarga completada</div>
+      <div class="download-toast-file" title="${filename}">${filename}</div>
+    </div>
+    <button class="download-toast-open" title="Abrir carpeta">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    </button>
+  `;
+
+  toast.addEventListener("click", async () => {
+    try {
+      await invoke("open_downloads_folder");
+    } catch (e) {}
+    toast.remove();
+  });
+
+  downloadToastContainer.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add("show");
+  }, 10);
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 400);
+  }, 5000);
+}
+
+listen("download-started", (event) => {
+  if (downloadBadge) {
+    downloadBadge.classList.remove("hidden");
+    downloadBadge.classList.add("active-pulse");
+  }
+});
+
+listen("download-finished", (event) => {
+  const name = event.payload?.name || "archivo";
+  const path = event.payload?.path || "";
+  showDownloadToast(name, path);
 });
 
 // Platform & Window Controls setup

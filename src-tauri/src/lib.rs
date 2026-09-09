@@ -515,6 +515,16 @@ fn close_window(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn open_downloads_folder(app: AppHandle) -> Result<(), String> {
+    let download_dir = dirs::download_dir().unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
+    let path_str = download_dir.to_string_lossy().to_string();
+    use tauri_plugin_opener::OpenerExt;
+    app.opener()
+        .open_path(&path_str, None::<&str>)
+        .map_err(|e| format!("Failed to open downloads folder: {}", e))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -659,7 +669,8 @@ pub fn run() {
             get_security_question,
             verify_security_answer,
             reset_pin_with_answer,
-            factory_reset
+            factory_reset,
+            open_downloads_folder
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -56,6 +56,77 @@ pub fn partition_to_uuid_bytes(partition: &str) -> [u8; 16] {
     bytes
 }
 
+pub fn get_unique_download_path(suggested_filename: &str) -> std::path::PathBuf {
+    let base_dir = dirs::download_dir().unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
+    let clean_name = if suggested_filename.trim().is_empty() {
+        "descarga"
+    } else {
+        suggested_filename.trim()
+    };
+    let file_name = std::path::Path::new(clean_name)
+        .file_name()
+        .and_then(|f| f.to_str())
+        .unwrap_or("descarga");
+
+    let mut dest = base_dir.join(file_name);
+    if !dest.exists() {
+        return dest;
+    }
+
+    let (stem, ext) = match file_name.rfind('.') {
+        Some(idx) => (&file_name[..idx], &file_name[idx..]),
+        None => (file_name, ""),
+    };
+
+    let mut counter = 1;
+    while dest.exists() {
+        dest = base_dir.join(format!("{} ({}){}", stem, counter, ext));
+        counter += 1;
+    }
+    dest
+}
+
+pub fn save_base64_file(filename: &str, data_uri_or_base64: &str) -> Result<std::path::PathBuf, String> {
+    use base64::Engine as _;
+    let raw_b64 = if let Some(idx) = data_uri_or_base64.find(";base64,") {
+        &data_uri_or_base64[idx + 8..]
+    } else {
+        data_uri_or_base64
+    };
+
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(raw_b64.trim())
+        .map_err(|e| format!("Base64 decode error: {}", e))?;
+
+    let dest = get_unique_download_path(filename);
+    std::fs::write(&dest, bytes).map_err(|e| format!("Failed to write file: {}", e))?;
+    Ok(dest)
+}
+
+pub fn notify_download_finished(app: &AppHandle, file_path: &std::path::Path) {
+    let file_name = file_path
+        .file_name()
+        .and_then(|f| f.to_str())
+        .unwrap_or("archivo");
+    let path_str = file_path.to_string_lossy().to_string();
+
+    let _ = app.emit(
+        "download-finished",
+        serde_json::json!({
+            "name": file_name,
+            "path": path_str
+        }),
+    );
+
+    use tauri_plugin_notification::NotificationExt;
+    let _ = app
+        .notification()
+        .builder()
+        .title("Descarga completada")
+        .body(format!("Guardado en Descargas: {}", file_name))
+        .show();
+}
+
 pub struct SessionManager {
     active_label: Mutex<Option<String>>,
     sessions: Mutex<HashMap<String, String>>, // partition -> webview label
@@ -149,6 +220,7 @@ impl SessionManager {
         let part_clone = partition.to_string();
         let app_handle_clone = app.clone();
         let app_handle_new_win = app.clone();
+        let app_handle_dl = app.clone();
 
         let partition_for_notif = partition.to_string();
 
@@ -346,7 +418,7 @@ impl SessionManager {
                 }
             }, true);
 
-            // Context Menu & Link Actions (Open in Default Browser, Open in New Session, Copy/Paste)
+            // Context Menu & Link Actions (Open in Default Browser, Open in New Session, Copy/Paste, Downloads)
             (function() {
                 var menuId = 'mini-browser-ctx-menu';
 
@@ -368,6 +440,105 @@ impl SessionManager {
                     if (e.key === 'Escape') removeMenu();
                 }, true);
 
+                // === Blob & Data download handling (WhatsApp Web, Gmail, web apps) ===
+                window.__minibrowser_pending_downloads = window.__minibrowser_pending_downloads || {};
+
+                function extractFilenameFromUrl(url) {
+                    try {
+                        var parsed = new URL(url);
+                        var parts = parsed.pathname.split('/');
+                        var last = parts[parts.length - 1];
+                        if (last && last.indexOf('.') !== -1) {
+                            return decodeURIComponent(last);
+                        }
+                    } catch(e) {}
+                    return '';
+                }
+
+                function triggerDownloadPayload(dataUriOrBase64, filename) {
+                    var id = 'dl_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+                    window.__minibrowser_pending_downloads[id] = {
+                        filename: filename || 'descarga',
+                        data: dataUriOrBase64
+                    };
+                    sendHostAction('blob-download-ready', { id: id, filename: filename || 'descarga' });
+                }
+
+                function triggerBlobDownload(blobOrUrl, suggestedFilename) {
+                    var finalName = suggestedFilename || 'descarga';
+                    if (typeof blobOrUrl === 'string') {
+                        if (blobOrUrl.startsWith('data:')) {
+                            triggerDownloadPayload(blobOrUrl, finalName);
+                        } else if (blobOrUrl.startsWith('blob:')) {
+                            fetch(blobOrUrl)
+                                .then(function(r) { return r.blob(); })
+                                .then(function(b) {
+                                    var reader = new FileReader();
+                                    reader.onloadend = function() {
+                                        triggerDownloadPayload(reader.result, finalName);
+                                    };
+                                    reader.readAsDataURL(b);
+                                })
+                                .catch(function(err) {
+                                    console.error('MiniBrowser blob fetch failed:', err);
+                                });
+                        } else if (blobOrUrl.startsWith('http://') || blobOrUrl.startsWith('https://')) {
+                            fetch(blobOrUrl)
+                                .then(function(r) { return r.blob(); })
+                                .then(function(b) {
+                                    var reader = new FileReader();
+                                    reader.onloadend = function() {
+                                        triggerDownloadPayload(reader.result, finalName);
+                                    };
+                                    reader.readAsDataURL(b);
+                                })
+                                .catch(function() {
+                                    sendHostAction('download-file', { url: blobOrUrl, filename: finalName });
+                                });
+                        }
+                    } else if (blobOrUrl instanceof Blob) {
+                        var reader = new FileReader();
+                        reader.onloadend = function() {
+                            triggerDownloadPayload(reader.result, finalName);
+                        };
+                        reader.readAsDataURL(blobOrUrl);
+                    }
+                }
+
+                // Intercept programmatic anchor clicks (used by WhatsApp Web, Gmail attachments, etc.)
+                try {
+                    var origAnchorClick = HTMLAnchorElement.prototype.click;
+                    HTMLAnchorElement.prototype.click = function() {
+                        var href = this.href || '';
+                        var downloadAttr = this.getAttribute('download');
+                        if (downloadAttr !== null && downloadAttr !== undefined) {
+                            var name = downloadAttr || this.download || extractFilenameFromUrl(href) || 'descarga';
+                            if (href.startsWith('blob:') || href.startsWith('data:')) {
+                                triggerBlobDownload(href, name);
+                                return;
+                            }
+                        }
+                        return origAnchorClick.apply(this, arguments);
+                    };
+                } catch(e) {}
+
+                // Intercept user clicks on links with download attribute or blob/data href
+                document.addEventListener('click', function(e) {
+                    var a = e.target.closest('a');
+                    if (a) {
+                        var href = a.href || '';
+                        var downloadAttr = a.getAttribute('download');
+                        if (downloadAttr !== null && downloadAttr !== undefined) {
+                            var name = downloadAttr || a.download || extractFilenameFromUrl(href) || 'descarga';
+                            if (href.startsWith('blob:') || href.startsWith('data:')) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                triggerBlobDownload(href, name);
+                            }
+                        }
+                    }
+                }, true);
+
                 window.addEventListener('contextmenu', function(e) {
                     if (e.shiftKey) return; // Allow native menu if holding Shift
 
@@ -386,7 +557,35 @@ impl SessionManager {
                         activeEl.tagName === 'TEXTAREA'
                     );
 
+                    var imgEl = e.target.closest('img');
+                    var imgSrc = imgEl ? (imgEl.currentSrc || imgEl.src) : null;
+                    if (!imgSrc && e.target.tagName === 'CANVAS') {
+                        try { imgSrc = e.target.toDataURL('image/png'); } catch(e) {}
+                    }
+
                     var items = [];
+
+                    // Image actions
+                    if (imgSrc) {
+                        var imgName = extractFilenameFromUrl(imgSrc) || ('imagen_' + Date.now() + '.png');
+                        items.push({
+                            icon: '💾',
+                            label: 'Guardar imagen en PC',
+                            action: function() {
+                                triggerBlobDownload(imgSrc, imgName);
+                            }
+                        });
+                        items.push({
+                            icon: '📋',
+                            label: 'Copiar enlace de imagen',
+                            action: function() {
+                                if (navigator.clipboard && navigator.clipboard.writeText) {
+                                    navigator.clipboard.writeText(imgSrc);
+                                }
+                            }
+                        });
+                        items.push({ separator: true });
+                    }
 
                     if (targetUrl && (targetUrl.startsWith('http://') || targetUrl.startsWith('https://') || targetUrl.startsWith('mailto:'))) {
                         items.push({
@@ -401,6 +600,14 @@ impl SessionManager {
                             label: 'Open in New Session Tab',
                             action: function() {
                                 sendHostAction('open-new-session', { url: targetUrl });
+                            }
+                        });
+                        items.push({
+                            icon: '💾',
+                            label: 'Descargar archivo en PC',
+                            action: function() {
+                                var linkName = extractFilenameFromUrl(targetUrl) || 'descarga';
+                                triggerBlobDownload(targetUrl, linkName);
                             }
                         });
                         items.push({
@@ -497,6 +704,13 @@ impl SessionManager {
 
                     items.push({ separator: true });
                     items.push({
+                        icon: '📁',
+                        label: 'Abrir carpeta Descargas',
+                        action: function() {
+                            sendHostAction('open-downloads-folder');
+                        }
+                    });
+                    items.push({
                         icon: '🔍',
                         label: 'Inspect Element',
                         shortcut: isMac ? 'Cmd+Opt+I' : 'F12',
@@ -567,6 +781,43 @@ impl SessionManager {
             .data_store_identifier(uuid_bytes)
             .user_agent(selected_user_agent)
             .initialization_script(init_script)
+            .on_download(move |_webview, event| {
+                match event {
+                    tauri::webview::DownloadEvent::Requested { url, destination } => {
+                        let filename = destination
+                            .file_name()
+                            .and_then(|f| f.to_str())
+                            .unwrap_or_else(|| {
+                                url.path_segments()
+                                    .and_then(|mut s| s.next_back())
+                                    .unwrap_or("descarga")
+                            })
+                            .to_string();
+                        let final_path = get_unique_download_path(&filename);
+                        *destination = final_path.clone();
+                        let _ = app_handle_dl.emit(
+                            "download-started",
+                            serde_json::json!({
+                                "url": url.to_string(),
+                                "name": filename
+                            }),
+                        );
+                        true
+                    }
+                    tauri::webview::DownloadEvent::Finished { url: _, path, success } => {
+                        if success {
+                            if let Some(ref p) = path {
+                                notify_download_finished(&app_handle_dl, p);
+                            } else {
+                                let download_dir = dirs::download_dir().unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
+                                notify_download_finished(&app_handle_dl, &download_dir.join("archivo"));
+                            }
+                        }
+                        true
+                    }
+                    _ => true,
+                }
+            })
             .on_navigation(move |url| {
                 if url.scheme() == "minibrowser-action" {
                     let action = url.host_str().unwrap_or("");
@@ -584,6 +835,95 @@ impl SessionManager {
                         "open-new-session" => {
                             if let Some(target_url) = params.get("url") {
                                 let _ = app_handle_clone.emit("open-new-session-url", target_url);
+                            }
+                        }
+                        "open-downloads-folder" => {
+                            let download_dir = dirs::download_dir().unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
+                            use tauri_plugin_opener::OpenerExt;
+                            let _ = app_handle_clone.opener().open_path(download_dir.to_string_lossy().to_string(), None::<&str>);
+                        }
+                        "blob-download-ready" => {
+                            let id = params.get("id").cloned().unwrap_or_default();
+                            let fallback_filename = params.get("filename").cloned().unwrap_or_else(|| "descarga".to_string());
+                            if let Some(wv) = app_handle_clone.get_webview(&label_nav) {
+                                let app_handle_save = app_handle_clone.clone();
+                                let eval_code = format!(
+                                    r#"(function() {{
+                                        var map = window.__minibrowser_pending_downloads;
+                                        if (map && map['{}']) {{
+                                            var item = map['{}'];
+                                            delete map['{}'];
+                                            return JSON.stringify(item);
+                                        }}
+                                        return null;
+                                    }})()"#,
+                                    id, id, id
+                                );
+                                let _ = wv.eval_with_callback(eval_code, move |res| {
+                                    // Parse result: either stringified JSON or JSON value
+                                    let parsed_val: Option<serde_json::Value> = if let Ok(raw_json) = serde_json::from_str::<String>(&res) {
+                                        serde_json::from_str::<serde_json::Value>(&raw_json).ok()
+                                    } else {
+                                        serde_json::from_str::<serde_json::Value>(&res).ok()
+                                    };
+
+                                    if let Some(val) = parsed_val {
+                                        let fname = val["filename"].as_str().unwrap_or(&fallback_filename);
+                                        let data_uri = val["data"].as_str().unwrap_or("");
+                                        if !data_uri.is_empty() {
+                                            match save_base64_file(fname, data_uri) {
+                                                Ok(saved_path) => {
+                                                    notify_download_finished(&app_handle_save, &saved_path);
+                                                }
+                                                Err(e) => {
+                                                    eprintln!("[DOWNLOAD] Error saving blob file: {}", e);
+                                                }
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                        "download-file" => {
+                            if let Some(target_url) = params.get("url") {
+                                let fallback_name = params.get("filename").cloned().unwrap_or_else(|| "descarga".to_string());
+                                let app_handle_save = app_handle_clone.clone();
+                                let target_url = target_url.clone();
+                                std::thread::spawn(move || {
+                                    let filename = if fallback_name.trim().is_empty() || fallback_name == "descarga" {
+                                        target_url.split('/').last().and_then(|s| s.split('?').next()).unwrap_or("descarga")
+                                    } else {
+                                        &fallback_name
+                                    };
+                                    let dest = get_unique_download_path(filename);
+                                    #[cfg(not(target_os = "windows"))]
+                                    {
+                                        let status = std::process::Command::new("curl")
+                                            .arg("-L")
+                                            .arg("-s")
+                                            .arg("-o")
+                                            .arg(&dest)
+                                            .arg(&target_url)
+                                            .status();
+                                        if let Ok(st) = status {
+                                            if st.success() && dest.exists() {
+                                                notify_download_finished(&app_handle_save, &dest);
+                                            }
+                                        }
+                                    }
+                                    #[cfg(target_os = "windows")]
+                                    {
+                                        let status = std::process::Command::new("powershell")
+                                            .arg("-Command")
+                                            .arg(format!("Invoke-WebRequest -Uri '{}' -OutFile '{}'", target_url, dest.to_string_lossy()))
+                                            .status();
+                                        if let Ok(st) = status {
+                                            if st.success() && dest.exists() {
+                                                notify_download_finished(&app_handle_save, &dest);
+                                            }
+                                        }
+                                    }
+                                });
                             }
                         }
                         "shortcut" => {
@@ -654,6 +994,11 @@ impl SessionManager {
                             if let Some(target_url) = params.get("url") {
                                 let _ = app_handle_new_win.emit("open-new-session-url", target_url);
                             }
+                        }
+                        "open-downloads-folder" => {
+                            let download_dir = dirs::download_dir().unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
+                            use tauri_plugin_opener::OpenerExt;
+                            let _ = app_handle_new_win.opener().open_path(download_dir.to_string_lossy().to_string(), None::<&str>);
                         }
                         "inspect" => {
                             if let Some(wv) = app_handle_new_win.get_webview(&label_new_win) {
