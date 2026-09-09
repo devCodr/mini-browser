@@ -43,6 +43,12 @@ pub struct Settings {
     pub start_minimized: bool,
     #[serde(rename = "pinLength", default = "default_pin_length")]
     pub pin_length: usize,
+    #[serde(rename = "securityQuestion", skip_serializing_if = "Option::is_none")]
+    pub security_question: Option<String>,
+    #[serde(rename = "securityAnswerHash", skip_serializing_if = "Option::is_none")]
+    pub security_answer_hash: Option<String>,
+    #[serde(rename = "securityAnswerSalt", skip_serializing_if = "Option::is_none")]
+    pub security_answer_salt: Option<String>,
 }
 
 impl Default for Settings {
@@ -55,6 +61,9 @@ impl Default for Settings {
             lock_on_launch: true,
             start_minimized: false,
             pin_length: 6,
+            security_question: None,
+            security_answer_hash: None,
+            security_answer_salt: None,
         };
         s.set_pin("123456");
         s
@@ -75,6 +84,32 @@ impl Settings {
     pub fn verify_pin(&self, pin: &str) -> bool {
         match (&self.pin_salt, &self.pin_hash) {
             (Some(salt), Some(hash)) => sha256_hash(pin, salt) == *hash,
+            _ => false,
+        }
+    }
+
+    pub fn set_security_question(&mut self, question: &str, answer: &str) {
+        let clean_q = question.trim();
+        let clean_a = answer.trim().to_lowercase();
+        if clean_q.is_empty() || clean_a.is_empty() {
+            self.security_question = None;
+            self.security_answer_hash = None;
+            self.security_answer_salt = None;
+            return;
+        }
+        let mut salt_bytes = [0u8; 16];
+        let _ = getrandom::getrandom(&mut salt_bytes);
+        let salt = hex::encode(salt_bytes);
+        let hash = sha256_hash(&clean_a, &salt);
+        self.security_question = Some(clean_q.to_string());
+        self.security_answer_hash = Some(hash);
+        self.security_answer_salt = Some(salt);
+    }
+
+    pub fn verify_security_answer(&self, answer: &str) -> bool {
+        let clean_a = answer.trim().to_lowercase();
+        match (&self.security_answer_salt, &self.security_answer_hash) {
+            (Some(salt), Some(hash)) => sha256_hash(&clean_a, salt) == *hash,
             _ => false,
         }
     }
@@ -165,6 +200,20 @@ impl StoreManager {
         if let Ok(json) = serde_json::to_string_pretty(bookmarks) {
             let _ = fs::write(self.bookmarks_path(), json);
         }
+    }
+
+    pub fn factory_reset(&self) {
+        let sessions = self.sessions_dir();
+        if sessions.exists() {
+            let _ = fs::remove_dir_all(&sessions);
+            let _ = fs::create_dir_all(&sessions);
+        }
+        let bookmarks = self.bookmarks_path();
+        if bookmarks.exists() {
+            let _ = fs::remove_file(&bookmarks);
+        }
+        let default_settings = Settings::default();
+        self.save_settings(&default_settings);
     }
 }
 

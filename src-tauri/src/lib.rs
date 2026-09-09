@@ -376,6 +376,70 @@ fn update_settings(
 }
 
 #[tauri::command]
+fn set_security_question(
+    state: State<'_, AppStateWrapper>,
+    question: String,
+    answer: String,
+) -> Result<bool, String> {
+    let store = state.store.lock().unwrap();
+    let mut settings = store.load_settings();
+    settings.set_security_question(&question, &answer);
+    store.save_settings(&settings);
+    Ok(true)
+}
+
+#[tauri::command]
+fn get_security_question(state: State<'_, AppStateWrapper>) -> Result<Option<String>, String> {
+    let store = state.store.lock().unwrap();
+    let settings = store.load_settings();
+    Ok(settings.security_question)
+}
+
+#[tauri::command]
+fn verify_security_answer(state: State<'_, AppStateWrapper>, answer: String) -> bool {
+    let store = state.store.lock().unwrap();
+    let settings = store.load_settings();
+    settings.verify_security_answer(&answer)
+}
+
+#[tauri::command]
+fn reset_pin_with_answer(
+    state: State<'_, AppStateWrapper>,
+    answer: String,
+    new_pin: String,
+) -> Result<bool, String> {
+    let clean_pin = new_pin.trim();
+    if (clean_pin.len() != 4 && clean_pin.len() != 6) || !clean_pin.chars().all(|c| c.is_ascii_digit()) {
+        return Err("PIN must be either 4 or 6 numeric digits".to_string());
+    }
+    let store = state.store.lock().unwrap();
+    let mut settings = store.load_settings();
+    if !settings.verify_security_answer(&answer) {
+        return Err("Incorrect security answer".to_string());
+    }
+    settings.set_pin(clean_pin);
+    store.save_settings(&settings);
+    Ok(true)
+}
+
+#[tauri::command]
+fn factory_reset(
+    app: AppHandle,
+    state: State<'_, AppStateWrapper>,
+) -> Result<serde_json::Value, String> {
+    state.sessions.deactivate_all(&app);
+    let store = state.store.lock().unwrap();
+    store.factory_reset();
+    let settings = store.load_settings();
+    let bookmarks = store.load_bookmarks();
+    rebuild_menu(&app, &bookmarks);
+    Ok(serde_json::json!({
+        "settings": settings,
+        "bookmarks": bookmarks
+    }))
+}
+
+#[tauri::command]
 fn get_platform() -> String {
     #[cfg(target_os = "macos")]
     return "macos".to_string();
@@ -551,7 +615,12 @@ pub fn run() {
             open_in_new_session,
             toggle_devtools,
             update_settings,
-            lock_now
+            lock_now,
+            set_security_question,
+            get_security_question,
+            verify_security_answer,
+            reset_pin_with_answer,
+            factory_reset
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

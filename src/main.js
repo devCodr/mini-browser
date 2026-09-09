@@ -71,6 +71,34 @@ const timeoutDisplay = document.getElementById("timeout-display");
 const formChangePin = document.getElementById("form-change-pin");
 const inputNewPin = document.getElementById("input-new-pin");
 
+// Security Question & Recovery Elements
+const formSecurityQuestion = document.getElementById("form-security-question");
+const selectSecurityQuestion = document.getElementById("select-security-question");
+const inputCustomQuestion = document.getElementById("input-custom-question");
+const inputSecurityAnswer = document.getElementById("input-security-answer");
+const securityQuestionStatus = document.getElementById("security-question-status");
+
+const btnForgotPin = document.getElementById("btn-forgot-pin");
+const modalRecovery = document.getElementById("modal-recovery");
+const btnCloseRecovery = document.getElementById("btn-close-recovery");
+const tabBtnRecoveryQuestion = document.getElementById("tab-btn-recovery-question");
+const tabBtnRecoveryReset = document.getElementById("tab-btn-recovery-reset");
+const panelRecoveryQuestion = document.getElementById("panel-recovery-question");
+const panelRecoveryReset = document.getElementById("panel-recovery-reset");
+
+const recoveryNoQuestion = document.getElementById("recovery-no-question");
+const recoveryHasQuestion = document.getElementById("recovery-has-question");
+const recoveryQuestionDisplay = document.getElementById("recovery-question-display");
+const inputRecoveryAnswer = document.getElementById("input-recovery-answer");
+const btnVerifyRecoveryAnswer = document.getElementById("btn-verify-recovery-answer");
+const recoveryAnswerError = document.getElementById("recovery-answer-error");
+const recoveryNewPinSection = document.getElementById("recovery-new-pin-section");
+const inputRecoveryNewPin = document.getElementById("input-recovery-new-pin");
+const btnSaveRecoveryPin = document.getElementById("btn-save-recovery-pin");
+
+const inputConfirmReset = document.getElementById("input-confirm-reset");
+const btnExecuteFactoryReset = document.getElementById("btn-execute-factory-reset");
+
 // Lock Overlay
 const lockOverlay = document.getElementById("lock-overlay");
 const lockCard = document.querySelector(".lock-card");
@@ -206,6 +234,7 @@ async function hideModal(modalEl) {
     !modalShortcuts.classList.contains("hidden") ||
     !modalAbout.classList.contains("hidden") ||
     !modalSettings.classList.contains("hidden") ||
+    (modalRecovery && !modalRecovery.classList.contains("hidden")) ||
     state.isLocked;
 
   if (!anyModalOpen && state.activePartition) {
@@ -1091,6 +1120,15 @@ btnSettings.addEventListener("click", () => {
   settingStartMinimized.checked = !!state.settings.startMinimized;
   settingTimeout.value = state.settings.inactivityMs;
   timeoutDisplay.textContent = `${state.settings.inactivityMs / 60000} minutes`;
+
+  if (state.settings.securityQuestion) {
+    securityQuestionStatus.textContent = "(Configurada ✓)";
+    securityQuestionStatus.style.color = "#10b981";
+  } else {
+    securityQuestionStatus.textContent = "(Sin configurar)";
+    securityQuestionStatus.style.color = "var(--text-muted)";
+  }
+
   showModal(modalSettings);
 });
 
@@ -1142,6 +1180,169 @@ formChangePin.addEventListener("submit", async (e) => {
     alert("PIN must be exactly 4 or 6 numeric digits.");
   }
 });
+
+// Security Question Setup
+if (selectSecurityQuestion) {
+  selectSecurityQuestion.addEventListener("change", (e) => {
+    if (e.target.value === "custom") {
+      inputCustomQuestion.classList.remove("hidden");
+      inputCustomQuestion.focus();
+    } else {
+      inputCustomQuestion.classList.add("hidden");
+    }
+  });
+}
+
+if (formSecurityQuestion) {
+  formSecurityQuestion.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const selected = selectSecurityQuestion.value;
+    const q = selected === "custom" ? inputCustomQuestion.value.trim() : selected;
+    const a = inputSecurityAnswer.value.trim();
+    if (!q || !a) return;
+    try {
+      await invoke("set_security_question", { question: q, answer: a });
+      state.settings.securityQuestion = q;
+      inputSecurityAnswer.value = "";
+      securityQuestionStatus.textContent = "(Configurada ✓)";
+      securityQuestionStatus.style.color = "#10b981";
+      alert("¡Pregunta de seguridad guardada con éxito!");
+    } catch (err) {
+      alert("Error guardando pregunta: " + err);
+    }
+  });
+}
+
+// === PIN Recovery Modal Handling ===
+if (btnForgotPin) {
+  btnForgotPin.addEventListener("click", async () => {
+    let question = state.settings.securityQuestion;
+    if (!question) {
+      try {
+        question = await invoke("get_security_question");
+        if (question) state.settings.securityQuestion = question;
+      } catch (_) {}
+    }
+
+    if (question) {
+      recoveryHasQuestion.classList.remove("hidden");
+      recoveryNoQuestion.classList.add("hidden");
+      recoveryQuestionDisplay.textContent = question;
+    } else {
+      recoveryHasQuestion.classList.add("hidden");
+      recoveryNoQuestion.classList.remove("hidden");
+    }
+
+    inputRecoveryAnswer.value = "";
+    recoveryAnswerError.classList.add("hidden");
+    recoveryAnswerError.style.display = "none";
+    recoveryNewPinSection.classList.add("hidden");
+    inputRecoveryNewPin.value = "";
+    inputConfirmReset.value = "";
+    btnExecuteFactoryReset.disabled = true;
+
+    // Reset to Question Tab
+    tabBtnRecoveryQuestion.classList.add("active");
+    tabBtnRecoveryReset.classList.remove("active");
+    panelRecoveryQuestion.classList.remove("hidden");
+    panelRecoveryReset.classList.add("hidden");
+
+    showModal(modalRecovery);
+    if (question) {
+      setTimeout(() => inputRecoveryAnswer.focus(), 80);
+    }
+  });
+}
+
+if (btnCloseRecovery) {
+  btnCloseRecovery.addEventListener("click", () => hideModal(modalRecovery));
+}
+
+if (tabBtnRecoveryQuestion) {
+  tabBtnRecoveryQuestion.addEventListener("click", () => {
+    tabBtnRecoveryQuestion.classList.add("active");
+    tabBtnRecoveryReset.classList.remove("active");
+    panelRecoveryQuestion.classList.remove("hidden");
+    panelRecoveryReset.classList.add("hidden");
+  });
+}
+
+if (tabBtnRecoveryReset) {
+  tabBtnRecoveryReset.addEventListener("click", () => {
+    tabBtnRecoveryReset.classList.add("active");
+    tabBtnRecoveryQuestion.classList.remove("active");
+    panelRecoveryReset.classList.remove("hidden");
+    panelRecoveryQuestion.classList.add("hidden");
+    setTimeout(() => inputConfirmReset.focus(), 80);
+  });
+}
+
+if (btnVerifyRecoveryAnswer) {
+  btnVerifyRecoveryAnswer.addEventListener("click", async () => {
+    const answer = inputRecoveryAnswer.value.trim();
+    if (!answer) return;
+    const isValid = await invoke("verify_security_answer", { answer });
+    if (isValid) {
+      recoveryAnswerError.classList.add("hidden");
+      recoveryAnswerError.style.display = "none";
+      recoveryNewPinSection.classList.remove("hidden");
+      setTimeout(() => inputRecoveryNewPin.focus(), 60);
+    } else {
+      recoveryAnswerError.classList.remove("hidden");
+      recoveryAnswerError.style.display = "block";
+    }
+  });
+}
+
+if (btnSaveRecoveryPin) {
+  btnSaveRecoveryPin.addEventListener("click", async () => {
+    const answer = inputRecoveryAnswer.value.trim();
+    const newPin = inputRecoveryNewPin.value.trim();
+    if ((newPin.length !== 4 && newPin.length !== 6) || !/^\d+$/.test(newPin)) {
+      alert("El nuevo PIN debe ser exactamente de 4 o 6 números.");
+      return;
+    }
+    try {
+      await invoke("reset_pin_with_answer", { answer, newPin });
+      state.settings.pinLength = newPin.length;
+      hideModal(modalRecovery);
+      unlockApp();
+      alert(`¡PIN actualizado a ${newPin.length} dígitos y aplicación desbloqueada!`);
+    } catch (err) {
+      alert("Error restableciendo PIN: " + err);
+    }
+  });
+}
+
+if (inputConfirmReset) {
+  inputConfirmReset.addEventListener("input", (e) => {
+    const val = e.target.value.trim().toUpperCase();
+    btnExecuteFactoryReset.disabled = val !== "RESET";
+  });
+}
+
+if (btnExecuteFactoryReset) {
+  btnExecuteFactoryReset.addEventListener("click", async () => {
+    if (!confirm("⚠️ ¿Estás COMPLETAMENTE seguro de restablecer MiniBrowser de fábrica?\n\nEsta acción borrará todas tus sesiones activas, cuentas, cookies y marcadores. El PIN volverá a ser 123456.")) {
+      return;
+    }
+    try {
+      const freshState = await invoke("factory_reset");
+      if (freshState) {
+        state.settings = freshState.settings;
+        state.bookmarks = freshState.bookmarks || [];
+      }
+      state.activePartition = null;
+      renderTabs();
+      hideModal(modalRecovery);
+      unlockApp();
+      goHome();
+      alert("MiniBrowser ha sido restablecido a los valores de fábrica.\nEl PIN por defecto es 123456.");
+    } catch (err) {
+      alert("Error al restablecer de fábrica: " + err);
+    }
+  });
+}
 
 btnLock.addEventListener("click", lockApp);
 
@@ -1276,6 +1477,7 @@ window.addEventListener("keydown", (e) => {
     hideModal(modalShortcuts);
     hideModal(modalAbout);
     hideModal(modalSettings);
+    if (modalRecovery) hideModal(modalRecovery);
     return;
   }
 

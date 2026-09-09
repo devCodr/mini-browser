@@ -1254,6 +1254,130 @@ kbd {
   animation: shake 0.35s ease;
 }
 
+.forgot-pin-btn {
+  margin-top: 14px;
+  background: transparent;
+  border: none;
+  color: var(--accent, #6366f1);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.forgot-pin-btn:hover {
+  opacity: 1;
+}
+
+.recovery-modal-card {
+  width: 480px;
+  max-width: 92vw;
+  padding: 24px;
+}
+
+.recovery-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 16px;
+  gap: 8px;
+}
+
+.recovery-tab {
+  flex: 1;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.recovery-tab:hover {
+  color: var(--text-primary);
+}
+
+.recovery-tab.active {
+  color: var(--accent, #6366f1);
+  border-bottom-color: var(--accent, #6366f1);
+}
+
+.recovery-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recovery-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.recovery-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.recovery-question-box {
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.recovery-notice {
+  padding: 14px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-md);
+  color: #fbbf24;
+  font-size: 13px;
+  text-align: center;
+}
+
+.danger-warning-card {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+}
+
+.danger-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.danger-btn {
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.danger-btn:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.danger-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 /* ==========================================================
    MANAGE SESSIONS MODAL
    ========================================================== */
