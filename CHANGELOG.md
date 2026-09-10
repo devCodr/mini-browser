@@ -19,9 +19,11 @@ Versioning follows [Semantic Versioning](https://semver.org/).
   - `MiniBrowser > Settings / Preferences... (⌘,)` — opens Settings modal
   - `View > Open Downloads Folder` — opens system Downloads folder
 - **Menu-shortcut handlers**: All native menu actions wire to frontend (`about_minibrowser`, `preferences`, `open_downloads`).
+- **Landing Page & Documentation (`docs/`)**: Updated GitHub Pages landing site with System Tray, Smart Notifications, window drag, native menu shortcuts (`⌘,`), and dynamic GitHub release tag fetcher.
+- **AGENTS.md workflow rules**: Added mandatory rule to synchronize `README.md` and `docs/index.html` on every modification and release.
 
 ### Removed
-- **About modal — static stats removed**: Removed hardcoded "Memory Footprint ~50 MB RAM (Idle)" and "Bundle Size ~4.8 MB (Ultra-compact)" misleading fields.
+- **About modal — static stats removed**: Removed hardcoded "Memory Footprint ~50 MB RAM (Idle)" and "Bundle Size ~4.8 MB (Ultra-compact)" misleading fields from About modal and documentation.
 
 ---
 

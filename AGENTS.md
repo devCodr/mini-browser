@@ -98,6 +98,27 @@ Generated binaries: `src-tauri/target/release/bundle/` (`.dmg`, `.app`, `.exe`, 
 
 ---
 
+## 🌐 Mandatory: Documentation & Landing Page Synchronization
+
+On **EVERY** feature addition, UI change, shortcut update, or release, the agent **MUST** keep all documentation and the GitHub Pages landing site fully synchronized:
+
+1. **`README.md`**:
+   - Feature highlights (Tray, smart notifications, window drag, native menu, etc.).
+   - Keyboard shortcuts table (Preferences `⌘,`, Downloads `⌘⇧J`, etc.).
+   - Project structure, architecture notes, and dynamic release badges.
+
+2. **Landing Page (`docs/index.html`)**:
+   - Download buttons and version tags must reflect the latest release version.
+   - Feature cards & descriptions: System Tray, Smart Notifications, window drag, native menu bar, 4 or 6-digit PIN security, sleep/suspend auto-lock.
+   - Documentation chapters: Multi-session architecture, tab workflows, security shield, System Tray & notifications chapter, complete shortcuts reference table, source build instructions.
+   - Never retain obsolete or hardcoded hardware claims (e.g. `~50 MB RAM` or `4.8 MB`).
+   - Ensure quick nav pills and anchor targets (`#docs-...`) remain aligned.
+
+3. **`CHANGELOG.md`**:
+   - Must document every change under the corresponding version header (`Added`, `Fixed`, `Changed`, `Removed`).
+
+---
+
 ## 🏗️ Architectural Invariants to Maintain
 
 1. **Multi-Account Storage Isolation (`data_store_identifier`)**:
@@ -128,3 +149,10 @@ Generated binaries: `src-tauri/target/release/bundle/` (`.dmg`, `.app`, `.exe`, 
    - Child webview fires `sendHostAction('notify', {...})` → Rust stores `partition` in `AppStateWrapper.pending_notification` and emits `notification-received`.
    - Frontend highlights tab via `highlightNotificationTab(partition)`.
    - On `app-focused` event or after PIN unlock, frontend calls `get_pending_notification` and navigates.
+
+7. **Window Drag Region**:
+   - Empty space in the tab bar container uses `data-tauri-drag-region` allowing users to reposition the native window.
+
+8. **Landing & Documentation Sync**:
+   - The landing page in `docs/index.html` serves as the live public user manual and download portal on GitHub Pages (`https://devcodr.github.io/mini-browser/`). It must never fall behind the current repository state.
+

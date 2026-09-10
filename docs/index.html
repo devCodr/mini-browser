@@ -48,8 +48,7 @@
         <div class="hero-pill">
           <span class="dot"></span>
           <span
-            >100% Open Source • Native Rust &amp; Tauri v2 • ~4.8 MB • Zero Cookie
-            Collisions</span
+            >100% Open Source • Native Rust &amp; Tauri v2 • System Tray • Zero Cookie Collisions</span
           >
         </div>
         <h1 class="hero-title">
@@ -78,7 +77,7 @@
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            <span>Download for macOS, Windows & Linux (v1.0.0)</span>
+            <span id="download-btn-text">Download for macOS, Windows & Linux (v1.3.0)</span>
           </a>
           <a href="#docs" class="btn-secondary">
             <span>Read User Guide</span>
@@ -208,13 +207,36 @@
                 stroke="currentColor"
                 stroke-width="2.2"
               >
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                <rect width="20" height="14" x="2" y="3" rx="2" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="12" y1="17" x2="12" y2="21" />
               </svg>
             </div>
-            <h3 class="feature-title">4.8 MB Native Bundle</h3>
+            <h3 class="feature-title">System Tray & Background Mode</h3>
             <p class="feature-desc">
-              Ultra-compact native standalone release package. Instant launch
-              in 0.25 seconds with ~50 MB baseline RAM footprint.
+              Runs quietly in your system tray / menu bar. 1-click restore,
+              instant lock, and quick actions without desktop clutter.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+              >
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+            </div>
+            <h3 class="feature-title">Smart Notification Routing</h3>
+            <p class="feature-desc">
+              Desktop notifications (WhatsApp, Gmail, etc.) automatically route
+              and switch directly to the specific tab and partition on click.
             </p>
           </div>
 
@@ -231,10 +253,10 @@
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
             </div>
-            <h3 class="feature-title">PIN Security & Auto-Lock</h3>
+            <h3 class="feature-title">PIN Security & Sleep Auto-Lock</h3>
             <p class="feature-desc">
-              Glassmorphic blur screen shield protected by SHA-256 PIN. Set
-              auto-lock after idle time or require authentication on app launch.
+              Glassmorphic blur screen shield protected by 4 or 6-digit PIN.
+              Auto-locks on system sleep/suspend, app launch, or idle timeout.
             </p>
           </div>
 
@@ -252,11 +274,10 @@
                 <path d="m18 9-6-6-6 6" />
               </svg>
             </div>
-            <h3 class="feature-title">4 Tab Reorder Workflows</h3>
+            <h3 class="feature-title">4 Tab Reorder & Window Drag</h3>
             <p class="feature-desc">
-              Right-click context menu, fast global keyboard shortcuts
-              (<code>⌥⌘←/→</code>), smooth mouse drag-and-drop, and 1-click
-              modal arrow buttons.
+              Right-click menu, global shortcuts (<code>⌥⌘←/→</code>), drag-and-drop
+              tabs, plus fluid window drag from the tab bar empty space.
             </p>
           </div>
 
@@ -295,12 +316,11 @@
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
             </div>
-            <h3 class="feature-title">Cross-Webview Global Shortcuts</h3>
+            <h3 class="feature-title">Native Menus & Global Shortcuts</h3>
             <p class="feature-desc">
-              Powered by native macOS Cocoa application menus.
-              <code>Cmd+1..9</code>, <code>Cmd+T</code>,
-              <code>Cmd+W</code> always trigger, even when typing inside
-              websites.
+              Complete macOS menu bar integration, Preferences (<code>⌘,</code>),
+              Downloads, and shortcuts (<code>⌘1..9</code>, <code>⌘T</code>, <code>⌘W</code>)
+              triggering across all webviews.
             </p>
           </div>
         </div>
@@ -326,17 +346,17 @@
         <!-- High-Impact Key Metrics -->
         <div class="metrics-grid">
           <div class="metric-card">
-            <div class="metric-val gradient-text">4.8 MB</div>
-            <div class="metric-label">Release Installer Size</div>
+            <div class="metric-val gradient-text">Ultra-Light</div>
+            <div class="metric-label">Compact Native Release</div>
             <p class="metric-desc">
-              Ultra-compact native standalone release. Downloads in seconds.
+              Powered by native WebKit / WebView2 engines. Zero heavy browser bloat.
             </p>
           </div>
           <div class="metric-card">
-            <div class="metric-val gradient-text">~50 MB</div>
-            <div class="metric-label">Baseline Idle RAM</div>
+            <div class="metric-val gradient-text">Lean RAM</div>
+            <div class="metric-label">Minimal Memory Footprint</div>
             <p class="metric-desc">
-              Leaves memory free for your demanding development and creative
+              Leaves system memory free for your development and creative
               tasks.
             </p>
           </div>
@@ -376,15 +396,15 @@
               <tr>
                 <td><strong>Binary / Installer Size</strong></td>
                 <td>
-                  <span class="badge-pill badge-pill-green">~4.8 MB</span>
-                  (Native universal release)
+                  <span class="badge-pill badge-pill-green">Ultra-compact</span>
+                  (Native system engine)
                 </td>
                 <td>250 MB – 380 MB+ (Bundled heavy engine)</td>
               </tr>
               <tr>
                 <td><strong>Idle Memory Usage</strong></td>
                 <td>
-                  <span class="badge-pill badge-pill-green">~50 MB RAM</span>
+                  <span class="badge-pill badge-pill-green">Optimized & Lean</span>
                 </td>
                 <td>280 MB – 650 MB+ per profile</td>
               </tr>
@@ -448,6 +468,9 @@
             <a href="#docs-security" class="docs-nav-pill"
               >🔒 PIN Security & Auto-Lock</a
             >
+            <a href="#docs-tray-notifications" class="docs-nav-pill"
+              >🔔 Tray & Notifications</a
+            >
             <a href="#docs-shortcuts" class="docs-nav-pill"
               >⌨️ Complete Shortcuts</a
             >
@@ -504,11 +527,11 @@
             <div class="callout callout-tip">
               <div class="callout-icon">💡</div>
               <div class="callout-body">
-                <strong>Native Rust & Tauri v2 Performance</strong>
+                <strong>Native Rust &amp; Tauri v2 Performance</strong>
                 MiniBrowser leverages system-native web engines (WebKit on
-                macOS, WebView2 on Windows, WebKitGTK on Linux). The entire app
-                idles at just ~50 MB RAM and the standalone installer is only
-                <strong>4.8 MB</strong>.
+                macOS, WebView2 on Windows, WebKitGTK on Linux). This eliminates
+                the bloated Chromium bundle overhead, providing lightning-fast
+                launch times and ultra-lean memory usage.
               </div>
             </div>
           </div>
@@ -678,7 +701,7 @@
           <div class="doc-card">
             <p>
               MiniBrowser includes a built-in cryptographic security layer with
-              a 6-digit SHA-256 PIN shield and full UI blur masking:
+              a 4 or 6-digit SHA-256 PIN shield and full UI blur masking:
             </p>
 
             <div class="steps-container">
@@ -687,7 +710,7 @@
                 <h4>Inactivity Auto-Lock</h4>
                 <p>
                   Configure an idle timer (1, 5, 15, 30, or 60 minutes) in
-                  Settings. When no input is detected, the browser automatically
+                  Settings. When no user activity is detected, the browser automatically
                   engages the lock overlay.
                 </p>
               </div>
@@ -695,27 +718,27 @@
                 <div class="step-item-num">🚀</div>
                 <h4>Lock on Launch</h4>
                 <p>
-                  Require your 6-digit PIN before any web sessions or tab
+                  Require your PIN before any web sessions or tab
                   contents are revealed upon launching the application.
                 </p>
               </div>
               <div class="step-item">
-                <div class="step-item-num">👁️</div>
-                <h4>Discreet Minimized Start</h4>
+                <div class="step-item-num">💤</div>
+                <h4>Sleep & Suspend Lock</h4>
                 <p>
-                  Enable "Start Minimized" to let the app start quietly in the
-                  background without abruptly flashing windows on your desktop.
+                  MiniBrowser automatically engages the PIN security shield
+                  whenever your computer enters sleep mode or suspends.
                 </p>
               </div>
               <div class="step-item">
                 <div class="step-item-num">⚡</div>
-                <h4>Emergency Instant Lock</h4>
+                <h4>Instant Emergency Lock</h4>
                 <p>
                   Hit <kbd>Cmd</kbd> + <kbd>Option</kbd> + <kbd>L</kbd> (<kbd
                     >Ctrl</kbd
                   >
-                  + <kbd>Alt</kbd> + <kbd>L</kbd>) anytime to immediately
-                  conceal all webviews behind the glass shield.
+                  + <kbd>Alt</kbd> + <kbd>L</kbd>) or select Lock from the System Tray
+                  menu to immediately conceal all webviews behind the glass shield.
                 </p>
               </div>
             </div>
@@ -725,15 +748,63 @@
               <div class="callout-body">
                 <strong>Factory Default PIN & Setup</strong>
                 The default factory PIN is <code>123456</code>. You can change
-                this to any 6-digit passcode anytime by clicking the Settings
-                gear icon (<kbd>⚙️</kbd>) and selecting <em>"Change PIN"</em>.
+                this to any 4 or 6-digit passcode anytime by clicking the Settings
+                gear icon (<kbd>⚙️</kbd>) or pressing <kbd>Cmd + ,</kbd> and selecting <em>"Change PIN"</em>.
                 The hash is saved locally using SHA-256 with salt.
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Chapter 5: Complete Shortcuts Table -->
+        <!-- Chapter 5: System Tray, Smart Notifications & Window Drag -->
+        <div id="docs-tray-notifications" class="doc-chapter">
+          <div class="doc-chapter-header">
+            <div class="doc-chapter-icon">🔔</div>
+            <div>
+              <h3 class="doc-chapter-title">
+                System Tray, Smart Notifications & Window Drag
+              </h3>
+              <p style="color: var(--text-muted); font-size: 14px">
+                Background persistence, tray quick menu, intelligent notification routing, and seamless window management.
+              </p>
+            </div>
+          </div>
+
+          <div class="doc-card">
+            <div class="steps-container">
+              <div class="step-item">
+                <div class="step-item-num">📌</div>
+                <h4>System Tray & Menu Bar</h4>
+                <p>
+                  MiniBrowser lives in your system tray (menu bar on macOS). Left-click to instantly bring the window to the front. Right-click or open the menu to quickly <strong>Show MiniBrowser</strong>, <strong>Lock Browser</strong>, or <strong>Quit</strong>.
+                </p>
+              </div>
+              <div class="step-item">
+                <div class="step-item-num">🎯</div>
+                <h4>Smart Notification Routing</h4>
+                <p>
+                  When WhatsApp, Gmail, or any other web application sends a desktop notification, clicking it immediately brings MiniBrowser forward and automatically navigates directly to that specific tab and session partition.
+                </p>
+              </div>
+              <div class="step-item">
+                <div class="step-item-num">🪟</div>
+                <h4>Fluid Window Dragging</h4>
+                <p>
+                  You can click and drag anywhere in the empty space of the top tab bar to reposition the MiniBrowser window on your screen smoothly without accidentally triggering tab switches.
+                </p>
+              </div>
+              <div class="step-item">
+                <div class="step-item-num">🧭</div>
+                <h4>Native macOS Menu Bar</h4>
+                <p>
+                  Enjoy a complete native menu bar experience: <strong>About MiniBrowser</strong>, <strong>Preferences (<kbd>⌘,</kbd>)</strong>, <strong>Downloads Folder</strong>, and comprehensive tab/session navigation accelerators.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chapter 6: Complete Shortcuts Table -->
         <div id="docs-shortcuts" class="doc-chapter">
           <div class="doc-chapter-header">
             <div class="doc-chapter-icon">⌨️</div>
@@ -758,6 +829,12 @@
                 </tr>
               </thead>
               <tbody>
+                <tr>
+                  <td><kbd>Cmd</kbd> + <kbd>,</kbd></td>
+                  <td><kbd>Ctrl</kbd> + <kbd>,</kbd></td>
+                  <td><strong>Preferences / Settings</strong></td>
+                  <td>Open configuration modal (PIN, timers, appearance)</td>
+                </tr>
                 <tr>
                   <td><kbd>Cmd</kbd> + <kbd>1</kbd> .. <kbd>9</kbd></td>
                   <td><kbd>Ctrl</kbd> + <kbd>1</kbd> .. <kbd>9</kbd></td>
@@ -837,6 +914,12 @@
                   <td>Zoom in, zoom out, or reset zoom to 100%</td>
                 </tr>
                 <tr>
+                  <td><kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>J</kbd></td>
+                  <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>J</kbd></td>
+                  <td><strong>Downloads Folder</strong></td>
+                  <td>Open default system downloads folder</td>
+                </tr>
+                <tr>
                   <td><kbd>Cmd</kbd> + <kbd>Option</kbd> + <kbd>L</kbd></td>
                   <td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>L</kbd></td>
                   <td><strong>Lock Browser</strong></td>
@@ -859,7 +942,7 @@
           </div>
         </div>
 
-        <!-- Chapter 6: Developer Setup & Compiling from Source -->
+        <!-- Chapter 7: Developer Setup & Compiling from Source -->
         <div id="docs-building" class="doc-chapter">
           <div class="doc-chapter-header">
             <div class="doc-chapter-icon">🚀</div>
@@ -925,7 +1008,7 @@ pnpm dev</code></pre>
             <ul>
               <li>
                 <strong>macOS</strong>: Apple Silicon & Universal
-                <code>.dmg</code> and <code>.app</code> (~4.8 MB)
+                <code>.dmg</code> and <code>.app</code>
               </li>
               <li>
                 <strong>Windows</strong>: <code>.msi</code> installer and
@@ -939,7 +1022,7 @@ pnpm dev</code></pre>
           </div>
         </div>
 
-        <!-- Chapter 7: FAQ & Troubleshooting -->
+        <!-- Chapter 8: FAQ & Troubleshooting -->
         <div id="docs-faq" class="doc-chapter">
           <div class="doc-chapter-header">
             <div class="doc-chapter-icon">❓</div>
@@ -1158,6 +1241,19 @@ pnpm dev</code></pre>
         }, observerOptions);
 
         chapters.forEach((chapter) => observer.observe(chapter));
+
+        // Dynamically sync latest GitHub release tag to download buttons
+        fetch("https://api.github.com/repos/devCodr/mini-browser/releases/latest")
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (data && data.tag_name) {
+              const btn = document.getElementById("download-btn-text");
+              if (btn) {
+                btn.textContent = `Download for macOS, Windows & Linux (${data.tag_name})`;
+              }
+            }
+          })
+          .catch(() => {});
       });
     </script>
   </body>
