@@ -15,7 +15,16 @@ pub struct AppStateWrapper {
 }
 
 pub fn rebuild_menu(app: &AppHandle, bookmarks: &[Bookmark]) {
-    let Ok(file_menu) = tauri::menu::SubmenuBuilder::new(app, "File")
+    // En macOS el primer sub-menú es el menú de la aplicación (nombre = productName).
+    // Sigue la convención estándar: About primero, después Preferences, luego acciones.
+    let version = env!("CARGO_PKG_VERSION");
+    let about_label = format!("About MiniBrowser v{}", version);
+
+    let Ok(app_menu) = tauri::menu::SubmenuBuilder::new(app, "MiniBrowser")
+        .item(&tauri::menu::MenuItemBuilder::with_id("about_minibrowser", &about_label).build(app).unwrap())
+        .separator()
+        .item(&tauri::menu::MenuItemBuilder::with_id("preferences", "Settings / Preferences...").accelerator("CmdOrCtrl+,").build(app).unwrap())
+        .separator()
         .item(&tauri::menu::MenuItemBuilder::with_id("new_session", "New Session").accelerator("CmdOrCtrl+T").build(app).unwrap())
         .item(&tauri::menu::MenuItemBuilder::with_id("close_session", "Close Active Session").accelerator("CmdOrCtrl+W").build(app).unwrap())
         .item(&tauri::menu::MenuItemBuilder::with_id("manage_sessions", "Manage Sessions...").accelerator("CmdOrCtrl+M").build(app).unwrap())
@@ -38,7 +47,7 @@ pub fn rebuild_menu(app: &AppHandle, bookmarks: &[Bookmark]) {
             } else {
                 &bm.title
             };
-            let label = format!("{}. {}", num, display_title);
+            let label = format!("{}.  {}", num, display_title);
             let accel = format!("CmdOrCtrl+{}", num);
             let id = format!("tab_{}", num);
             if let Ok(item) = tauri::menu::MenuItemBuilder::with_id(id, label).accelerator(accel).build(app) {
@@ -72,11 +81,13 @@ pub fn rebuild_menu(app: &AppHandle, bookmarks: &[Bookmark]) {
         .item(&tauri::menu::MenuItemBuilder::with_id("reload", "Reload Active Tab").accelerator("CmdOrCtrl+R").build(app).unwrap())
         .item(&tauri::menu::MenuItemBuilder::with_id("home", "Home / Dashboard").accelerator("CmdOrCtrl+H").build(app).unwrap())
         .item(&tauri::menu::MenuItemBuilder::with_id("focus_url", "Focus Address Bar").accelerator("CmdOrCtrl+L").build(app).unwrap())
+        .separator()
         .item(&tauri::menu::MenuItemBuilder::with_id("shortcuts_help", "Keyboard Shortcuts & Help").accelerator("CmdOrCtrl+/").build(app).unwrap())
+        .item(&tauri::menu::MenuItemBuilder::with_id("open_downloads", "Open Downloads Folder").build(app).unwrap())
         .build() else { return; };
 
     if let Ok(menu) = tauri::menu::MenuBuilder::new(app)
-        .items(&[&file_menu, &edit_menu, &tabs_menu, &view_menu])
+        .items(&[&app_menu, &edit_menu, &tabs_menu, &view_menu])
         .build() {
         let _ = app.set_menu(menu);
     }
@@ -494,6 +505,13 @@ fn get_pending_notification(state: State<'_, AppStateWrapper>) -> Option<serde_j
     pending.take()
 }
 
+/// Retorna la versión actual del app (leid de Cargo.toml en tiempo de compilación).
+/// Usada por el modal de About para mostrar siempre la versión real.
+#[tauri::command]
+fn get_app_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
+}
+
 #[tauri::command]
 fn minimize_window(app: AppHandle) -> Result<(), String> {
     if let Some(w) = app.get_window("main") {
@@ -763,7 +781,8 @@ pub fn run() {
             reset_pin_with_answer,
             factory_reset,
             open_downloads_folder,
-            get_pending_notification
+            get_pending_notification,
+            get_app_version
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

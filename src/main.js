@@ -1142,8 +1142,20 @@ if (btnDownloads) {
   });
 }
 
-btnAbout.addEventListener("click", () => showModal(modalAbout));
+btnAbout.addEventListener("click", () => openAboutModal());
 btnCloseAbout.addEventListener("click", () => hideModal(modalAbout));
+
+async function openAboutModal() {
+  // Actualizar la versión dinámicamente desde Rust antes de mostrar el modal
+  try {
+    const version = await invoke("get_app_version");
+    const badge = document.getElementById("about-version-badge");
+    if (badge && version) {
+      badge.textContent = `v${version} • Open Source • Rust & Tauri v2`;
+    }
+  } catch (_) {}
+  showModal(modalAbout);
+}
 
 formNewSession.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -1548,7 +1560,7 @@ window.addEventListener("keydown", (e) => {
 });
 
 // Listen to Native macOS Application Menu Accelerators (Fires from Cocoa on ANY website!)
-listen("menu-shortcut", (event) => {
+listen("menu-shortcut", async (event) => {
   const id = event.payload;
   if (!id) return;
 
@@ -1581,6 +1593,12 @@ listen("menu-shortcut", (event) => {
     if (state.activePartition) moveTabByPartition(state.activePartition, -1);
   } else if (id === "move_tab_right") {
     if (state.activePartition) moveTabByPartition(state.activePartition, 1);
+  } else if (id === "about_minibrowser") {
+    openAboutModal();
+  } else if (id === "preferences") {
+    btnSettings.click();
+  } else if (id === "open_downloads") {
+    try { await invoke("open_downloads_folder"); } catch (e) {}
   }
 });
 

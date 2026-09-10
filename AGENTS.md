@@ -8,9 +8,11 @@ This document provides mandatory operational instructions for any AI assistant o
 
 **CRITICAL**: On **EVERY** feature addition, bugfix, or functional modification, the agent **MUST**:
 1. **Bump the application version** across all project configuration files.
-2. **Commit the changes** using conventional commit messages (`feat:`, `fix:`, `chore:`, etc.).
-3. **Create an annotated Git tag** matching the new version (e.g., `v1.0.1`, `v1.1.0`).
-4. **Compile the release binary and packages** (`pnpm run build`).
+2. **Update `CHANGELOG.md`** with a new entry describing the changes.
+3. **Commit the changes** using conventional commit messages (`feat:`, `fix:`, `chore:`, etc.).
+4. **Create an annotated Git tag** matching the new version (e.g., `v1.0.1`, `v1.1.0`).
+5. **Compile the release binary and packages** (`pnpm run build`).
+6. **Push to remote + push tags** to trigger GitHub Actions CI/CD: `git push && git push --tags`.
 
 ---
 
@@ -18,93 +20,111 @@ This document provides mandatory operational instructions for any AI assistant o
 
 The application version **must always be identical** across all three files:
 
-1. [package.json](file:///Volumes/SSD/larico/mini-browser/package.json):
-   ```json
-   "version": "1.0.1"
-   ```
-2. [src-tauri/tauri.conf.json](file:///Volumes/SSD/larico/mini-browser/src-tauri/tauri.conf.json):
-   ```json
-   "version": "1.0.1"
-   ```
-3. [src-tauri/Cargo.toml](file:///Volumes/SSD/larico/mini-browser/src-tauri/Cargo.toml):
-   ```toml
-   [package]
-   version = "1.0.1"
-   ```
+1. `package.json` → `"version": "X.Y.Z"`
+2. `src-tauri/tauri.conf.json` → `"version": "X.Y.Z"`
+3. `src-tauri/Cargo.toml` → `version = "X.Y.Z"` under `[package]`
+
+> **CRITICAL — About Modal**: The version shown in the About modal (`#about-version-badge` in `index.html`)
+> is populated **dynamically** at runtime via `get_app_version` Tauri command (reads `env!("CARGO_PKG_VERSION")`).
+> **NEVER hardcode a version string in `index.html`**.
+> The `openAboutModal()` function in `main.js` calls `invoke("get_app_version")` which always returns the real compiled version.
+> The native menu label "About MiniBrowser vX.Y.Z" is also dynamic in `rebuild_menu()` via `env!("CARGO_PKG_VERSION")`.
+
+---
+
+## 📝 Mandatory: CHANGELOG.md Update on Every Modification
+
+On every change, add an entry to `CHANGELOG.md` following this format:
+
+```markdown
+## [X.Y.Z] — YYYY-MM-DD
+
+### Added
+- Description of new features
+
+### Fixed
+- Description of bug fixes
+
+### Removed
+- Description of removed features/fields
+
+### Changed
+- Description of modified behavior
+```
+
+Use `[Unreleased]` section at top for staging before a version bump.
 
 ---
 
 ## ⚡ Automated Release Command
 
-To automate all steps in one single command, use:
-
 ```bash
-# For patch updates (1.0.0 -> 1.0.1):
+# Patch update (1.0.0 -> 1.0.1):
 pnpm run release patch
 
-# For minor feature releases (1.0.0 -> 1.1.0):
+# Minor feature release (1.0.0 -> 1.1.0):
 pnpm run release minor
 
-# For major breaking releases (1.0.0 -> 2.0.0):
+# Major breaking release (1.0.0 -> 2.0.0):
 pnpm run release major
 
-# Or specify an exact version:
+# Exact version:
 pnpm run release 1.0.2
 ```
 
 ### What `pnpm run release` does:
-1. Updates `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml` with the new version.
-2. Stages all modified files and commits them with `chore(release): vX.Y.Z`.
+1. Updates `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml`.
+2. Commits with `chore(release): vX.Y.Z`.
 3. Creates the annotated Git tag `vX.Y.Z`.
 4. Compiles the native production release bundle (`pnpm run build` / `tauri build`).
+
+After running release, push manually:
+```bash
+git push && git push --tags
+```
 
 ---
 
 ## 🛠️ Manual Release Procedure
 
-If performing steps manually instead of using `pnpm run release`:
+1. Edit `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` → new version `X.Y.Z`.
+2. Update `CHANGELOG.md` → move `[Unreleased]` entries to `[X.Y.Z] — YYYY-MM-DD`.
+3. `git add -A && git commit -m "chore(release): vX.Y.Z"`
+4. `git tag -a "vX.Y.Z" -m "Release vX.Y.Z"`
+5. `pnpm run build`
+6. `git push && git push --tags`  ← triggers `.github/workflows/release.yml`
 
-1. **Update Versions**:
-   Edit `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml` to the new version `X.Y.Z`.
-
-2. **Commit Changes**:
-   ```bash
-   git add -A
-   git commit -m "chore(release): vX.Y.Z"
-   ```
-
-3. **Create Git Tag**:
-   ```bash
-   git tag -a "vX.Y.Z" -m "Release vX.Y.Z"
-   ```
-
-4. **Compile Release Build**:
-   ```bash
-   pnpm run build
-   ```
-   *Generated binaries will be placed in `src-tauri/target/release/bundle/` (`.dmg`, `.app`, `.exe`, `.deb`, etc.).*
-
-5. **Push to Remote (Triggers GitHub Actions CI/CD)**:
-   ```bash
-   git push && git push --tags
-   ```
-   *This triggers `.github/workflows/release.yml`, building and uploading universal releases for macOS, Windows, and Linux.*
+Generated binaries: `src-tauri/target/release/bundle/` (`.dmg`, `.app`, `.exe`, `.deb`).
 
 ---
 
 ## 🏗️ Architectural Invariants to Maintain
 
-When modifying the codebase, preserve these critical architectural guarantees:
-
 1. **Multi-Account Storage Isolation (`data_store_identifier`)**:
-   - On macOS, WebKit requires `.data_store_identifier(uuid_bytes)` on `WebviewBuilder` to allocate separate `WKWebsiteDataStore` instances.
-   - Never remove `data_store_identifier` or deterministic UUID derivation, or accounts (`W1`, `W2`, etc.) will leak cookies and sessions.
+   - On macOS, WebKit requires `.data_store_identifier(uuid_bytes)` on `WebviewBuilder`.
+   - Never remove `data_store_identifier` or deterministic UUID derivation — accounts will leak cookies.
 
 2. **Targeted User-Agent Handling**:
-   - **WhatsApp & standard sites**: Use Google Chrome User-Agent (`CHROME_USER_AGENT`) to ensure camera, microphone, voice notes, and WhatsApp Web compatibility without browser warnings.
-   - **Gmail & Google Services**: Use Apple WebKit User-Agent (`APPLE_WEBKIT_USER_AGENT`) to prevent embedded webview blocks ("This browser or app may not be secure").
+   - **WhatsApp & standard sites**: `CHROME_USER_AGENT` — ensures camera/mic/voice notes work.
+   - **Gmail & Google Services**: `APPLE_WEBKIT_USER_AGENT` — prevents "browser not secure" blocks.
 
 3. **Security & PIN Locking**:
-   - The PIN supports **4 or 6 digits**.
-   - `Inactivity PIN Lock` only controls idle timeouts during an active session.
-   - **Startup & Suspend**: The application **must always lock** on launch/reboot and upon system sleep/suspend.
+   - PIN supports **4 or 6 digits**.
+   - `Inactivity PIN Lock` controls only idle timeouts during an active session.
+   - **Startup & Suspend**: The app **must always lock** on launch and on system sleep/suspend.
+
+4. **About Modal — Dynamic Version**:
+   - `openAboutModal()` in `main.js` calls `invoke("get_app_version")` → updates `#about-version-badge`.
+   - `rebuild_menu()` in `lib.rs` uses `env!("CARGO_PKG_VERSION")` for the native menu label.
+   - Never hardcode a version string in HTML or JS.
+
+5. **System Tray Icon**:
+   - Created in `lib.rs` setup via `tauri::tray::TrayIconBuilder`.
+   - Menu: Show MiniBrowser / Lock Browser / separator / Quit MiniBrowser.
+   - Left-click → shows and focuses main window + emits `app-focused`.
+   - Required Cargo feature: `tray-icon` in `tauri` dependency (`Cargo.toml`).
+
+6. **Notification → Tab Navigation**:
+   - Child webview fires `sendHostAction('notify', {...})` → Rust stores `partition` in `AppStateWrapper.pending_notification` and emits `notification-received`.
+   - Frontend highlights tab via `highlightNotificationTab(partition)`.
+   - On `app-focused` event or after PIN unlock, frontend calls `get_pending_notification` and navigates.
