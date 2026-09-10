@@ -9,6 +9,9 @@ use tauri::{AppHandle, Emitter, Manager, State, WindowEvent};
 pub struct AppStateWrapper {
     pub store: Mutex<StoreManager>,
     pub sessions: SessionManager,
+    /// Partition de la última notificación recibida mientras la app estaba en background.
+    /// Se limpia al ser consumida por el frontend.
+    pub pending_notification: Mutex<Option<serde_json::Value>>,
 }
 
 pub fn rebuild_menu(app: &AppHandle, bookmarks: &[Bookmark]) {
@@ -483,6 +486,14 @@ fn get_platform() -> String {
     return "unknown".to_string();
 }
 
+/// Retorna y limpia la notificación pendiente (partition que originó la última
+/// notificación del sistema mientras la ventana estaba en background).
+#[tauri::command]
+fn get_pending_notification(state: State<'_, AppStateWrapper>) -> Option<serde_json::Value> {
+    let mut pending = state.pending_notification.lock().unwrap();
+    pending.take()
+}
+
 #[tauri::command]
 fn minimize_window(app: AppHandle) -> Result<(), String> {
     if let Some(w) = app.get_window("main") {
@@ -545,6 +556,7 @@ pub fn run() {
             app.manage(AppStateWrapper {
                 store: Mutex::new(store_manager),
                 sessions: session_manager,
+                pending_notification: Mutex::new(None),
             });
 
             rebuild_menu(&app.handle(), &initial_bookmarks);
@@ -605,10 +617,17 @@ pub fn run() {
                                 }
                             }
                         }
-                        #[cfg(target_os = "macos")]
-                        WindowEvent::Focused(_) => {
-                            if let Some(w) = app_handle.get_window("main") {
-                                apply_traffic_lights_inset(&w, 16.0, 14.0);
+                        WindowEvent::Focused(focused) => {
+                            #[cfg(target_os = "macos")]
+                            {
+                                if let Some(w) = app_handle.get_window("main") {
+                                    apply_traffic_lights_inset(&w, 16.0, 14.0);
+                                }
+                            }
+                            // Cuando la ventana recibe foco (usuario hace clic en notificación
+                            // o en el tray), notificamos al frontend para que navegue al tab pendiente.
+                            if *focused {
+                                let _ = app_handle.emit("app-focused", ());
                             }
                         }
                         _ => {}
@@ -631,6 +650,79 @@ pub fn run() {
                     }
                 }
             });
+
+            // === System Tray Icon ===
+            {
+                use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem};
+                use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+
+                let tray_show = MenuItemBuilder::with_id("tray_show", "Show MiniBrowser")
+                    .build(app.handle())
+                    .unwrap();
+                let tray_lock = MenuItemBuilder::with_id("tray_lock", "Lock Browser")
+                    .build(app.handle())
+                    .unwrap();
+                let tray_sep = PredefinedMenuItem::separator(app.handle()).unwrap();
+                let tray_quit = MenuItemBuilder::with_id("tray_quit", "Quit MiniBrowser")
+                    .build(app.handle())
+                    .unwrap();
+
+                let tray_menu = MenuBuilder::new(app)
+                    .item(&tray_show)
+                    .item(&tray_lock)
+                    .item(&tray_sep)
+                    .item(&tray_quit)
+                    .build()
+                    .unwrap();
+
+                let app_h_tray = app.handle().clone();
+                let _tray = TrayIconBuilder::new()
+                    .icon(app.default_window_icon().unwrap().clone())
+                    .tooltip("MiniBrowser")
+                    .menu(&tray_menu)
+                    .on_menu_event(move |app, event| {
+                        match event.id().as_ref() {
+                            "tray_show" => {
+                                if let Some(w) = app.get_window("main") {
+                                    let _ = w.show();
+                                    let _ = w.unminimize();
+                                    let _ = w.set_focus();
+                                }
+                            }
+                            "tray_lock" => {
+                                let _ = app.emit("system-sleep-lock", ());
+                                if let Some(w) = app.get_window("main") {
+                                    let _ = w.show();
+                                    let _ = w.unminimize();
+                                    let _ = w.set_focus();
+                                }
+                            }
+                            "tray_quit" => {
+                                app.exit(0);
+                            }
+                            _ => {}
+                        }
+                    })
+                    .on_tray_icon_event(move |_tray, event| {
+                        // Click izquierdo en el ícono → mostrar y enfocar ventana
+                        if let TrayIconEvent::Click {
+                            button: MouseButton::Left,
+                            button_state: MouseButtonState::Up,
+                            ..
+                        } = event
+                        {
+                            if let Some(w) = app_h_tray.get_window("main") {
+                                let _ = w.show();
+                                let _ = w.unminimize();
+                                let _ = w.set_focus();
+                                // Emitir app-focused para que el frontend verifique notif pendiente
+                                let _ = app_h_tray.emit("app-focused", ());
+                            }
+                        }
+                    })
+                    .build(app)
+                    .unwrap();
+            }
 
             Ok(())
         })
@@ -670,7 +762,8 @@ pub fn run() {
             verify_security_answer,
             reset_pin_with_answer,
             factory_reset,
-            open_downloads_folder
+            open_downloads_folder,
+            get_pending_notification
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

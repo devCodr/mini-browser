@@ -954,6 +954,24 @@ impl SessionManager {
                         "notify" => {
                             let title = params.get("title").cloned().unwrap_or_else(|| partition_for_notif.clone());
                             let body = params.get("body").cloned().unwrap_or_default();
+
+                            let notif_payload = serde_json::json!({
+                                "partition": partition_for_notif,
+                                "title": &title,
+                                "body": &body,
+                            });
+
+                            // Guardar partition pendiente en estado global para que el frontend
+                            // pueda navegar al tab correcto cuando el usuario haga clic en la notif.
+                            {
+                                let state: tauri::State<crate::AppStateWrapper> = app_handle_clone.state();
+                                let mut pending = state.pending_notification.lock().unwrap();
+                                *pending = Some(notif_payload.clone());
+                            }
+
+                            // Notificar al frontend inmediatamente para resaltar el tab con actividad.
+                            let _ = app_handle_clone.emit("notification-received", &notif_payload);
+
                             use tauri_plugin_notification::NotificationExt;
                             let _ = app_handle_clone
                                 .notification()

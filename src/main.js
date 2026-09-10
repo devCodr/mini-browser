@@ -190,8 +190,9 @@ async function moveTabByPartition(partition, delta) {
 
 // === Window Dragging (Reliable native dragging on header empty space) ===
 header.addEventListener("mousedown", async (e) => {
-  // Never start window dragging if clicking inside tabs, buttons, or inputs
-  if (e.target.closest("button, input, select, .tab-item, a, .key-btn, .preset-card, .session-manage-row, .tabs-bar")) return;
+  // Never start window dragging if clicking inside individual tabs, buttons, or inputs.
+  // Note: .tabs-bar background (empty area) is intentionally allowed for dragging.
+  if (e.target.closest("button, input, select, .tab-item, a, .key-btn, .preset-card, .session-manage-row, .tab-close-btn")) return;
   try {
     await invoke("start_dragging");
   } catch (err) {
@@ -377,6 +378,21 @@ function createBookmarkIconElement(bm, className) {
   };
   return img;
 }
+
+// === Notification Tab Highlight ===
+// Resalta visualmente el tab que originó una notificación del sistema.
+function highlightNotificationTab(partition) {
+  if (!partition) return;
+  const tabEl = tabsBar.querySelector(`[data-partition="${CSS.escape(partition)}"]`);
+  if (tabEl) {
+    tabEl.classList.remove("tab-notification-pulse");
+    // Force reflow to restart animation
+    void tabEl.offsetWidth;
+    tabEl.classList.add("tab-notification-pulse");
+    setTimeout(() => tabEl.classList.remove("tab-notification-pulse"), 3500);
+  }
+}
+
 
 // === Render Tabs with Drag & Drop Reordering ===
 function renderTabs() {
@@ -953,6 +969,18 @@ async function unlockApp() {
   state.pinBuffer = "";
   updatePinDots();
   resetInactivityTimer();
+
+  // Verificar si hay una notificación pendiente → navegar al tab correspondiente
+  try {
+    const pending = await invoke("get_pending_notification");
+    if (pending && pending.partition) {
+      const bm = state.bookmarks.find((b) => b.partition === pending.partition);
+      if (bm) {
+        await activateSession(bm.partition, bm.url);
+        return;
+      }
+    }
+  } catch (_) {}
 
   // Restore active session webview or open first tab if available
   if (state.activePartition) {
@@ -1774,6 +1802,30 @@ async function init() {
 // System sleep / suspend detection from Rust watchdog
 listen("system-sleep-lock", () => {
   lockApp();
+});
+
+// Notificación recibida desde un webview hijo → resaltar el tab origen
+listen("notification-received", (event) => {
+  const { partition } = event.payload || {};
+  if (partition) {
+    highlightNotificationTab(partition);
+  }
+});
+
+// La ventana volvió a tener foco (clic en notificación del sistema o en tray)
+// → navegar al tab pendiente si no estamos bloqueados (si estamos bloqueados,
+//   unlockApp() lo manejará tras el PIN).
+listen("app-focused", async () => {
+  if (state.isLocked) return;
+  try {
+    const pending = await invoke("get_pending_notification");
+    if (pending && pending.partition) {
+      const bm = state.bookmarks.find((b) => b.partition === pending.partition);
+      if (bm) {
+        await activateSession(bm.partition, bm.url);
+      }
+    }
+  } catch (_) {}
 });
 
 // Heartbeat watchdog for browser suspend detection

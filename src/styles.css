@@ -423,6 +423,18 @@ kbd {
   box-shadow: 0 0 10px rgba(99, 102, 241, 0.15);
 }
 
+/* Notification activity indicator: tab pulses with a glow when it receives a notification */
+@keyframes tab-notif-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7), 0 0 8px rgba(99, 102, 241, 0.3); border-color: rgba(99, 102, 241, 0.8); }
+  50%  { box-shadow: 0 0 0 5px rgba(99, 102, 241, 0), 0 0 16px rgba(99, 102, 241, 0.5); border-color: rgba(99, 102, 241, 0.9); }
+  100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.0), 0 0 8px rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.4); }
+}
+
+.tab-item.tab-notification-pulse {
+  animation: tab-notif-pulse 0.7s ease-in-out 4;
+  border-color: rgba(99, 102, 241, 0.8) !important;
+}
+
 .tab-item.tab-icon-only {
   padding: 0 8px;
   gap: 4px;
