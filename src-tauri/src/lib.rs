@@ -377,16 +377,33 @@ fn configure_auto_launch(enabled: bool) -> Result<(), String> {
 
     #[cfg(target_os = "macos")]
     {
+        // 1. Purge legacy broken LaunchAgent plist if it exists
+        if let Some(home) = dirs::home_dir() {
+            let old_plist = home.join("Library/LaunchAgents/MiniBrowser.plist");
+            if old_plist.exists() {
+                let _ = std::process::Command::new("launchctl")
+                    .args(["unload", &old_plist.to_string_lossy()])
+                    .output();
+                let _ = std::fs::remove_file(&old_plist);
+            }
+        }
+
+        // 2. Resolve proper .app bundle path for Login Items
         if let Some(idx) = app_path.find(".app/Contents/MacOS") {
             app_path = app_path[..idx + 4].to_string();
+        } else if std::path::Path::new("/Applications/MiniBrowser.app").exists() {
+            app_path = "/Applications/MiniBrowser.app".to_string();
         }
     }
 
-    let auto = auto_launch::AutoLaunchBuilder::new()
-        .set_app_name("MiniBrowser")
-        .set_app_path(&app_path)
-        .build()
-        .map_err(|e| e.to_string())?;
+    let mut builder = auto_launch::AutoLaunchBuilder::new();
+    builder.set_app_name("MiniBrowser");
+    builder.set_app_path(&app_path);
+
+    #[cfg(target_os = "macos")]
+    builder.set_macos_launch_mode(auto_launch::MacOSLaunchMode::AppleScript);
+
+    let auto = builder.build().map_err(|e| e.to_string())?;
 
     if enabled {
         let _ = auto.enable();
@@ -577,6 +594,22 @@ pub fn run() {
                 pending_notification: Mutex::new(None),
             });
 
+            #[cfg(target_os = "macos")]
+            {
+                if let Some(home) = dirs::home_dir() {
+                    let old_plist = home.join("Library/LaunchAgents/MiniBrowser.plist");
+                    if old_plist.exists() {
+                        let _ = std::process::Command::new("launchctl")
+                            .args(["unload", &old_plist.to_string_lossy()])
+                            .output();
+                        let _ = std::fs::remove_file(&old_plist);
+                    }
+                }
+                if initial_settings.auto_launch {
+                    let _ = configure_auto_launch(true);
+                }
+            }
+
             rebuild_menu(&app.handle(), &initial_bookmarks);
 
             let app_handle_menu = app.handle().clone();
@@ -646,6 +679,15 @@ pub fn run() {
                             // o en el tray), notificamos al frontend para que navegue al tab pendiente.
                             if *focused {
                                 let _ = app_handle.emit("app-focused", ());
+                            }
+                        }
+                        WindowEvent::CloseRequested { api, .. } => {
+                            #[cfg(target_os = "macos")]
+                            {
+                                api.prevent_close();
+                                if let Some(w) = app_handle.get_window("main") {
+                                    let _ = w.hide();
+                                }
                             }
                         }
                         _ => {}
@@ -784,8 +826,21 @@ pub fn run() {
             get_pending_notification,
             get_app_version
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { has_visible_windows, .. } = event {
+                if !has_visible_windows {
+                    if let Some(w) = app_handle.get_window("main") {
+                        let _ = w.show();
+                        let _ = w.unminimize();
+                        let _ = w.set_focus();
+                    }
+                }
+            }
+            let _ = (app_handle, event);
+        });
 }
 
 #[cfg(target_os = "macos")]

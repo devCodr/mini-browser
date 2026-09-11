@@ -10,6 +10,17 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.3.1] — 2026-09-11
+
+### Fixed
+- **macOS Launch at Login**: Migrated auto-launch mechanism to native `AppleScript` Login Items (`MacOSLaunchMode::AppleScript`). MiniBrowser now registers properly under macOS System Settings **"Open at Login"** (alongside apps like Maccy, Espanso, Rectangle Pro) instead of failing under "App Background Activity".
+- **Launchd failure (exit code 78)**: Resolved bug where LaunchAgent plist attempted to execute the `.app` bundle directory directly, which caused `launchd` to fail on boot and prevented the app, Tray Icon, and Dock active dot from appearing.
+- **Legacy LaunchAgent cleanup**: Automatically unloads and purges legacy `~/Library/LaunchAgents/MiniBrowser.plist` on startup and settings update.
+- **macOS Close-to-Tray behavior**: Closing the main window on macOS now hides the window (`api.prevent_close()`) instead of killing the app process, keeping the System Tray icon and background sessions alive.
+- **macOS Dock click reopen**: Clicking the Dock icon when the window is hidden or minimized reopens, unminimizes, and focuses the main window (`RunEvent::Reopen`).
+
+---
+
 ## [1.3.0] — 2026-09-10
 
 ### Added
