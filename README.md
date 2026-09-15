@@ -45,7 +45,7 @@ Standard web browsers share cookies and session caches across all tabs and windo
   - **Session Manager (`Cmd + M` / `Ctrl + M`)**: 1-click `[ ↑ ]` and `[ ↓ ]` reordering buttons.
 - 📜 **Horizontal Tabs Wheel Scrolling**: Scroll through dozens of tabs with your trackpad or mouse wheel.
 - 🪟 **Window Drag from Tab Bar**: Drag the window from the empty space in the tab bar — anywhere that isn't a tab or button.
-- 🔒 **PIN Security Shield**: Glassmorphic blur overlay with 4 or 6-digit PIN lock, inactivity auto-lock timer, security question recovery, and quiet launch in minimized mode.
+- 🔒 **PIN Security Shield**: Glassmorphic blur overlay with 4 or 6-digit PIN lock, inactivity auto-lock timer, temporary session-unlock mode ("Keep unlocked for this session"), security question recovery, and quiet launch in minimized mode.
 - ⌨️ **Native Menu Bar & Global Accelerators**: Complete macOS app menu with tab switching shortcuts (`Cmd+1`–`Cmd+9`), Settings (`Cmd+,`), and About — all functioning even while focused inside external websites.
 - 🎨 **Custom Sessions & Badges**: Assign unique labels, colored badges, and custom icons to each account.
 
@@ -127,6 +127,7 @@ The compiled release packages will be created in `src-tauri/target/release/bundl
 | **`Cmd + H`** | **`Ctrl + H`** | Home | Return to dashboard home |
 | **`Cmd + L`** | **`Ctrl + L`** | Address Bar | Focus address bar for rapid navigation |
 | **`Cmd + Option + L`** | **`Ctrl + Alt + L`** | Lock Browser | Instantly engage PIN security shield |
+| **`Cmd + Option + P`** | **`Ctrl + Alt + P`** | Pause Auto-Lock | Temporarily bypass inactivity lock for current session |
 | **`Cmd + /`** | **`Ctrl + /`** | Help & Guide | Open interactive shortcuts & user manual |
 
 ---
@@ -135,7 +136,7 @@ The compiled release packages will be created in `src-tauri/target/release/bundl
 
 - **Zero Data Harvesting**: MiniBrowser communicates strictly between your machine and the sites you visit. No telemetry, no third-party tracking.
 - **Dedicated Disk Partitions**: Each session stores cache, cookies, and local data under `$APP_DATA/com.larico.minibrowser/sessions/<partition_id>/`.
-- **PIN Shield**: Set a 4 or 6-digit PIN to prevent unauthorized local access with configurable auto-lock on inactivity, security question recovery, and mandatory lock on launch & system sleep.
+- **PIN Shield**: Set a 4 or 6-digit PIN to prevent unauthorized local access with configurable auto-lock on inactivity, one-click session bypass ("Keep unlocked for this session"), security question recovery, and mandatory lock on launch & system sleep.
 
 ---
 

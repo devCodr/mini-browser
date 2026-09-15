@@ -12,13 +12,20 @@ pub struct AppStateWrapper {
     /// Partition de la última notificación recibida mientras la app estaba en background.
     /// Se limpia al ser consumida por el frontend.
     pub pending_notification: Mutex<Option<serde_json::Value>>,
+    pub session_inactivity_paused: Mutex<bool>,
 }
 
-pub fn rebuild_menu(app: &AppHandle, bookmarks: &[Bookmark]) {
+pub fn rebuild_menu(app: &AppHandle, bookmarks: &[Bookmark], session_paused: bool) {
     // En macOS el primer sub-menú es el menú de la aplicación (nombre = productName).
     // Sigue la convención estándar: About primero, después Preferences, luego acciones.
     let version = env!("CARGO_PKG_VERSION");
     let about_label = format!("About MiniBrowser v{}", version);
+
+    let pause_label = if session_paused {
+        "Resume Inactivity Lock"
+    } else {
+        "Pause Inactivity Lock (This Session)"
+    };
 
     let Ok(app_menu) = tauri::menu::SubmenuBuilder::new(app, "MiniBrowser")
         .item(&tauri::menu::MenuItemBuilder::with_id("about_minibrowser", &about_label).build(app).unwrap())
@@ -30,6 +37,7 @@ pub fn rebuild_menu(app: &AppHandle, bookmarks: &[Bookmark]) {
         .item(&tauri::menu::MenuItemBuilder::with_id("manage_sessions", "Manage Sessions...").accelerator("CmdOrCtrl+M").build(app).unwrap())
         .separator()
         .item(&tauri::menu::MenuItemBuilder::with_id("lock_now", "Lock Browser").accelerator("CmdOrCtrl+Alt+L").build(app).unwrap())
+        .item(&tauri::menu::MenuItemBuilder::with_id("toggle_session_inactivity", pause_label).accelerator("CmdOrCtrl+Alt+P").build(app).unwrap())
         .build() else { return; };
 
     let mut tabs_builder = tauri::menu::SubmenuBuilder::new(app, "Tabs");
@@ -90,6 +98,33 @@ pub fn rebuild_menu(app: &AppHandle, bookmarks: &[Bookmark]) {
         .items(&[&app_menu, &edit_menu, &tabs_menu, &view_menu])
         .build() {
         let _ = app.set_menu(menu);
+    }
+}
+
+pub fn rebuild_tray_menu(app: &AppHandle, session_paused: bool) {
+    use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem};
+    let Ok(tray_show) = MenuItemBuilder::with_id("tray_show", "Show MiniBrowser").build(app) else { return; };
+    let Ok(tray_lock) = MenuItemBuilder::with_id("tray_lock", "Lock Browser").build(app) else { return; };
+    let pause_label = if session_paused {
+        "Resume Inactivity Lock"
+    } else {
+        "Pause Inactivity Lock (This Session)"
+    };
+    let Ok(tray_pause) = MenuItemBuilder::with_id("tray_pause", pause_label).build(app) else { return; };
+    let Ok(tray_sep) = PredefinedMenuItem::separator(app) else { return; };
+    let Ok(tray_quit) = MenuItemBuilder::with_id("tray_quit", "Quit MiniBrowser").build(app) else { return; };
+
+    if let Ok(tray_menu) = MenuBuilder::new(app)
+        .item(&tray_show)
+        .item(&tray_lock)
+        .item(&tray_pause)
+        .item(&tray_sep)
+        .item(&tray_quit)
+        .build()
+    {
+        if let Some(tray) = app.tray_by_id("main-tray") {
+            let _ = tray.set_menu(Some(tray_menu));
+        }
     }
 }
 
@@ -224,7 +259,8 @@ fn add_bookmark(
             icon_svg,
         });
         store.save_bookmarks(&bookmarks);
-        rebuild_menu(&app, &bookmarks);
+        let paused = *state.session_inactivity_paused.lock().unwrap();
+        rebuild_menu(&app, &bookmarks, paused);
     }
     Ok(bookmarks)
 }
@@ -240,7 +276,8 @@ fn remove_bookmark(
     let mut bookmarks = store.load_bookmarks();
     bookmarks.retain(|b| b.partition != partition);
     store.save_bookmarks(&bookmarks);
-    rebuild_menu(&app, &bookmarks);
+    let paused = *state.session_inactivity_paused.lock().unwrap();
+    rebuild_menu(&app, &bookmarks, paused);
     Ok(bookmarks)
 }
 
@@ -252,21 +289,25 @@ fn reorder_bookmarks(
 ) -> Result<Vec<Bookmark>, String> {
     let store = state.store.lock().unwrap();
     store.save_bookmarks(&new_order);
-    rebuild_menu(&app, &new_order);
+    let paused = *state.session_inactivity_paused.lock().unwrap();
+    rebuild_menu(&app, &new_order, paused);
     Ok(new_order)
 }
 
 #[tauri::command]
 fn update_bookmark_icon(
+    app: AppHandle,
     state: State<'_, AppStateWrapper>,
     partition: String,
-    icon_svg: Option<String>,
+    icon_svg: String,
 ) -> Result<Vec<Bookmark>, String> {
     let store = state.store.lock().unwrap();
     let mut bookmarks = store.load_bookmarks();
     if let Some(b) = bookmarks.iter_mut().find(|x| x.partition == partition) {
-        b.icon_svg = icon_svg;
+        b.icon_svg = Some(icon_svg);
         store.save_bookmarks(&bookmarks);
+        let paused = *state.session_inactivity_paused.lock().unwrap();
+        rebuild_menu(&app, &bookmarks, paused);
     }
     Ok(bookmarks)
 }
@@ -292,7 +333,8 @@ fn update_bookmark_meta(
             b.icon_svg = if trimmed.is_empty() { None } else { Some(trimmed) };
         }
         store.save_bookmarks(&bookmarks);
-        rebuild_menu(&app, &bookmarks);
+        let paused = *state.session_inactivity_paused.lock().unwrap();
+        rebuild_menu(&app, &bookmarks, paused);
     }
     Ok(bookmarks)
 }
@@ -495,11 +537,33 @@ fn factory_reset(
     store.factory_reset();
     let settings = store.load_settings();
     let bookmarks = store.load_bookmarks();
-    rebuild_menu(&app, &bookmarks);
+    {
+        let mut p = state.session_inactivity_paused.lock().unwrap();
+        *p = false;
+    }
+    rebuild_menu(&app, &bookmarks, false);
+    rebuild_tray_menu(&app, false);
     Ok(serde_json::json!({
         "settings": settings,
         "bookmarks": bookmarks
     }))
+}
+
+#[tauri::command]
+fn update_session_lock_state(
+    app: AppHandle,
+    state: State<'_, AppStateWrapper>,
+    paused: bool,
+) -> Result<(), String> {
+    {
+        let mut p = state.session_inactivity_paused.lock().unwrap();
+        *p = paused;
+    }
+    let store = state.store.lock().unwrap();
+    let bookmarks = store.load_bookmarks();
+    rebuild_menu(&app, &bookmarks, paused);
+    rebuild_tray_menu(&app, paused);
+    Ok(())
 }
 
 #[tauri::command]
@@ -592,6 +656,7 @@ pub fn run() {
                 store: Mutex::new(store_manager),
                 sessions: session_manager,
                 pending_notification: Mutex::new(None),
+                session_inactivity_paused: Mutex::new(false),
             });
 
             #[cfg(target_os = "macos")]
@@ -610,7 +675,7 @@ pub fn run() {
                 }
             }
 
-            rebuild_menu(&app.handle(), &initial_bookmarks);
+            rebuild_menu(&app.handle(), &initial_bookmarks, false);
 
             let app_handle_menu = app.handle().clone();
             app.on_menu_event(move |_app, event| {
@@ -722,6 +787,9 @@ pub fn run() {
                 let tray_lock = MenuItemBuilder::with_id("tray_lock", "Lock Browser")
                     .build(app.handle())
                     .unwrap();
+                let tray_pause = MenuItemBuilder::with_id("tray_pause", "Pause Inactivity Lock (This Session)")
+                    .build(app.handle())
+                    .unwrap();
                 let tray_sep = PredefinedMenuItem::separator(app.handle()).unwrap();
                 let tray_quit = MenuItemBuilder::with_id("tray_quit", "Quit MiniBrowser")
                     .build(app.handle())
@@ -730,13 +798,14 @@ pub fn run() {
                 let tray_menu = MenuBuilder::new(app)
                     .item(&tray_show)
                     .item(&tray_lock)
+                    .item(&tray_pause)
                     .item(&tray_sep)
                     .item(&tray_quit)
                     .build()
                     .unwrap();
 
                 let app_h_tray = app.handle().clone();
-                let _tray = TrayIconBuilder::new()
+                let _tray = TrayIconBuilder::with_id("main-tray")
                     .icon(app.default_window_icon().unwrap().clone())
                     .tooltip("MiniBrowser")
                     .menu(&tray_menu)
@@ -756,6 +825,9 @@ pub fn run() {
                                     let _ = w.unminimize();
                                     let _ = w.set_focus();
                                 }
+                            }
+                            "tray_pause" => {
+                                let _ = app.emit("toggle-session-inactivity", ());
                             }
                             "tray_quit" => {
                                 app.exit(0);
@@ -817,6 +889,7 @@ pub fn run() {
             toggle_devtools,
             update_settings,
             lock_now,
+            update_session_lock_state,
             set_security_question,
             get_security_question,
             verify_security_answer,

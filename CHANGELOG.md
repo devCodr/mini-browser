@@ -10,6 +10,21 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.4.0] — 2026-09-15
+
+### Added
+- **Session Inactivity Auto-Lock Bypass ("Keep unlocked for this session")**:
+  - Ability to temporarily pause the inactivity lock for the current working session without modifying persistent settings stored on disk.
+  - **Lock screen integration**: Added *"Keep unlocked for this session"* checkbox directly below PIN keypad on the lock screen overlay.
+  - **Header status badge**: Dynamic amber pill (`Session Unlocked`) displayed next to the lock button when auto-lock is paused; 1-click resumes normal auto-lock.
+  - **macOS App Menu integration**: Added `MiniBrowser > Pause Inactivity Lock (This Session)` / `Resume Inactivity Lock` with native accelerator (`CmdOrCtrl+Alt+P`).
+  - **System Tray integration**: Added tray menu item to toggle session auto-lock pause directly from macOS menu bar / Windows tray.
+  - **Settings modal integration**: Added session auto-lock status indicator and quick pause/resume action under the Inactivity PIN Lock section.
+  - **Global shortcut**: `Cmd + Alt + P` (macOS) / `Ctrl + Alt + P` (Windows/Linux) to instantly toggle session auto-lock pause.
+  - **Safety guarantees**: Auto-lock pause is kept purely in-memory; restarting the application, system sleep/suspend, or manual lock (`Cmd+Alt+L`) safely enforces standard security policies.
+
+---
+
 ## [1.3.1] — 2026-09-11
 
 ### Fixed

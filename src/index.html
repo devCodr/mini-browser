@@ -60,6 +60,11 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       </button>
 
+      <button id="btn-session-pause" class="session-pause-badge hidden" title="Inactivity auto-lock is paused for this session. Click to resume auto-lock (Cmd+Alt+P).">
+        <span class="pulse-dot-amber"></span>
+        <span class="session-pause-text">Session Unlocked</span>
+      </button>
+
       <button id="btn-shortcuts" class="icon-btn" title="Keyboard Shortcuts & Help (Cmd+/)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
       </button>
@@ -296,6 +301,7 @@
         <div class="shortcut-group">
           <div class="shortcut-group-title">🔒 Security & View</div>
           <div class="shortcut-row"><span class="shortcut-desc">Lock Browser Now</span><span><kbd>Cmd</kbd> + <kbd>Alt</kbd> + <kbd>L</kbd></span></div>
+          <div class="shortcut-row"><span class="shortcut-desc">Pause / Resume Auto-Lock (Session)</span><span><kbd>Cmd</kbd> + <kbd>Alt</kbd> + <kbd>P</kbd></span></div>
           <div class="shortcut-row"><span class="shortcut-desc">Zoom In / Zoom Out</span><span><kbd>Cmd</kbd> + <kbd>+</kbd> / <kbd>-</kbd></span></div>
           <div class="shortcut-row"><span class="shortcut-desc">Reset Zoom (100%)</span><span><kbd>Cmd</kbd> + <kbd>0</kbd></span></div>
           <div class="shortcut-row"><span class="shortcut-desc">Toggle Shortcuts Help</span><span><kbd>Cmd</kbd> + <kbd>/</kbd></span></div>
@@ -409,6 +415,14 @@
             <input id="setting-lock-toggle" type="checkbox" checked />
             <span class="slider"></span>
           </label>
+        </div>
+
+        <div id="session-pause-row" class="session-pause-row">
+          <div class="session-pause-info">
+            <span class="session-pause-status-label">Session Auto-Lock:</span>
+            <span id="session-pause-status-val" class="session-pause-status-val active">Active (locks on idle)</span>
+          </div>
+          <button id="btn-toggle-session-settings" type="button" class="secondary-btn btn-sm">Pause for this session</button>
         </div>
 
         <div class="settings-item">
@@ -542,6 +556,13 @@
       </div>
 
       <div id="pin-error-msg" class="pin-error-msg hidden" style="display: none;">Incorrect PIN. Try again.</div>
+      <label class="lock-session-toggle" id="label-unlock-session" title="Pause inactivity auto-lock for this session">
+        <input type="checkbox" id="check-unlock-session" />
+        <span class="lock-session-custom-check">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </span>
+        <span class="lock-session-text">Keep unlocked for this session</span>
+      </label>
       <button id="btn-forgot-pin" class="forgot-pin-btn" type="button">Forgot your PIN?</button>
     </div>
   </div>

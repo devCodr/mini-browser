@@ -1988,3 +1988,143 @@ kbd {
   color: #fff;
   background: rgba(255, 255, 255, 0.1);
 }
+
+/* ==========================================================
+   SESSION INACTIVITY PAUSE / UNLOCK STYLES
+   ========================================================== */
+.session-pause-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--radius-full);
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  -webkit-app-region: no-drag;
+}
+
+.session-pause-badge:hover {
+  background: rgba(245, 158, 11, 0.22);
+  border-color: rgba(245, 158, 11, 0.55);
+  transform: translateY(-1px);
+}
+
+.pulse-dot-amber {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fbbf24;
+  box-shadow: 0 0 8px #fbbf24;
+  animation: pulse-amber 2s infinite;
+}
+
+@keyframes pulse-amber {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 5px rgba(251, 191, 36, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0);
+  }
+}
+
+.lock-session-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: color 0.15s ease;
+  -webkit-app-region: no-drag;
+}
+
+.lock-session-toggle:hover {
+  color: var(--text-primary);
+}
+
+.lock-session-toggle input[type="checkbox"] {
+  display: none;
+}
+
+.lock-session-custom-check {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  transition: all 0.15s ease;
+}
+
+.lock-session-toggle input[type="checkbox"]:checked + .lock-session-custom-check {
+  background: var(--accent, #6366f1);
+  border-color: var(--accent, #6366f1);
+  color: #ffffff;
+}
+
+.lock-session-text {
+  font-weight: 500;
+}
+
+.session-pause-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  margin: -6px 0 12px 0;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: 11.5px;
+}
+
+.session-pause-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.session-pause-status-label {
+  color: var(--text-muted);
+}
+
+.session-pause-status-val.active {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.session-pause-status-val.paused {
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+.btn-sm {
+  padding: 3px 10px;
+  font-size: 11px;
+  height: 26px;
+}
+
+.download-toast-icon.notice-icon {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+}
+

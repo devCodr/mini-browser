@@ -20,6 +20,7 @@ let state = {
   isLocked: false,
   pinBuffer: "",
   inactivityTimer: null,
+  sessionInactivityPaused: false,
   zoomLevel: 1.0,
 };
 
@@ -113,6 +114,11 @@ const pinErrorMsg = document.getElementById("pin-error-msg");
 const keyButtons = document.querySelectorAll(".key-btn[data-key]");
 const btnPinClear = document.getElementById("btn-pin-clear");
 const btnPinDel = document.getElementById("btn-pin-del");
+
+const btnSessionPause = document.getElementById("btn-session-pause");
+const checkUnlockSession = document.getElementById("check-unlock-session");
+const btnToggleSessionSettings = document.getElementById("btn-toggle-session-settings");
+const sessionPauseStatusVal = document.getElementById("session-pause-status-val");
 
 // Custom Launch on Dashboard
 const formCustomLaunch = document.getElementById("form-custom-launch");
@@ -870,7 +876,7 @@ async function removeSession(partition) {
 
 // === Inactivity & Lock Screen ===
 function resetInactivityTimer() {
-  if (state.isLocked || !state.settings.lockEnabled) return;
+  if (state.isLocked || !state.settings.lockEnabled || state.sessionInactivityPaused) return;
   if (state.inactivityTimer) clearTimeout(state.inactivityTimer);
   state.inactivityTimer = setTimeout(() => {
     lockApp();
@@ -893,6 +899,13 @@ async function lockApp() {
   if (state.isLocked) return;
   state.isLocked = true;
   state.pinBuffer = "";
+  if (state.inactivityTimer) {
+    clearTimeout(state.inactivityTimer);
+    state.inactivityTimer = null;
+  }
+  if (checkUnlockSession) {
+    checkUnlockSession.checked = state.sessionInactivityPaused;
+  }
 
   const targetLen = state.settings.pinLength || 6;
   const lockSubtitle = document.querySelector(".lock-subtitle");
@@ -968,7 +981,15 @@ async function unlockApp() {
   lockOverlay.classList.add("hidden");
   state.pinBuffer = "";
   updatePinDots();
-  resetInactivityTimer();
+
+  if (checkUnlockSession && checkUnlockSession.checked) {
+    setSessionInactivityPause(true, true);
+  } else {
+    if (state.sessionInactivityPaused) {
+      setSessionInactivityPause(false, false);
+    }
+    resetInactivityTimer();
+  }
 
   // Verificar si hay una notificación pendiente → navegar al tab correspondiente
   try {
@@ -993,6 +1014,63 @@ async function unlockApp() {
   } else {
     goHome();
   }
+}
+
+function updateSessionLockUI() {
+  const isPaused = state.sessionInactivityPaused;
+  if (btnSessionPause) {
+    if (isPaused) {
+      btnSessionPause.classList.remove("hidden");
+    } else {
+      btnSessionPause.classList.add("hidden");
+    }
+  }
+
+  if (sessionPauseStatusVal) {
+    if (isPaused) {
+      sessionPauseStatusVal.textContent = "Paused for this session (No auto-lock)";
+      sessionPauseStatusVal.className = "session-pause-status-val paused";
+    } else {
+      sessionPauseStatusVal.textContent = `Active (${(state.settings.inactivityMs || 300000) / 60000}m idle timeout)`;
+      sessionPauseStatusVal.className = "session-pause-status-val active";
+    }
+  }
+
+  if (btnToggleSessionSettings) {
+    btnToggleSessionSettings.textContent = isPaused ? "Resume Auto-Lock" : "Pause for this session";
+  }
+
+  if (checkUnlockSession) {
+    checkUnlockSession.checked = isPaused;
+  }
+}
+
+async function setSessionInactivityPause(paused, showToast = true) {
+  state.sessionInactivityPaused = paused;
+  if (paused) {
+    if (state.inactivityTimer) {
+      clearTimeout(state.inactivityTimer);
+      state.inactivityTimer = null;
+    }
+    if (showToast) {
+      showNoticeToast("Auto-Lock Paused", "Inactivity lock disabled for this session (resets on quit/sleep)");
+    }
+  } else {
+    resetInactivityTimer();
+    if (showToast) {
+      showNoticeToast("Auto-Lock Active", `Will lock after ${(state.settings.inactivityMs || 300000) / 60000}m idle`);
+    }
+  }
+  updateSessionLockUI();
+  try {
+    await invoke("update_session_lock_state", { paused });
+  } catch (err) {
+    console.error("Error updating session lock state:", err);
+  }
+}
+
+function toggleSessionInactivityPause() {
+  setSessionInactivityPause(!state.sessionInactivityPaused, true);
 }
 
 // === Navigation Controls ===
@@ -1185,6 +1263,7 @@ btnSettings.addEventListener("click", () => {
     securityQuestionStatus.style.color = "var(--text-muted)";
   }
 
+  updateSessionLockUI();
   showModal(modalSettings);
 });
 
@@ -1465,6 +1544,10 @@ function executeShortcut(key, { alt = false, shift = false } = {}) {
   else if (k === "r") {
     if (state.activePartition) invoke("nav_reload", { partition: state.activePartition });
   }
+  // Session Inactivity Pause Toggle: Cmd + Alt + P
+  else if (k === "p" && alt) {
+    toggleSessionInactivityPause();
+  }
   // Focus address bar: Cmd + L
   else if (k === "l") {
     if (alt) {
@@ -1579,6 +1662,8 @@ listen("menu-shortcut", async (event) => {
     openManageSessionsModal();
   } else if (id === "lock_now") {
     lockApp();
+  } else if (id === "toggle_session_inactivity") {
+    toggleSessionInactivityPause();
   } else if (id === "reload") {
     if (state.activePartition) {
       invoke("nav_reload", { partition: state.activePartition });
@@ -1701,6 +1786,29 @@ function showDownloadToast(filename, path) {
   }, 5000);
 }
 
+function showNoticeToast(title, message) {
+  if (!downloadToastContainer) return;
+  const toast = document.createElement("div");
+  toast.className = "download-toast";
+  toast.innerHTML = `
+    <div class="download-toast-icon notice-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/><path d="M10 16h4"/></svg>
+    </div>
+    <div class="download-toast-content">
+      <div class="download-toast-title">${title}</div>
+      <div class="download-toast-file" title="${message}">${message}</div>
+    </div>
+  `;
+  downloadToastContainer.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add("show");
+  }, 10);
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 400);
+  }, 4000);
+}
+
 listen("download-started", (event) => {
   if (downloadBadge) {
     downloadBadge.classList.remove("hidden");
@@ -1713,6 +1821,22 @@ listen("download-finished", (event) => {
   const path = event.payload?.path || "";
   showDownloadToast(name, path);
 });
+
+listen("toggle-session-inactivity", () => {
+  toggleSessionInactivityPause();
+});
+
+if (btnSessionPause) {
+  btnSessionPause.addEventListener("click", () => {
+    toggleSessionInactivityPause();
+  });
+}
+
+if (btnToggleSessionSettings) {
+  btnToggleSessionSettings.addEventListener("click", () => {
+    toggleSessionInactivityPause();
+  });
+}
 
 // Platform & Window Controls setup
 async function setupPlatformUI() {
