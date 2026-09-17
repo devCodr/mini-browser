@@ -472,6 +472,31 @@
           </select>
         </div>
 
+        <div class="settings-item" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-subtle);">
+          <div class="settings-info">
+            <span class="settings-label">Memory Saver (Tab Hibernation)</span>
+            <span class="settings-desc">Frees 100% of RAM by putting inactive tabs into standby</span>
+          </div>
+          <label class="toggle-switch">
+            <input id="setting-hibernate-toggle" type="checkbox" checked />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-item">
+          <div class="settings-info">
+            <span class="settings-label">Sleep Inactive Tabs After</span>
+            <span class="settings-desc" id="hibernate-timeout-display">15 minutes</span>
+          </div>
+          <select id="setting-hibernate-timeout" class="select-input">
+            <option value="300000">5 minutes (Aggressive)</option>
+            <option value="600000">10 minutes</option>
+            <option value="900000" selected>15 minutes (Recommended)</option>
+            <option value="1800000">30 minutes</option>
+            <option value="3600000">1 hour</option>
+          </select>
+        </div>
+
         <div class="settings-item-col">
           <span class="settings-label">Change PIN (4 or 6 digits)</span>
           <span class="settings-desc">Supports 4 or 6 numeric digits (e.g. 1234 or 123456)</span>
@@ -578,6 +603,17 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>
       <span>Move Right</span>
       <kbd>⌥⌘→</kbd>
+    </button>
+    <div class="ctx-divider"></div>
+    <button id="ctx-sleep-now" class="ctx-item">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <span>Sleep Tab Now</span>
+      <kbd>💤</kbd>
+    </button>
+    <button id="ctx-toggle-prevent-sleep" class="ctx-item">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      <span id="ctx-toggle-prevent-sleep-label">Keep Tab Awake</span>
+      <span id="ctx-toggle-prevent-sleep-check" class="ctx-check">✓</span>
     </button>
     <div class="ctx-divider"></div>
     <button id="ctx-manage" class="ctx-item">

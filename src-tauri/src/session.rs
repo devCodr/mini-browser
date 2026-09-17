@@ -1118,6 +1118,28 @@ impl SessionManager {
         Ok(())
     }
 
+    pub fn hibernate_session(&self, app: &AppHandle, partition: &str) -> Result<bool, String> {
+        let label = Self::clean_label(partition);
+
+        // Never hibernate the currently active foreground tab
+        {
+            let active_lock = self.active_label.lock().unwrap();
+            if let Some(ref active) = *active_lock {
+                if active == &label {
+                    return Ok(false);
+                }
+            }
+        }
+
+        if let Some(wv) = app.get_webview(&label) {
+            let _ = wv.close();
+            self.sessions.lock().unwrap().remove(partition);
+            return Ok(true);
+        }
+
+        Ok(false)
+    }
+
     pub fn go_back(&self, app: &AppHandle, partition: &str) {
         let label = Self::clean_label(partition);
         if let Some(wv) = app.get_webview(&label) {

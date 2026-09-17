@@ -14,6 +14,8 @@ let state = {
     lockOnLaunch: false,
     startMinimized: false,
     autoLaunch: false,
+    hibernateEnabled: true,
+    hibernateTimeoutMs: 900000,
   },
   bookmarks: [],
   activePartition: null,
@@ -23,6 +25,9 @@ let state = {
   sessionInactivityPaused: false,
   zoomLevel: 1.0,
 };
+
+const hibernatedPartitions = new Set();
+const lastActiveMap = new Map();
 
 let draggedTabIndex = null;
 let draggedManageIndex = null;
@@ -74,6 +79,13 @@ const settingStartMinimized = document.getElementById("setting-start-minimized")
 const settingAutoLaunch = document.getElementById("setting-auto-launch");
 const settingTimeout = document.getElementById("setting-timeout");
 const timeoutDisplay = document.getElementById("timeout-display");
+const settingHibernateToggle = document.getElementById("setting-hibernate-toggle");
+const settingHibernateTimeout = document.getElementById("setting-hibernate-timeout");
+const hibernateTimeoutDisplay = document.getElementById("hibernate-timeout-display");
+const ctxSleepNow = document.getElementById("ctx-sleep-now");
+const ctxTogglePreventSleep = document.getElementById("ctx-toggle-prevent-sleep");
+const ctxTogglePreventSleepCheck = document.getElementById("ctx-toggle-prevent-sleep-check");
+const ctxTogglePreventSleepLabel = document.getElementById("ctx-toggle-prevent-sleep-label");
 const formChangePin = document.getElementById("form-change-pin");
 const inputNewPin = document.getElementById("input-new-pin");
 
@@ -136,6 +148,26 @@ function showTabContextMenu(x, y, partition, idx) {
   contextTargetPartition = partition;
   ctxMoveLeft.style.display = idx > 0 ? "flex" : "none";
   ctxMoveRight.style.display = idx < state.bookmarks.length - 1 ? "flex" : "none";
+
+  const targetBm = state.bookmarks.find((b) => b.partition === partition);
+  if (targetBm) {
+    if (targetBm.preventSleep) {
+      if (ctxTogglePreventSleepCheck) ctxTogglePreventSleepCheck.classList.remove("hidden");
+      if (ctxTogglePreventSleepLabel) ctxTogglePreventSleepLabel.textContent = "Keep Tab Awake (Active)";
+    } else {
+      if (ctxTogglePreventSleepCheck) ctxTogglePreventSleepCheck.classList.add("hidden");
+      if (ctxTogglePreventSleepLabel) ctxTogglePreventSleepLabel.textContent = "Keep Tab Awake";
+    }
+
+    const isHibernated = hibernatedPartitions.has(partition);
+    const isActive = partition === state.activePartition;
+    if (isActive || isHibernated) {
+      if (ctxSleepNow) ctxSleepNow.style.display = "none";
+    } else {
+      if (ctxSleepNow) ctxSleepNow.style.display = "flex";
+    }
+  }
+
   tabContextMenu.style.left = `${Math.min(x, window.innerWidth - 210)}px`;
   tabContextMenu.style.top = `${y + 8}px`;
   tabContextMenu.classList.remove("hidden");
@@ -161,6 +193,32 @@ ctxMoveRight.addEventListener("click", () => {
   if (contextTargetPartition) moveTabByPartition(contextTargetPartition, 1);
   hideTabContextMenu();
 });
+
+if (ctxSleepNow) {
+  ctxSleepNow.addEventListener("click", async () => {
+    if (contextTargetPartition && contextTargetPartition !== state.activePartition) {
+      await hibernateSession(contextTargetPartition);
+    }
+    hideTabContextMenu();
+  });
+}
+
+if (ctxTogglePreventSleep) {
+  ctxTogglePreventSleep.addEventListener("click", async () => {
+    if (contextTargetPartition) {
+      try {
+        const updated = await invoke("toggle_tab_prevent_sleep", { partition: contextTargetPartition });
+        if (updated) {
+          state.bookmarks = updated;
+          renderTabs();
+        }
+      } catch (err) {
+        console.error("Error toggling prevent sleep:", err);
+      }
+    }
+    hideTabContextMenu();
+  });
+}
 
 ctxManage.addEventListener("click", () => {
   hideTabContextMenu();
@@ -439,6 +497,26 @@ function renderTabs() {
         badgeSpan.style.color = bm.color;
       }
       tab.appendChild(badgeSpan);
+    }
+
+    // Tab standby / hibernation indicator (💤)
+    if (hibernatedPartitions.has(bm.partition)) {
+      tab.classList.add("hibernated");
+      tab.title = `${bm.title || bm.url} (En reposo / Sleeping — click to wake)`;
+      const sleepBadge = document.createElement("span");
+      sleepBadge.className = "tab-sleep-badge";
+      sleepBadge.textContent = "💤";
+      sleepBadge.title = "En reposo / Sleeping (RAM liberada)";
+      tab.appendChild(sleepBadge);
+    }
+
+    // Keep awake indicator (⚡) if preventSleep is active
+    if (bm.preventSleep) {
+      const awakeSpan = document.createElement("span");
+      awakeSpan.className = "tab-prevent-sleep-indicator";
+      awakeSpan.title = "Always Awake (No entra en reposo)";
+      awakeSpan.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`;
+      tab.appendChild(awakeSpan);
     }
 
     // Close Button (Immediate removal on click without drag conflict)
@@ -797,6 +875,9 @@ function renderManageSessionsList() {
 // === Session Actions ===
 async function activateSession(partition, url) {
   state.activePartition = partition;
+  lastActiveMap.set(partition, Date.now());
+  hibernatedPartitions.delete(partition);
+
   welcomeView.style.display = "none";
 
   // Update URL pill without layout shift
@@ -811,6 +892,47 @@ async function activateSession(partition, url) {
     console.error("Error activating session:", err);
   }
 }
+
+async function hibernateSession(partition) {
+  if (partition === state.activePartition) return false;
+  try {
+    const success = await invoke("hibernate_session", { partition });
+    if (success) {
+      hibernatedPartitions.add(partition);
+      renderTabs();
+      return true;
+    }
+  } catch (err) {
+    console.error("Error hibernating session:", err);
+  }
+  return false;
+}
+
+function checkInactiveTabsForHibernation() {
+  if (!state.settings || state.settings.hibernateEnabled === false) return;
+  const timeoutMs = state.settings.hibernateTimeoutMs || 900000;
+  const now = Date.now();
+
+  for (const bm of state.bookmarks) {
+    if (bm.partition === state.activePartition) {
+      lastActiveMap.set(bm.partition, now);
+      continue;
+    }
+    if (bm.preventSleep) {
+      continue;
+    }
+    if (hibernatedPartitions.has(bm.partition)) {
+      continue;
+    }
+    const lastActive = lastActiveMap.get(bm.partition) || now;
+    if (now - lastActive >= timeoutMs) {
+      hibernateSession(bm.partition);
+    }
+  }
+}
+
+// Background watcher for tab inactivity
+setInterval(checkInactiveTabsForHibernation, 30000);
 
 async function goHome() {
   state.activePartition = null;
@@ -1255,6 +1377,15 @@ btnSettings.addEventListener("click", () => {
   settingTimeout.value = state.settings.inactivityMs;
   timeoutDisplay.textContent = `${state.settings.inactivityMs / 60000} minutes`;
 
+  if (settingHibernateToggle) {
+    settingHibernateToggle.checked = state.settings.hibernateEnabled !== false;
+  }
+  if (settingHibernateTimeout) {
+    settingHibernateTimeout.value = state.settings.hibernateTimeoutMs || 900000;
+    const mins = Math.round((state.settings.hibernateTimeoutMs || 900000) / 60000);
+    if (hibernateTimeoutDisplay) hibernateTimeoutDisplay.textContent = `${mins} minutes`;
+  }
+
   if (state.settings.securityQuestion) {
     securityQuestionStatus.textContent = "(Configured ✓)";
     securityQuestionStatus.style.color = "#10b981";
@@ -1277,6 +1408,8 @@ async function saveUpdatedSettings() {
       lockOnLaunch: settingLockOnLaunch.checked,
       startMinimized: settingStartMinimized.checked,
       autoLaunch: settingAutoLaunch ? settingAutoLaunch.checked : false,
+      hibernateEnabled: settingHibernateToggle ? settingHibernateToggle.checked : true,
+      hibernateTimeoutMs: settingHibernateTimeout ? parseInt(settingHibernateTimeout.value, 10) : 900000,
     });
     if (updated) state.settings = updated;
     if (!state.settings.lockEnabled) {
@@ -1293,6 +1426,18 @@ settingLockToggle.addEventListener("change", saveUpdatedSettings);
 settingLockOnLaunch.addEventListener("change", saveUpdatedSettings);
 settingStartMinimized.addEventListener("change", saveUpdatedSettings);
 if (settingAutoLaunch) settingAutoLaunch.addEventListener("change", saveUpdatedSettings);
+
+if (settingHibernateToggle) {
+  settingHibernateToggle.addEventListener("change", saveUpdatedSettings);
+}
+
+if (settingHibernateTimeout) {
+  settingHibernateTimeout.addEventListener("change", (e) => {
+    const ms = parseInt(e.target.value, 10);
+    if (hibernateTimeoutDisplay) hibernateTimeoutDisplay.textContent = `${ms / 60000} minutes`;
+    saveUpdatedSettings();
+  });
+}
 
 settingTimeout.addEventListener("change", (e) => {
   const ms = parseInt(e.target.value, 10);
@@ -1724,9 +1869,19 @@ function resetZoom() {
 
 // Listen for navigation events from child webviews
 listen("session-navigated", (event) => {
-  if (event.payload.partition === state.activePartition) {
-    urlDomain.textContent = getDomain(event.payload.url);
-    urlInput.value = event.payload.url;
+  const { partition, url } = event.payload || {};
+  if (partition) {
+    // Keep in-memory URL in sync so waking from hibernation opens the latest URL
+    const bm = state.bookmarks.find((b) => b.partition === partition);
+    if (bm && url && !url.startsWith("minibrowser-action://")) {
+      bm.url = url;
+    }
+  }
+
+  if (partition === state.activePartition) {
+    urlDomain.textContent = getDomain(url);
+    urlInput.value = url;
+    lastActiveMap.set(partition, Date.now());
   }
 });
 

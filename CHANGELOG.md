@@ -10,6 +10,21 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.5.0] — 2026-09-17
+
+### Added
+- **Memory Saver & Intelligent Tab Hibernation (Standby System)**:
+  - Eliminates excessive RAM consumption (800MB–1.4GB per tab on heavy web applications like WhatsApp Web, Facebook, and Gmail) caused by multiple concurrent WebKit processes on macOS.
+  - **Automatic tab standby**: Background tabs inactive for longer than the configured threshold (default 15 minutes) are put into standby by cleanly terminating their child Webview, instantly reclaiming 100% of their RAM memory.
+  - **Seamless 1-click wake-up**: Clicking any hibernated tab immediately re-creates the WebKit instance with the exact partition, preserved login session (`data_store_identifier`), and navigated URL.
+  - **Manual tab sleep**: Right-click context menu option *"Sleep Tab Now 💤"* to immediately free memory for specific tabs.
+  - **Selective Wake Lock ("Keep Tab Awake ⚡")**: Right-click context menu toggle allows users to exclude critical communication tabs (such as WhatsApp Web or primary email) from ever sleeping, ensuring uninterrupted live notifications and active WebSockets.
+  - **Tab bar visual indicators**: Sleeping tabs display a subtle dashed border and `💤` badge; protected tabs display an active `⚡` wake lock badge.
+  - **Configurable Settings**: Added Memory Saver toggle and customizable sleep timeout (5 min, 10 min, 15 min, 30 min, 1 hour) in Browser Settings (`⌘,`).
+  - **Navigation URL persistence**: In-memory tab URLs are automatically synced on navigation so waking tabs always restore to the exact active page.
+
+---
+
 ## [1.4.0] — 2026-09-15
 
 ### Added

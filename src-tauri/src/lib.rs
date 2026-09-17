@@ -257,6 +257,7 @@ fn add_bookmark(
             badge,
             color,
             icon_svg,
+            prevent_sleep: false,
         });
         store.save_bookmarks(&bookmarks);
         let paused = *state.session_inactivity_paused.lock().unwrap();
@@ -337,6 +338,29 @@ fn update_bookmark_meta(
         rebuild_menu(&app, &bookmarks, paused);
     }
     Ok(bookmarks)
+}
+
+#[tauri::command]
+fn toggle_tab_prevent_sleep(
+    state: State<'_, AppStateWrapper>,
+    partition: String,
+) -> Result<Vec<Bookmark>, String> {
+    let store = state.store.lock().unwrap();
+    let mut bookmarks = store.load_bookmarks();
+    if let Some(b) = bookmarks.iter_mut().find(|x| x.partition == partition) {
+        b.prevent_sleep = !b.prevent_sleep;
+        store.save_bookmarks(&bookmarks);
+    }
+    Ok(bookmarks)
+}
+
+#[tauri::command]
+fn hibernate_session(
+    app: AppHandle,
+    state: State<'_, AppStateWrapper>,
+    partition: String,
+) -> Result<bool, String> {
+    state.sessions.hibernate_session(&app, &partition)
 }
 
 #[tauri::command]
@@ -463,6 +487,8 @@ fn update_settings(
     lock_on_launch: bool,
     start_minimized: bool,
     auto_launch: Option<bool>,
+    hibernate_enabled: Option<bool>,
+    hibernate_timeout_ms: Option<u64>,
 ) -> Result<store::Settings, String> {
     let store = state.store.lock().unwrap();
     let mut settings = store.load_settings();
@@ -475,6 +501,12 @@ fn update_settings(
             settings.auto_launch = al;
             let _ = configure_auto_launch(al);
         }
+    }
+    if let Some(he) = hibernate_enabled {
+        settings.hibernate_enabled = he;
+    }
+    if let Some(ht) = hibernate_timeout_ms {
+        settings.hibernate_timeout_ms = ht.max(60000);
     }
     store.save_settings(&settings);
     Ok(settings)
@@ -897,7 +929,9 @@ pub fn run() {
             factory_reset,
             open_downloads_folder,
             get_pending_notification,
-            get_app_version
+            get_app_version,
+            hibernate_session,
+            toggle_tab_prevent_sleep
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

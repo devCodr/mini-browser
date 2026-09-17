@@ -17,6 +17,8 @@ pub struct Bookmark {
     pub color: Option<String>,
     #[serde(rename = "iconSvg", skip_serializing_if = "Option::is_none")]
     pub icon_svg: Option<String>,
+    #[serde(rename = "preventSleep", default)]
+    pub prevent_sleep: bool,
 }
 
 fn default_true() -> bool {
@@ -25,6 +27,10 @@ fn default_true() -> bool {
 
 fn default_pin_length() -> usize {
     6
+}
+
+fn default_hibernate_timeout() -> u64 {
+    15 * 60 * 1000 // 15 minutes
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -51,6 +57,10 @@ pub struct Settings {
     pub security_answer_hash: Option<String>,
     #[serde(rename = "securityAnswerSalt", skip_serializing_if = "Option::is_none")]
     pub security_answer_salt: Option<String>,
+    #[serde(rename = "hibernateEnabled", default = "default_true")]
+    pub hibernate_enabled: bool,
+    #[serde(rename = "hibernateTimeoutMs", default = "default_hibernate_timeout")]
+    pub hibernate_timeout_ms: u64,
 }
 
 impl Default for Settings {
@@ -67,6 +77,8 @@ impl Default for Settings {
             security_question: None,
             security_answer_hash: None,
             security_answer_salt: None,
+            hibernate_enabled: true,
+            hibernate_timeout_ms: default_hibernate_timeout(),
         };
         s.set_pin("123456");
         s
@@ -255,6 +267,7 @@ fn try_migrate_electron_bookmarks() -> Option<Vec<Bookmark>> {
                             badge: None,
                             color: None,
                             icon_svg: b.icon_svg,
+                            prevent_sleep: false,
                         })
                         .collect();
                     return Some(new_list);
