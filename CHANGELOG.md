@@ -10,6 +10,21 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.5.1] — 2026-09-17
+
+### Fixed
+- **Tab Context Menu Z-Index & Native View Clipping**: Resolved issue where the tab bar right-click context menu was partially hidden/cut off behind native child `WKWebView` instances on macOS. MiniBrowser now dynamically hides the active webview while the tab menu is open, ensuring full foreground visibility, and automatically restores it upon dismissal.
+- **Strict English-Only Interface**: Purged remaining Spanish localization strings across all menus, notifications, file fallbacks, and tooltips (e.g., `'Abrir carpeta Descargas'` → `'Open Downloads Folder'`, `'Descarga completada'` → `'Download Completed'`, `'Descargar archivo'` → `'Download File'`).
+
+### Added
+- **Webview In-Page Context Menu Actions**: Added tab management options directly into the right-click menu inside web pages (WhatsApp Web, Facebook, Gmail, etc.):
+  - **`Sleep This Tab 💤`**: Immediately puts current tab into standby and switches to an adjacent tab.
+  - **`Toggle Keep Tab Awake ⚡`**: Exclude or include the current tab from automatic hibernation.
+  - **`Manage Sessions... (Cmd+M)`**: Opens the session management modal.
+  - **`Close Tab (Cmd+W)`**: Closes the current session directly from inside the page.
+
+---
+
 ## [1.5.0] — 2026-09-17
 
 ### Added

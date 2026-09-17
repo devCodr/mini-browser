@@ -59,14 +59,14 @@ pub fn partition_to_uuid_bytes(partition: &str) -> [u8; 16] {
 pub fn get_unique_download_path(suggested_filename: &str) -> std::path::PathBuf {
     let base_dir = dirs::download_dir().unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
     let clean_name = if suggested_filename.trim().is_empty() {
-        "descarga"
+        "download"
     } else {
         suggested_filename.trim()
     };
     let file_name = std::path::Path::new(clean_name)
         .file_name()
         .and_then(|f| f.to_str())
-        .unwrap_or("descarga");
+        .unwrap_or("download");
 
     let mut dest = base_dir.join(file_name);
     if !dest.exists() {
@@ -107,7 +107,7 @@ pub fn notify_download_finished(app: &AppHandle, file_path: &std::path::Path) {
     let file_name = file_path
         .file_name()
         .and_then(|f| f.to_str())
-        .unwrap_or("archivo");
+        .unwrap_or("file");
     let path_str = file_path.to_string_lossy().to_string();
 
     let _ = app.emit(
@@ -122,8 +122,8 @@ pub fn notify_download_finished(app: &AppHandle, file_path: &std::path::Path) {
     let _ = app
         .notification()
         .builder()
-        .title("Descarga completada")
-        .body(format!("Guardado en Descargas: {}", file_name))
+        .title("Download completed")
+        .body(format!("Saved to Downloads: {}", file_name))
         .show();
 }
 
@@ -458,14 +458,14 @@ impl SessionManager {
                 function triggerDownloadPayload(dataUriOrBase64, filename) {
                     var id = 'dl_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
                     window.__minibrowser_pending_downloads[id] = {
-                        filename: filename || 'descarga',
+                        filename: filename || 'download',
                         data: dataUriOrBase64
                     };
-                    sendHostAction('blob-download-ready', { id: id, filename: filename || 'descarga' });
+                    sendHostAction('blob-download-ready', { id: id, filename: filename || 'download' });
                 }
 
                 function triggerBlobDownload(blobOrUrl, suggestedFilename) {
-                    var finalName = suggestedFilename || 'descarga';
+                    var finalName = suggestedFilename || 'download';
                     if (typeof blobOrUrl === 'string') {
                         if (blobOrUrl.startsWith('data:')) {
                             triggerDownloadPayload(blobOrUrl, finalName);
@@ -512,7 +512,7 @@ impl SessionManager {
                         var href = this.href || '';
                         var downloadAttr = this.getAttribute('download');
                         if (downloadAttr !== null && downloadAttr !== undefined) {
-                            var name = downloadAttr || this.download || extractFilenameFromUrl(href) || 'descarga';
+                            var name = downloadAttr || this.download || extractFilenameFromUrl(href) || 'download';
                             if (href.startsWith('blob:') || href.startsWith('data:')) {
                                 triggerBlobDownload(href, name);
                                 return;
@@ -529,7 +529,7 @@ impl SessionManager {
                         var href = a.href || '';
                         var downloadAttr = a.getAttribute('download');
                         if (downloadAttr !== null && downloadAttr !== undefined) {
-                            var name = downloadAttr || a.download || extractFilenameFromUrl(href) || 'descarga';
+                            var name = downloadAttr || a.download || extractFilenameFromUrl(href) || 'download';
                             if (href.startsWith('blob:') || href.startsWith('data:')) {
                                 e.preventDefault();
                                 e.stopPropagation();
@@ -604,9 +604,9 @@ impl SessionManager {
                         });
                         items.push({
                             icon: '💾',
-                            label: 'Descargar archivo en PC',
+                            label: 'Download File',
                             action: function() {
-                                var linkName = extractFilenameFromUrl(targetUrl) || 'descarga';
+                                var linkName = extractFilenameFromUrl(targetUrl) || 'download';
                                 triggerBlobDownload(targetUrl, linkName);
                             }
                         });
@@ -704,8 +704,40 @@ impl SessionManager {
 
                     items.push({ separator: true });
                     items.push({
+                        icon: '💤',
+                        label: 'Sleep This Tab',
+                        action: function() {
+                            sendHostAction('sleep-tab');
+                        }
+                    });
+                    items.push({
+                        icon: '⚡',
+                        label: 'Toggle Keep Tab Awake',
+                        action: function() {
+                            sendHostAction('toggle-tab-prevent-sleep');
+                        }
+                    });
+                    items.push({
+                        icon: '🗂️',
+                        label: 'Manage Sessions...',
+                        shortcut: modName + '+M',
+                        action: function() {
+                            sendHostAction('shortcut', { key: 'm' });
+                        }
+                    });
+                    items.push({
+                        icon: '✕',
+                        label: 'Close Tab',
+                        shortcut: modName + '+W',
+                        action: function() {
+                            sendHostAction('shortcut', { key: 'w' });
+                        }
+                    });
+
+                    items.push({ separator: true });
+                    items.push({
                         icon: '📁',
-                        label: 'Abrir carpeta Descargas',
+                        label: 'Open Downloads Folder',
                         action: function() {
                             sendHostAction('open-downloads-folder');
                         }
@@ -810,7 +842,7 @@ impl SessionManager {
                                 notify_download_finished(&app_handle_dl, p);
                             } else {
                                 let download_dir = dirs::download_dir().unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
-                                notify_download_finished(&app_handle_dl, &download_dir.join("archivo"));
+                                notify_download_finished(&app_handle_dl, &download_dir.join("download"));
                             }
                         }
                         true
@@ -842,9 +874,15 @@ impl SessionManager {
                             use tauri_plugin_opener::OpenerExt;
                             let _ = app_handle_clone.opener().open_path(download_dir.to_string_lossy().to_string(), None::<&str>);
                         }
+                        "sleep-tab" => {
+                            let _ = app_handle_clone.emit("sleep-active-tab", &part_clone);
+                        }
+                        "toggle-tab-prevent-sleep" => {
+                            let _ = app_handle_clone.emit("toggle-tab-prevent-sleep-action", &part_clone);
+                        }
                         "blob-download-ready" => {
                             let id = params.get("id").cloned().unwrap_or_default();
-                            let fallback_filename = params.get("filename").cloned().unwrap_or_else(|| "descarga".to_string());
+                            let fallback_filename = params.get("filename").cloned().unwrap_or_else(|| "download".to_string());
                             if let Some(wv) = app_handle_clone.get_webview(&label_nav) {
                                 let app_handle_save = app_handle_clone.clone();
                                 let eval_code = format!(
@@ -886,12 +924,12 @@ impl SessionManager {
                         }
                         "download-file" => {
                             if let Some(target_url) = params.get("url") {
-                                let fallback_name = params.get("filename").cloned().unwrap_or_else(|| "descarga".to_string());
+                                let fallback_name = params.get("filename").cloned().unwrap_or_else(|| "download".to_string());
                                 let app_handle_save = app_handle_clone.clone();
                                 let target_url = target_url.clone();
                                 std::thread::spawn(move || {
-                                    let filename = if fallback_name.trim().is_empty() || fallback_name == "descarga" {
-                                        target_url.split('/').last().and_then(|s| s.split('?').next()).unwrap_or("descarga")
+                                    let filename = if fallback_name.trim().is_empty() || fallback_name == "download" {
+                                        target_url.split('/').last().and_then(|s| s.split('?').next()).unwrap_or("download")
                                     } else {
                                         &fallback_name
                                     };

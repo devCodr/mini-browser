@@ -144,7 +144,7 @@ const ctxManage = document.getElementById("ctx-manage");
 const ctxClose = document.getElementById("ctx-close");
 let contextTargetPartition = null;
 
-function showTabContextMenu(x, y, partition, idx) {
+async function showTabContextMenu(x, y, partition, idx) {
   contextTargetPartition = partition;
   ctxMoveLeft.style.display = idx > 0 ? "flex" : "none";
   ctxMoveRight.style.display = idx < state.bookmarks.length - 1 ? "flex" : "none";
@@ -171,11 +171,36 @@ function showTabContextMenu(x, y, partition, idx) {
   tabContextMenu.style.left = `${Math.min(x, window.innerWidth - 210)}px`;
   tabContextMenu.style.top = `${y + 8}px`;
   tabContextMenu.classList.remove("hidden");
+
+  // On macOS, child WKWebViews are native OS views that render above any HTML DOM z-index.
+  // Hide active webview while tab context menu is open so the menu is 100% visible and unclipped.
+  if (state.activePartition) {
+    try {
+      await invoke("hide_active_session");
+    } catch (_) {}
+  }
 }
 
-function hideTabContextMenu() {
-  if (tabContextMenu) tabContextMenu.classList.add("hidden");
-  contextTargetPartition = null;
+async function hideTabContextMenu() {
+  if (tabContextMenu && !tabContextMenu.classList.contains("hidden")) {
+    tabContextMenu.classList.add("hidden");
+    contextTargetPartition = null;
+
+    const anyModalOpen =
+      !modalNewSession.classList.contains("hidden") ||
+      !modalManageSessions.classList.contains("hidden") ||
+      !modalShortcuts.classList.contains("hidden") ||
+      !modalAbout.classList.contains("hidden") ||
+      !modalSettings.classList.contains("hidden") ||
+      (modalRecovery && !modalRecovery.classList.contains("hidden")) ||
+      state.isLocked;
+
+    if (!anyModalOpen && state.activePartition) {
+      try {
+        await invoke("show_active_session");
+      } catch (_) {}
+    }
+  }
 }
 
 window.addEventListener("click", (e) => {
@@ -502,11 +527,11 @@ function renderTabs() {
     // Tab standby / hibernation indicator (💤)
     if (hibernatedPartitions.has(bm.partition)) {
       tab.classList.add("hibernated");
-      tab.title = `${bm.title || bm.url} (En reposo / Sleeping — click to wake)`;
+      tab.title = `${bm.title || bm.url} (Sleeping — click to wake)`;
       const sleepBadge = document.createElement("span");
       sleepBadge.className = "tab-sleep-badge";
       sleepBadge.textContent = "💤";
-      sleepBadge.title = "En reposo / Sleeping (RAM liberada)";
+      sleepBadge.title = "Sleeping (RAM freed — click to wake)";
       tab.appendChild(sleepBadge);
     }
 
@@ -514,7 +539,7 @@ function renderTabs() {
     if (bm.preventSleep) {
       const awakeSpan = document.createElement("span");
       awakeSpan.className = "tab-prevent-sleep-indicator";
-      awakeSpan.title = "Always Awake (No entra en reposo)";
+      awakeSpan.title = "Always Awake (Never sleeps)";
       awakeSpan.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`;
       tab.appendChild(awakeSpan);
     }
@@ -1914,10 +1939,10 @@ function showDownloadToast(filename, path) {
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
     </div>
     <div class="download-toast-content">
-      <div class="download-toast-title">Descarga completada</div>
+      <div class="download-toast-title">Download Completed</div>
       <div class="download-toast-file" title="${filename}">${filename}</div>
     </div>
-    <button class="download-toast-open" title="Abrir carpeta">
+    <button class="download-toast-open" title="Open Folder">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
     </button>
   `;
@@ -2123,6 +2148,34 @@ listen("app-focused", async () => {
       }
     }
   } catch (_) {}
+});
+
+// Context menu actions triggered from inside child webviews
+listen("sleep-active-tab", async (event) => {
+  const partition = event.payload || state.activePartition;
+  if (!partition) return;
+  const currentIndex = state.bookmarks.findIndex((b) => b.partition === partition);
+  if (currentIndex !== -1 && state.bookmarks.length > 1) {
+    const nextTab = state.bookmarks[currentIndex === 0 ? 1 : currentIndex - 1];
+    await activateSession(nextTab.partition, nextTab.url);
+  } else {
+    await goHome();
+  }
+  await hibernateSession(partition);
+});
+
+listen("toggle-tab-prevent-sleep-action", async (event) => {
+  const partition = event.payload || state.activePartition;
+  if (!partition) return;
+  try {
+    const updated = await invoke("toggle_tab_prevent_sleep", { partition });
+    if (updated) {
+      state.bookmarks = updated;
+      renderTabs();
+    }
+  } catch (err) {
+    console.error("Error toggling keep tab awake:", err);
+  }
 });
 
 // Heartbeat watchdog for browser suspend detection
