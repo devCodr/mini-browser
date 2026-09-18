@@ -899,6 +899,10 @@ function renderManageSessionsList() {
 
 // === Session Actions ===
 async function activateSession(partition, url) {
+  if (state.isLocked) {
+    console.warn("Blocked activateSession: app is locked");
+    return;
+  }
   state.activePartition = partition;
   lastActiveMap.set(partition, Date.now());
   hibernatedPartitions.delete(partition);
@@ -960,6 +964,7 @@ function checkInactiveTabsForHibernation() {
 setInterval(checkInactiveTabsForHibernation, 30000);
 
 async function goHome() {
+  if (state.isLocked) return;
   state.activePartition = null;
   welcomeView.style.display = "flex";
   urlDomain.textContent = "Welcome";
@@ -974,6 +979,7 @@ async function goHome() {
 }
 
 async function createSession(urlStr, titleStr, badgeStr, colorStr, iconSvgStr = null) {
+  if (state.isLocked) return;
   const url = normalizeUrl(urlStr);
   if (!url) return;
 
@@ -1001,6 +1007,10 @@ async function createSession(urlStr, titleStr, badgeStr, colorStr, iconSvgStr = 
 }
 
 async function removeSession(partition) {
+  if (state.isLocked) {
+    console.warn("Blocked removeSession: app is locked");
+    return;
+  }
   const isCurrent = state.activePartition === partition;
   try {
     const list = await invoke("remove_bookmark", { partition });
@@ -1045,6 +1055,7 @@ function renderPinDots() {
 async function lockApp() {
   if (state.isLocked) return;
   state.isLocked = true;
+  invoke("set_app_locked", { locked: true }).catch(console.error);
   state.pinBuffer = "";
   if (state.inactivityTimer) {
     clearTimeout(state.inactivityTimer);
@@ -1125,6 +1136,7 @@ function triggerPinError() {
 
 async function unlockApp() {
   state.isLocked = false;
+  invoke("set_app_locked", { locked: false }).catch(console.error);
   lockOverlay.classList.add("hidden");
   state.pinBuffer = "";
   updatePinDots();
@@ -1292,6 +1304,7 @@ formCustomLaunch.addEventListener("submit", (e) => {
 
 // === Modals Management ===
 function openNewSessionModal(prefillUrl = "") {
+  if (state.isLocked) return;
   const urlInput = document.getElementById("new-session-url");
   const titleInput = document.getElementById("new-session-title");
   const badgeInput = document.getElementById("new-session-badge");
@@ -1329,11 +1342,13 @@ if (newSessionUrlInput) {
 }
 
 function openManageSessionsModal() {
+  if (state.isLocked) return;
   renderManageSessionsList();
   showModal(modalManageSessions);
 }
 
 function toggleShortcutsModal() {
+  if (state.isLocked) return;
   if (modalShortcuts.classList.contains("hidden")) {
     showModal(modalShortcuts);
   } else {
@@ -1359,6 +1374,7 @@ btnCloseShortcuts.addEventListener("click", () => hideModal(modalShortcuts));
 
 if (btnDownloads) {
   btnDownloads.addEventListener("click", async () => {
+    if (state.isLocked) return;
     try {
       await invoke("open_downloads_folder");
     } catch (err) {
@@ -1371,6 +1387,7 @@ btnAbout.addEventListener("click", () => openAboutModal());
 btnCloseAbout.addEventListener("click", () => hideModal(modalAbout));
 
 async function openAboutModal() {
+  if (state.isLocked) return;
   // Actualizar la versión dinámicamente desde Rust antes de mostrar el modal
   try {
     const version = await invoke("get_app_version");
@@ -1384,6 +1401,7 @@ async function openAboutModal() {
 
 formNewSession.addEventListener("submit", (e) => {
   e.preventDefault();
+  if (state.isLocked) return;
   const url = document.getElementById("new-session-url").value.trim();
   const title = document.getElementById("new-session-title").value.trim();
   const badge = document.getElementById("new-session-badge").value.trim() || generateUniqueBadge(url);
@@ -1395,6 +1413,7 @@ formNewSession.addEventListener("submit", (e) => {
 });
 
 btnSettings.addEventListener("click", () => {
+  if (state.isLocked) return;
   settingLockToggle.checked = state.settings.lockEnabled;
   settingLockOnLaunch.checked = state.settings.lockOnLaunch !== false;
   settingStartMinimized.checked = !!state.settings.startMinimized;
@@ -1766,15 +1785,46 @@ window.addEventListener("keydown", (e) => {
 
   // Lock overlay active
   if (state.isLocked) {
+    // If recovery modal is open, let user interact with its inputs
+    if (modalRecovery && !modalRecovery.classList.contains("hidden")) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        hideModal(modalRecovery);
+        return;
+      }
+      const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+      const mod = isMac ? e.metaKey : e.ctrlKey;
+      if (mod && e.key.toLowerCase() !== "q") {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      return;
+    }
+
+    const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+    const mod = isMac ? e.metaKey : e.ctrlKey;
+
     if (e.key >= "0" && e.key <= "9") {
+      e.preventDefault();
+      e.stopPropagation();
       handlePinInput(e.key);
+      return;
     } else if (e.key === "Backspace") {
+      e.preventDefault();
+      e.stopPropagation();
       state.pinBuffer = state.pinBuffer.slice(0, -1);
       updatePinDots();
+      return;
     } else if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
       state.pinBuffer = "";
       updatePinDots();
+      return;
     } else if (e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation();
       if (state.pinBuffer.length === 4 || state.pinBuffer.length === 6) {
         const pinToVerify = state.pinBuffer;
         invoke("verify_pin", { pin: pinToVerify }).then((isValid) => {
@@ -1782,7 +1832,17 @@ window.addEventListener("keydown", (e) => {
           else triggerPinError();
         });
       }
+      return;
     }
+
+    // Allow normal app quit with Cmd+Q / Ctrl+Q
+    if (mod && e.key.toLowerCase() === "q") {
+      return;
+    }
+
+    // Intercept and swallow ALL other key presses and shortcuts while locked (Cmd+W, Cmd+T, Cmd+R, Cmd+1..9, etc.)
+    e.preventDefault();
+    e.stopPropagation();
     return;
   }
 
@@ -1810,10 +1870,11 @@ window.addEventListener("keydown", (e) => {
     e.preventDefault();
     executeShortcut(e.key, { alt: e.altKey, shift: e.shiftKey });
   }
-});
+}, true);
 
 // Listen to Native macOS Application Menu Accelerators (Fires from Cocoa on ANY website!)
 listen("menu-shortcut", async (event) => {
+  if (state.isLocked) return;
   const id = event.payload;
   if (!id) return;
 
@@ -1859,6 +1920,7 @@ listen("menu-shortcut", async (event) => {
 
 // Global Keydown Handler (Forwarded from child webviews if available)
 listen("trigger-shortcut", (event) => {
+  if (state.isLocked) return;
   if (event.payload) {
     const { key, alt, shift } = event.payload;
     executeShortcut(key, { alt, shift });
@@ -1866,6 +1928,7 @@ listen("trigger-shortcut", (event) => {
 });
 
 function changeZoom(delta) {
+  if (state.isLocked) return;
   state.zoomLevel = Math.max(0.3, Math.min(3.0, state.zoomLevel + delta));
   if (state.activePartition) {
     invoke("set_zoom", { partition: state.activePartition, factor: state.zoomLevel });
@@ -1873,6 +1936,7 @@ function changeZoom(delta) {
 }
 
 function resetZoom() {
+  if (state.isLocked) return;
   state.zoomLevel = 1.0;
   if (state.activePartition) {
     invoke("set_zoom", { partition: state.activePartition, factor: 1.0 });
@@ -1912,6 +1976,7 @@ listen("session-navigated", (event) => {
 
 // Listen for opening new session from context menu
 listen("open-new-session-url", (event) => {
+  if (state.isLocked) return;
   const url = event.payload;
   if (url) {
     const domain = getDomain(url) || "Web";
@@ -2003,17 +2068,20 @@ listen("download-finished", (event) => {
 });
 
 listen("toggle-session-inactivity", () => {
+  if (state.isLocked) return;
   toggleSessionInactivityPause();
 });
 
 if (btnSessionPause) {
   btnSessionPause.addEventListener("click", () => {
+    if (state.isLocked) return;
     toggleSessionInactivityPause();
   });
 }
 
 if (btnToggleSessionSettings) {
   btnToggleSessionSettings.addEventListener("click", () => {
+    if (state.isLocked) return;
     toggleSessionInactivityPause();
   });
 }
@@ -2152,6 +2220,7 @@ listen("app-focused", async () => {
 
 // Context menu actions triggered from inside child webviews
 listen("sleep-active-tab", async (event) => {
+  if (state.isLocked) return;
   const partition = event.payload || state.activePartition;
   if (!partition) return;
   const currentIndex = state.bookmarks.findIndex((b) => b.partition === partition);
@@ -2165,6 +2234,7 @@ listen("sleep-active-tab", async (event) => {
 });
 
 listen("toggle-tab-prevent-sleep-action", async (event) => {
+  if (state.isLocked) return;
   const partition = event.payload || state.activePartition;
   if (!partition) return;
   try {

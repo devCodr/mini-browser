@@ -10,6 +10,17 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.5.2] — 2026-09-17
+
+### Fixed
+- **Lock Screen Bypass via Shortcut (`Cmd+W` / `CmdOrCtrl+W`) & Full Shortcut Shielding**:
+  - Resolved security vulnerability where pressing `Cmd+W` while the application was locked triggered the native macOS application menu accelerator for `close_session`, closing the active tab and activating the adjacent session webview directly over the PIN overlay without authentication.
+  - **Full Lock Isolation in Rust Core**: Added synchronized `is_locked` state guard inside `AppStateWrapper`. Rust now strictly drops all native menu events (`app.on_menu_event`) when locked, and rejects backend commands (`activate_session`, `add_bookmark`, `remove_bookmark`, and navigation) during locked states.
+  - **Keydown Event Capture & Interception**: Upgraded global `keydown` event listener to capture phase (`useCapture: true`). Intercepts and blocks all keyboard shortcuts (such as `Cmd+W`, `Cmd+T`, `Cmd+R`, `Cmd+1..9`, `Cmd+,`, `Cmd+M`) and default browser actions while locked. Only digit PIN entry (`0-9`), `Backspace`, `Escape`, `Enter`, and standard OS quit (`Cmd+Q`) are permitted.
+  - **Frontend UI & Listener Guards**: Added strict `state.isLocked` checks across `activateSession`, `removeSession`, `createSession`, `goHome`, `openNewSessionModal`, `openManageSessionsModal`, `toggleShortcutsModal`, `openAboutModal`, Settings button, `menu-shortcut`, and child webview forwarded shortcuts (`trigger-shortcut`).
+
+---
+
 ## [1.5.1] — 2026-09-17
 
 ### Fixed

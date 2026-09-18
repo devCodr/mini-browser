@@ -13,6 +13,7 @@ pub struct AppStateWrapper {
     /// Se limpia al ser consumida por el frontend.
     pub pending_notification: Mutex<Option<serde_json::Value>>,
     pub session_inactivity_paused: Mutex<bool>,
+    pub is_locked: Mutex<bool>,
 }
 
 pub fn rebuild_menu(app: &AppHandle, bookmarks: &[Bookmark], session_paused: bool) {
@@ -148,6 +149,9 @@ fn activate_session(
     partition: String,
     url: String,
 ) -> Result<String, String> {
+    if *state.is_locked.lock().unwrap() {
+        return Err("App is locked".to_string());
+    }
     let store = state.store.lock().unwrap();
     state.sessions.activate_session(&app, &partition, &url, &store)
 }
@@ -166,6 +170,9 @@ fn hide_active_session(app: AppHandle, state: State<'_, AppStateWrapper>) -> Res
 
 #[tauri::command]
 fn show_active_session(app: AppHandle, state: State<'_, AppStateWrapper>) -> Result<(), String> {
+    if *state.is_locked.lock().unwrap() {
+        return Ok(());
+    }
     state.sessions.show_active(&app);
     Ok(())
 }
@@ -240,6 +247,9 @@ fn add_bookmark(
     color: Option<String>,
     icon_svg: Option<String>,
 ) -> Result<Vec<Bookmark>, String> {
+    if *state.is_locked.lock().unwrap() {
+        return Err("App is locked".to_string());
+    }
     let store = state.store.lock().unwrap();
     let mut bookmarks = store.load_bookmarks();
 
@@ -272,6 +282,9 @@ fn remove_bookmark(
     state: State<'_, AppStateWrapper>,
     partition: String,
 ) -> Result<Vec<Bookmark>, String> {
+    if *state.is_locked.lock().unwrap() {
+        return Err("App is locked".to_string());
+    }
     let _ = state.sessions.close_session(&app, &partition);
     let store = state.store.lock().unwrap();
     let mut bookmarks = store.load_bookmarks();
@@ -365,16 +378,25 @@ fn hibernate_session(
 
 #[tauri::command]
 fn nav_back(app: AppHandle, state: State<'_, AppStateWrapper>, partition: String) {
+    if *state.is_locked.lock().unwrap() {
+        return;
+    }
     state.sessions.go_back(&app, &partition);
 }
 
 #[tauri::command]
 fn nav_forward(app: AppHandle, state: State<'_, AppStateWrapper>, partition: String) {
+    if *state.is_locked.lock().unwrap() {
+        return;
+    }
     state.sessions.go_forward(&app, &partition);
 }
 
 #[tauri::command]
 fn nav_reload(app: AppHandle, state: State<'_, AppStateWrapper>, partition: String) {
+    if *state.is_locked.lock().unwrap() {
+        return;
+    }
     state.sessions.reload(&app, &partition);
 }
 
@@ -385,6 +407,9 @@ fn nav_to(
     partition: String,
     url: String,
 ) -> Result<(), String> {
+    if *state.is_locked.lock().unwrap() {
+        return Err("App is locked".to_string());
+    }
     state.sessions.navigate(&app, &partition, &url)
 }
 
@@ -397,7 +422,24 @@ fn set_zoom(app: AppHandle, state: State<'_, AppStateWrapper>, partition: String
 fn verify_pin(state: State<'_, AppStateWrapper>, pin: String) -> bool {
     let store = state.store.lock().unwrap();
     let settings = store.load_settings();
-    settings.verify_pin(&pin)
+    let valid = settings.verify_pin(&pin);
+    if valid {
+        *state.is_locked.lock().unwrap() = false;
+    }
+    valid
+}
+
+#[tauri::command]
+fn set_app_locked(
+    app: AppHandle,
+    state: State<'_, AppStateWrapper>,
+    locked: bool,
+) -> Result<(), String> {
+    *state.is_locked.lock().unwrap() = locked;
+    if locked {
+        state.sessions.hide_active(&app);
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -433,7 +475,9 @@ fn set_inactivity_ms(state: State<'_, AppStateWrapper>, ms: u64) -> Result<u64, 
 
 #[tauri::command]
 fn lock_now(app: AppHandle, state: State<'_, AppStateWrapper>) -> Result<(), String> {
+    *state.is_locked.lock().unwrap() = true;
     state.sessions.deactivate_all(&app);
+    let _ = app.emit("system-sleep-lock", ());
     Ok(())
 }
 
@@ -556,6 +600,7 @@ fn reset_pin_with_answer(
     }
     settings.set_pin(clean_pin);
     store.save_settings(&settings);
+    *state.is_locked.lock().unwrap() = false;
     Ok(true)
 }
 
@@ -573,6 +618,7 @@ fn factory_reset(
         let mut p = state.session_inactivity_paused.lock().unwrap();
         *p = false;
     }
+    *state.is_locked.lock().unwrap() = settings.lock_on_launch;
     rebuild_menu(&app, &bookmarks, false);
     rebuild_tray_menu(&app, false);
     Ok(serde_json::json!({
@@ -684,11 +730,14 @@ pub fn run() {
             let initial_settings = store_manager.load_settings();
             let initial_bookmarks = store_manager.load_bookmarks();
 
+            let initial_locked = initial_settings.lock_on_launch;
+
             app.manage(AppStateWrapper {
                 store: Mutex::new(store_manager),
                 sessions: session_manager,
                 pending_notification: Mutex::new(None),
                 session_inactivity_paused: Mutex::new(false),
+                is_locked: Mutex::new(initial_locked),
             });
 
             #[cfg(target_os = "macos")]
@@ -710,7 +759,11 @@ pub fn run() {
             rebuild_menu(&app.handle(), &initial_bookmarks, false);
 
             let app_handle_menu = app.handle().clone();
-            app.on_menu_event(move |_app, event| {
+            app.on_menu_event(move |app_h, event| {
+                let state: State<AppStateWrapper> = app_h.state();
+                if *state.is_locked.lock().unwrap() {
+                    return;
+                }
                 let id = event.id().as_ref();
                 let _ = app_handle_menu.emit("menu-shortcut", id);
             });
@@ -802,6 +855,7 @@ pub fn run() {
                     last_tick = std::time::Instant::now();
                     if elapsed > std::time::Duration::from_millis(3000) {
                         let state: State<AppStateWrapper> = app_h_sleep.state();
+                        *state.is_locked.lock().unwrap() = true;
                         state.sessions.hide_active(&app_h_sleep);
                         let _ = app_h_sleep.emit("system-sleep-lock", ());
                     }
@@ -851,6 +905,8 @@ pub fn run() {
                                 }
                             }
                             "tray_lock" => {
+                                let state: State<AppStateWrapper> = app.state();
+                                *state.is_locked.lock().unwrap() = true;
                                 let _ = app.emit("system-sleep-lock", ());
                                 if let Some(w) = app.get_window("main") {
                                     let _ = w.show();
@@ -921,6 +977,7 @@ pub fn run() {
             toggle_devtools,
             update_settings,
             lock_now,
+            set_app_locked,
             update_session_lock_state,
             set_security_question,
             get_security_question,
