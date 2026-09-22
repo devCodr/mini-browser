@@ -48,6 +48,7 @@ Standard web browsers share cookies and session caches across all tabs and windo
 - 🔒 **PIN Security Shield**: Glassmorphic blur overlay with 4 or 6-digit PIN lock, inactivity auto-lock timer, temporary session-unlock mode ("Keep unlocked for this session"), security question recovery, and quiet launch in minimized mode.
 - 💤 **Memory Saver & Tab Standby (Hibernation)**: Frees 100% of RAM consumed by heavy background tabs (WhatsApp Web, Facebook, Gmail) by placing inactive tabs into standby, with 1-click wake lock (`⚡ Keep Tab Awake`) to prevent sleep on critical communication accounts.
 - ⌨️ **Native Menu Bar & Global Accelerators**: Complete macOS app menu with tab switching shortcuts (`Cmd+1`–`Cmd+9`), Settings (`Cmd+,`), and About — all functioning even while focused inside external websites.
+- 📎 **Native Drag & Drop & File Attachments**: Drag photos, documents, and media straight from Finder/desktop into chat conversations (WhatsApp Web, Facebook, Telegram, Gmail), with reliable native file picker dialogs.
 - 🎨 **Custom Sessions & Badges**: Assign unique labels, colored badges, and custom icons to each account.
 
 ---

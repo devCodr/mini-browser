@@ -10,6 +10,23 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.5.3] — 2026-09-22
+
+### Fixed
+- **Address Bar URL Pollution from Background Subframes & Sandboxes**:
+  - Resolved issue where complex web applications (e.g. Facebook embedding `fbsbx.com` sandbox iframes, WhatsApp Web connecting to `webtp.whatsapp.net` telemetry subframes) overwrote the address bar and saved bookmarks with internal domains.
+  - Subframe navigations are now decoupled from omnibox state in `on_navigation`.
+  - Main frame page loads are handled cleanly via native `.on_page_load()` and a dedicated top-level observer (`window === window.top`) monitoring SPA history transitions (`pushState`, `replaceState`, `popstate`, `hashchange`).
+  - Added frontend defenses in `main.js` to ensure the address bar and bookmark storage only track authentic top-level destinations.
+- **Native File Drag & Drop into Web Applications**:
+  - Enabled `.disable_drag_drop_handler()` on child webviews and `"dragDropEnabled": false` in window configuration.
+  - WebKit now directly receives macOS Finder file drag-and-drop operations, allowing seamless dragging of photos, videos, and documents into WhatsApp Web, Facebook, Telegram, and Gmail conversations.
+- **File Chooser & Attachment Button Compatibility in WebKit**:
+  - Added compatibility shims for hidden `<input type="file">` elements to guarantee programmatic triggers (such as clicking *"Documento"* or *"Fotos y videos"* in WhatsApp Web's attachment popover menu) correctly prompt the native macOS file picker (`NSOpenPanel`).
+  - Isolated internal `sendHostAction` communications inside hidden, detached iframes, preventing `window.location.href` assignments from interrupting active network uploads, fetches, or WebSockets.
+
+---
+
 ## [1.5.2] — 2026-09-17
 
 ### Fixed

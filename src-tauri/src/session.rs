@@ -221,8 +221,9 @@ impl SessionManager {
         let app_handle_clone = app.clone();
         let app_handle_new_win = app.clone();
         let app_handle_dl = app.clone();
-
         let partition_for_notif = partition.to_string();
+        let app_handle_load = app.clone();
+        let part_clone_load = partition.to_string();
 
         let init_script = r##"
             // === Chrome Fingerprint: defeat embedded webview detection by Google, etc. ===
@@ -387,11 +388,120 @@ impl SessionManager {
                         }
                     }
                     var actionUrl = 'minibrowser-action://' + action + (query.length ? '?' + query.join('&') : '');
-                    window.location.href = actionUrl;
+                    var frame = document.createElement('iframe');
+                    frame.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden;pointer-events:none;';
+                    frame.src = actionUrl;
+                    (document.body || document.documentElement).appendChild(frame);
+                    setTimeout(function() {
+                        if (frame.parentNode) frame.parentNode.removeChild(frame);
+                    }, 1000);
                 } catch (err) {
                     console.error('sendHostAction failed:', err);
                 }
             }
+
+            // === Top-Level Window URL Tracker (Guarantees Real Omnibox Sync) ===
+            (function() {
+                if (window !== window.top) return; // Disregard internal subframes completely
+
+                var lastKnownUrl = '';
+
+                function notifyUrl() {
+                    try {
+                        var cur = window.location.href;
+                        if (!cur || cur.startsWith('about:') || cur.startsWith('minibrowser-action:')) return;
+                        if (cur !== lastKnownUrl) {
+                            lastKnownUrl = cur;
+                            sendHostAction('url-changed', { url: cur });
+                        }
+                    } catch(e) {}
+                }
+
+                notifyUrl();
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', notifyUrl);
+                }
+                window.addEventListener('load', notifyUrl);
+
+                try {
+                    var origPush = history.pushState;
+                    if (origPush) {
+                        history.pushState = function() {
+                            var res = origPush.apply(this, arguments);
+                            notifyUrl();
+                            return res;
+                        };
+                    }
+                    var origReplace = history.replaceState;
+                    if (origReplace) {
+                        history.replaceState = function() {
+                            var res = origReplace.apply(this, arguments);
+                            notifyUrl();
+                            return res;
+                        };
+                    }
+                } catch(e) {}
+
+                window.addEventListener('popstate', notifyUrl);
+                window.addEventListener('hashchange', notifyUrl);
+                setInterval(notifyUrl, 1000);
+            })();
+
+            // === WebKit File Input & Attachment Compatibility ===
+            (function() {
+                try {
+                    // Ensure programmatic click() on hidden file inputs succeeds in WebKit
+                    var origInputClick = HTMLInputElement.prototype.click;
+                    HTMLInputElement.prototype.click = function() {
+                        if (this.type === 'file') {
+                            var prevDisplay = this.style.display;
+                            var prevVisibility = this.style.visibility;
+                            var prevOpacity = this.style.opacity;
+                            var prevWidth = this.style.width;
+                            var prevHeight = this.style.height;
+                            var prevPos = this.style.position;
+
+                            if (prevDisplay === 'none' || prevVisibility === 'hidden' || this.offsetWidth === 0 || this.offsetHeight === 0) {
+                                this.style.setProperty('display', 'block', 'important');
+                                this.style.setProperty('visibility', 'visible', 'important');
+                                this.style.setProperty('opacity', '0.0001', 'important');
+                                this.style.setProperty('position', 'fixed', 'important');
+                                this.style.setProperty('width', '2px', 'important');
+                                this.style.setProperty('height', '2px', 'important');
+                                this.style.setProperty('bottom', '0', 'important');
+                                this.style.setProperty('left', '0', 'important');
+                                this.style.setProperty('z-index', '2147483646', 'important');
+                            }
+                            var ret = origInputClick.apply(this, arguments);
+                            setTimeout(() => {
+                                if (prevDisplay === 'none') {
+                                    this.style.display = prevDisplay;
+                                    this.style.visibility = prevVisibility;
+                                    this.style.opacity = prevOpacity;
+                                    this.style.width = prevWidth;
+                                    this.style.height = prevHeight;
+                                    this.style.position = prevPos;
+                                }
+                            }, 500);
+                            return ret;
+                        }
+                        return origInputClick.apply(this, arguments);
+                    };
+
+                    // Enhance buttons containing file inputs (e.g. WhatsApp Web attachment menu items)
+                    document.addEventListener('click', function(e) {
+                        var target = e.target;
+                        if (!target) return;
+                        var btn = target.closest('button, [role="button"], li');
+                        if (btn) {
+                            var fileInput = btn.querySelector('input[type="file"]');
+                            if (fileInput && fileInput !== target) {
+                                fileInput.click();
+                            }
+                        }
+                    }, true);
+                } catch(e) {}
+            })();
 
             window.addEventListener('keydown', function(e) {
                 if (e.key === 'F12') {
@@ -809,10 +919,25 @@ impl SessionManager {
 
         let builder = WebviewBuilder::new(&label, WebviewUrl::External(parsed_url))
             .devtools(true)
+            .disable_drag_drop_handler()
             .data_directory(data_dir)
             .data_store_identifier(uuid_bytes)
             .user_agent(selected_user_agent)
             .initialization_script(init_script)
+            .on_page_load(move |_webview, payload| {
+                if payload.event() == tauri::webview::PageLoadEvent::Started || payload.event() == tauri::webview::PageLoadEvent::Finished {
+                    let page_url = payload.url().to_string();
+                    if !page_url.starts_with("minibrowser-action:") && !page_url.starts_with("about:") {
+                        let _ = app_handle_load.emit(
+                            "session-navigated",
+                            serde_json::json!({
+                                "partition": part_clone_load,
+                                "url": page_url,
+                            }),
+                        );
+                    }
+                }
+            })
             .on_download(move |_webview, event| {
                 match event {
                     tauri::webview::DownloadEvent::Requested { url, destination } => {
@@ -1018,18 +1143,28 @@ impl SessionManager {
                                 .body(&body)
                                 .show();
                         }
+                        "url-changed" => {
+                            if let Some(target_url) = params.get("url") {
+                                if !target_url.starts_with("minibrowser-action:") && !target_url.starts_with("about:") {
+                                    let _ = app_handle_clone.emit(
+                                        "session-navigated",
+                                        serde_json::json!({
+                                            "partition": part_clone,
+                                            "url": target_url.clone(),
+                                        }),
+                                    );
+                                }
+                            }
+                        }
                         _ => {}
                     }
                     return false;
                 }
 
-                let _ = app_handle_clone.emit(
-                    "session-navigated",
-                    serde_json::json!({
-                        "partition": part_clone,
-                        "url": url.to_string()
-                    }),
-                );
+                // Normal HTTP/HTTPS navigation: allow it without emitting session-navigated.
+                // Main frame loads are reported cleanly via .on_page_load() and the top-level
+                // observer ("url-changed"), preventing background iframes (fbsbx.com, webtp.whatsapp.net)
+                // from polluting the address bar or bookmarks.
                 true
             })
             .on_new_window(move |url, _features| {

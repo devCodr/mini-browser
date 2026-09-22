@@ -1959,10 +1959,15 @@ function resetZoom() {
 // Listen for navigation events from child webviews
 listen("session-navigated", (event) => {
   const { partition, url } = event.payload || {};
+  if (!url || url.startsWith("minibrowser-action://") || url.startsWith("about:")) return;
+
+  // Ignore internal subframe sandbox/telemetry endpoints if received
+  if (url.includes("fbsbx.com") || url.includes("webtp.whatsapp.net")) return;
+
   if (partition) {
     // Keep in-memory URL in sync so waking from hibernation opens the latest URL
     const bm = state.bookmarks.find((b) => b.partition === partition);
-    if (bm && url && !url.startsWith("minibrowser-action://")) {
+    if (bm) {
       bm.url = url;
     }
   }
