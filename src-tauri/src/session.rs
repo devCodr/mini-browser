@@ -221,7 +221,6 @@ impl SessionManager {
         let app_handle_clone = app.clone();
         let app_handle_new_win = app.clone();
         let app_handle_dl = app.clone();
-        let partition_for_notif = partition.to_string();
         let app_handle_load = app.clone();
         let part_clone_load = partition.to_string();
 
@@ -377,6 +376,13 @@ impl SessionManager {
                 } catch(e) {}
             })();
 
+            function getRealElement(node) {
+                if (!node) return null;
+                if (node.nodeType === 3) return node.parentElement;
+                if (node.nodeType === 1) return node;
+                return null;
+            }
+
             function sendHostAction(action, data) {
                 try {
                     var query = [];
@@ -388,64 +394,11 @@ impl SessionManager {
                         }
                     }
                     var actionUrl = 'minibrowser-action://' + action + (query.length ? '?' + query.join('&') : '');
-                    var frame = document.createElement('iframe');
-                    frame.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden;pointer-events:none;';
-                    frame.src = actionUrl;
-                    (document.body || document.documentElement).appendChild(frame);
-                    setTimeout(function() {
-                        if (frame.parentNode) frame.parentNode.removeChild(frame);
-                    }, 1000);
+                    window.location.href = actionUrl;
                 } catch (err) {
                     console.error('sendHostAction failed:', err);
                 }
             }
-
-            // === Top-Level Window URL Tracker (Guarantees Real Omnibox Sync) ===
-            (function() {
-                if (window !== window.top) return; // Disregard internal subframes completely
-
-                var lastKnownUrl = '';
-
-                function notifyUrl() {
-                    try {
-                        var cur = window.location.href;
-                        if (!cur || cur.startsWith('about:') || cur.startsWith('minibrowser-action:')) return;
-                        if (cur !== lastKnownUrl) {
-                            lastKnownUrl = cur;
-                            sendHostAction('url-changed', { url: cur });
-                        }
-                    } catch(e) {}
-                }
-
-                notifyUrl();
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', notifyUrl);
-                }
-                window.addEventListener('load', notifyUrl);
-
-                try {
-                    var origPush = history.pushState;
-                    if (origPush) {
-                        history.pushState = function() {
-                            var res = origPush.apply(this, arguments);
-                            notifyUrl();
-                            return res;
-                        };
-                    }
-                    var origReplace = history.replaceState;
-                    if (origReplace) {
-                        history.replaceState = function() {
-                            var res = origReplace.apply(this, arguments);
-                            notifyUrl();
-                            return res;
-                        };
-                    }
-                } catch(e) {}
-
-                window.addEventListener('popstate', notifyUrl);
-                window.addEventListener('hashchange', notifyUrl);
-                setInterval(notifyUrl, 1000);
-            })();
 
             // === WebKit File Input & Attachment Compatibility ===
             (function() {
@@ -490,12 +443,12 @@ impl SessionManager {
 
                     // Enhance buttons containing file inputs (e.g. WhatsApp Web attachment menu items)
                     document.addEventListener('click', function(e) {
-                        var target = e.target;
-                        if (!target) return;
-                        var btn = target.closest('button, [role="button"], li');
+                        var targetEl = getRealElement(e.target);
+                        if (!targetEl || typeof targetEl.closest !== 'function') return;
+                        var btn = targetEl.closest('button, [role="button"], li');
                         if (btn) {
                             var fileInput = btn.querySelector('input[type="file"]');
-                            if (fileInput && fileInput !== target) {
+                            if (fileInput && fileInput !== targetEl) {
                                 fileInput.click();
                             }
                         }
@@ -531,6 +484,7 @@ impl SessionManager {
             // Context Menu & Link Actions (Open in Default Browser, Open in New Session, Copy/Paste, Downloads)
             (function() {
                 var menuId = 'mini-browser-ctx-menu';
+                var menuOpenedAt = 0;
 
                 function removeMenu() {
                     var el = document.getElementById(menuId);
@@ -538,13 +492,20 @@ impl SessionManager {
                 }
 
                 document.addEventListener('click', function(e) {
-                    if (!e.target.closest('#' + menuId)) {
+                    var targetEl = getRealElement(e.target);
+                    if (targetEl && typeof targetEl.closest === 'function' && !targetEl.closest('#' + menuId)) {
                         removeMenu();
                     }
                 }, true);
 
-                window.addEventListener('blur', removeMenu);
-                window.addEventListener('scroll', removeMenu, true);
+                window.addEventListener('blur', function() {
+                    if (Date.now() - menuOpenedAt < 250) return;
+                    removeMenu();
+                });
+                window.addEventListener('scroll', function() {
+                    if (Date.now() - menuOpenedAt < 250) return;
+                    removeMenu();
+                }, true);
                 window.addEventListener('resize', removeMenu);
                 window.addEventListener('keydown', function(e) {
                     if (e.key === 'Escape') removeMenu();
@@ -634,7 +595,8 @@ impl SessionManager {
 
                 // Intercept user clicks on links with download attribute or blob/data href
                 document.addEventListener('click', function(e) {
-                    var a = e.target.closest('a');
+                    var targetEl = getRealElement(e.target);
+                    var a = targetEl && typeof targetEl.closest === 'function' ? targetEl.closest('a') : null;
                     if (a) {
                         var href = a.href || '';
                         var downloadAttr = a.getAttribute('download');
@@ -657,8 +619,27 @@ impl SessionManager {
                     var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
                     var modName = isMac ? 'Cmd' : 'Ctrl';
 
-                    var linkEl = e.target.closest('a[href]');
-                    var targetUrl = linkEl ? linkEl.href : null;
+                    var targetEl = getRealElement(e.target);
+                    var linkEl = targetEl && typeof targetEl.closest === 'function' ? targetEl.closest('a[href]') : null;
+                    var targetUrl = null;
+                    if (linkEl) {
+                        targetUrl = linkEl.getAttribute('data-saferedirecturl') || linkEl.href;
+                        // Unwrap Google redirect URLs if present to open direct target
+                        if (targetUrl && (targetUrl.indexOf('google.com/url?') !== -1 || targetUrl.indexOf('google.co/url?') !== -1)) {
+                            try {
+                                var parsedRedirect = new URL(targetUrl);
+                                var realUrl = parsedRedirect.searchParams.get('q') || parsedRedirect.searchParams.get('url');
+                                if (realUrl) targetUrl = realUrl;
+                            } catch(err) {}
+                        }
+                    }
+                    if (!targetUrl && targetEl && typeof targetEl.closest === 'function') {
+                        var customLink = targetEl.closest('[data-url], [data-href], [role="link"]');
+                        if (customLink) {
+                            targetUrl = customLink.getAttribute('data-url') || customLink.getAttribute('data-href');
+                        }
+                    }
+
                     var selectedText = window.getSelection() ? window.getSelection().toString().trim() : '';
                     var activeEl = document.activeElement;
                     var isEditable = activeEl && (
@@ -667,10 +648,10 @@ impl SessionManager {
                         activeEl.tagName === 'TEXTAREA'
                     );
 
-                    var imgEl = e.target.closest('img');
+                    var imgEl = targetEl && typeof targetEl.closest === 'function' ? targetEl.closest('img') : null;
                     var imgSrc = imgEl ? (imgEl.currentSrc || imgEl.src) : null;
-                    if (!imgSrc && e.target.tagName === 'CANVAS') {
-                        try { imgSrc = e.target.toDataURL('image/png'); } catch(e) {}
+                    if (!imgSrc && targetEl && targetEl.tagName === 'CANVAS') {
+                        try { imgSrc = targetEl.toDataURL('image/png'); } catch(e) {}
                     }
 
                     var items = [];
@@ -862,6 +843,9 @@ impl SessionManager {
                     });
 
                     e.preventDefault();
+                    e.stopPropagation();
+
+                    menuOpenedAt = Date.now();
 
                     var menu = document.createElement('div');
                     menu.id = menuId;
@@ -894,7 +878,7 @@ impl SessionManager {
                         menu.appendChild(row);
                     });
 
-                    document.documentElement.appendChild(menu);
+                    (document.body || document.documentElement).appendChild(menu);
 
                     var x = e.clientX;
                     var y = e.clientY;
@@ -913,6 +897,7 @@ impl SessionManager {
 
         let label_nav = label.clone();
         let label_new_win = label.clone();
+        let part_clone_new_win = partition.to_string();
 
         let selected_user_agent = get_user_agent_for_session(&raw_url, partition);
         let uuid_bytes = Self::partition_to_uuid_bytes(partition);
@@ -923,7 +908,7 @@ impl SessionManager {
             .data_directory(data_dir)
             .data_store_identifier(uuid_bytes)
             .user_agent(selected_user_agent)
-            .initialization_script(init_script)
+            .initialization_script_for_all_frames(init_script)
             .on_page_load(move |_webview, payload| {
                 if payload.event() == tauri::webview::PageLoadEvent::Started || payload.event() == tauri::webview::PageLoadEvent::Finished {
                     let page_url = payload.url().to_string();
@@ -977,234 +962,17 @@ impl SessionManager {
             })
             .on_navigation(move |url| {
                 if url.scheme() == "minibrowser-action" {
-                    let action = url.host_str().unwrap_or("");
-                    let mut params = std::collections::HashMap::new();
-                    for (k, v) in url.query_pairs() {
-                        params.insert(k.to_string(), v.to_string());
-                    }
-                    match action {
-                        "open-default-browser" => {
-                            if let Some(target_url) = params.get("url") {
-                                use tauri_plugin_opener::OpenerExt;
-                                let _ = app_handle_clone.opener().open_url(target_url, None::<&str>);
-                            }
-                        }
-                        "open-new-session" => {
-                            if let Some(target_url) = params.get("url") {
-                                let _ = app_handle_clone.emit("open-new-session-url", target_url);
-                            }
-                        }
-                        "open-downloads-folder" => {
-                            let download_dir = dirs::download_dir().unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
-                            use tauri_plugin_opener::OpenerExt;
-                            let _ = app_handle_clone.opener().open_path(download_dir.to_string_lossy().to_string(), None::<&str>);
-                        }
-                        "sleep-tab" => {
-                            let _ = app_handle_clone.emit("sleep-active-tab", &part_clone);
-                        }
-                        "toggle-tab-prevent-sleep" => {
-                            let _ = app_handle_clone.emit("toggle-tab-prevent-sleep-action", &part_clone);
-                        }
-                        "blob-download-ready" => {
-                            let id = params.get("id").cloned().unwrap_or_default();
-                            let fallback_filename = params.get("filename").cloned().unwrap_or_else(|| "download".to_string());
-                            if let Some(wv) = app_handle_clone.get_webview(&label_nav) {
-                                let app_handle_save = app_handle_clone.clone();
-                                let eval_code = format!(
-                                    r#"(function() {{
-                                        var map = window.__minibrowser_pending_downloads;
-                                        if (map && map['{}']) {{
-                                            var item = map['{}'];
-                                            delete map['{}'];
-                                            return JSON.stringify(item);
-                                        }}
-                                        return null;
-                                    }})()"#,
-                                    id, id, id
-                                );
-                                let _ = wv.eval_with_callback(eval_code, move |res| {
-                                    // Parse result: either stringified JSON or JSON value
-                                    let parsed_val: Option<serde_json::Value> = if let Ok(raw_json) = serde_json::from_str::<String>(&res) {
-                                        serde_json::from_str::<serde_json::Value>(&raw_json).ok()
-                                    } else {
-                                        serde_json::from_str::<serde_json::Value>(&res).ok()
-                                    };
-
-                                    if let Some(val) = parsed_val {
-                                        let fname = val["filename"].as_str().unwrap_or(&fallback_filename);
-                                        let data_uri = val["data"].as_str().unwrap_or("");
-                                        if !data_uri.is_empty() {
-                                            match save_base64_file(fname, data_uri) {
-                                                Ok(saved_path) => {
-                                                    notify_download_finished(&app_handle_save, &saved_path);
-                                                }
-                                                Err(e) => {
-                                                    eprintln!("[DOWNLOAD] Error saving blob file: {}", e);
-                                                }
-                                            }
-                                        }
-                                    }
-                                });
-                            }
-                        }
-                        "download-file" => {
-                            if let Some(target_url) = params.get("url") {
-                                let fallback_name = params.get("filename").cloned().unwrap_or_else(|| "download".to_string());
-                                let app_handle_save = app_handle_clone.clone();
-                                let target_url = target_url.clone();
-                                std::thread::spawn(move || {
-                                    let filename = if fallback_name.trim().is_empty() || fallback_name == "download" {
-                                        target_url.split('/').last().and_then(|s| s.split('?').next()).unwrap_or("download")
-                                    } else {
-                                        &fallback_name
-                                    };
-                                    let dest = get_unique_download_path(filename);
-                                    #[cfg(not(target_os = "windows"))]
-                                    {
-                                        let status = std::process::Command::new("curl")
-                                            .arg("-L")
-                                            .arg("-s")
-                                            .arg("-o")
-                                            .arg(&dest)
-                                            .arg(&target_url)
-                                            .status();
-                                        if let Ok(st) = status {
-                                            if st.success() && dest.exists() {
-                                                notify_download_finished(&app_handle_save, &dest);
-                                            }
-                                        }
-                                    }
-                                    #[cfg(target_os = "windows")]
-                                    {
-                                        let status = std::process::Command::new("powershell")
-                                            .arg("-Command")
-                                            .arg(format!("Invoke-WebRequest -Uri '{}' -OutFile '{}'", target_url, dest.to_string_lossy()))
-                                            .status();
-                                        if let Ok(st) = status {
-                                            if st.success() && dest.exists() {
-                                                notify_download_finished(&app_handle_save, &dest);
-                                            }
-                                        }
-                                    }
-                                });
-                            }
-                        }
-                        "shortcut" => {
-                            let key = params.get("key").cloned().unwrap_or_default();
-                            let alt = params.get("alt").map(|v| v == "true").unwrap_or(false);
-                            let shift = params.get("shift").map(|v| v == "true").unwrap_or(false);
-                            let _ = app_handle_clone.emit(
-                                "trigger-shortcut",
-                                serde_json::json!({
-                                    "key": key,
-                                    "alt": alt,
-                                    "shift": shift,
-                                }),
-                            );
-                        }
-                        "inspect" => {
-                            if let Some(wv) = app_handle_clone.get_webview(&label_nav) {
-                                #[cfg(any(debug_assertions, feature = "devtools"))]
-                                {
-                                    if wv.is_devtools_open() {
-                                        wv.close_devtools();
-                                    } else {
-                                        wv.open_devtools();
-                                    }
-                                }
-                            }
-                        }
-                        "notify" => {
-                            let title = params.get("title").cloned().unwrap_or_else(|| partition_for_notif.clone());
-                            let body = params.get("body").cloned().unwrap_or_default();
-
-                            let notif_payload = serde_json::json!({
-                                "partition": partition_for_notif,
-                                "title": &title,
-                                "body": &body,
-                            });
-
-                            // Guardar partition pendiente en estado global para que el frontend
-                            // pueda navegar al tab correcto cuando el usuario haga clic en la notif.
-                            {
-                                let state: tauri::State<crate::AppStateWrapper> = app_handle_clone.state();
-                                let mut pending = state.pending_notification.lock().unwrap();
-                                *pending = Some(notif_payload.clone());
-                            }
-
-                            // Notificar al frontend inmediatamente para resaltar el tab con actividad.
-                            let _ = app_handle_clone.emit("notification-received", &notif_payload);
-
-                            use tauri_plugin_notification::NotificationExt;
-                            let _ = app_handle_clone
-                                .notification()
-                                .builder()
-                                .title(&title)
-                                .body(&body)
-                                .show();
-                        }
-                        "url-changed" => {
-                            if let Some(target_url) = params.get("url") {
-                                if !target_url.starts_with("minibrowser-action:") && !target_url.starts_with("about:") {
-                                    let _ = app_handle_clone.emit(
-                                        "session-navigated",
-                                        serde_json::json!({
-                                            "partition": part_clone,
-                                            "url": target_url.clone(),
-                                        }),
-                                    );
-                                }
-                            }
-                        }
-                        _ => {}
-                    }
+                    Self::handle_host_action(&app_handle_clone, &part_clone, &label_nav, url);
                     return false;
                 }
 
                 // Normal HTTP/HTTPS navigation: allow it without emitting session-navigated.
-                // Main frame loads are reported cleanly via .on_page_load() and the top-level
-                // observer ("url-changed"), preventing background iframes (fbsbx.com, webtp.whatsapp.net)
-                // from polluting the address bar or bookmarks.
+                // Main frame loads are reported cleanly via .on_page_load().
                 true
             })
             .on_new_window(move |url, _features| {
                 if url.scheme() == "minibrowser-action" {
-                    let action = url.host_str().unwrap_or("");
-                    let mut params = std::collections::HashMap::new();
-                    for (k, v) in url.query_pairs() {
-                        params.insert(k.to_string(), v.to_string());
-                    }
-                    match action {
-                        "open-default-browser" => {
-                            if let Some(target_url) = params.get("url") {
-                                use tauri_plugin_opener::OpenerExt;
-                                let _ = app_handle_new_win.opener().open_url(target_url, None::<&str>);
-                            }
-                        }
-                        "open-new-session" => {
-                            if let Some(target_url) = params.get("url") {
-                                let _ = app_handle_new_win.emit("open-new-session-url", target_url);
-                            }
-                        }
-                        "open-downloads-folder" => {
-                            let download_dir = dirs::download_dir().unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
-                            use tauri_plugin_opener::OpenerExt;
-                            let _ = app_handle_new_win.opener().open_path(download_dir.to_string_lossy().to_string(), None::<&str>);
-                        }
-                        "inspect" => {
-                            if let Some(wv) = app_handle_new_win.get_webview(&label_new_win) {
-                                #[cfg(any(debug_assertions, feature = "devtools"))]
-                                {
-                                    if wv.is_devtools_open() {
-                                        wv.close_devtools();
-                                    } else {
-                                        wv.open_devtools();
-                                    }
-                                }
-                            }
-                        }
-                        _ => {}
-                    }
+                    Self::handle_host_action(&app_handle_new_win, &part_clone_new_win, &label_new_win, &url);
                     return tauri::webview::NewWindowResponse::Deny;
                 }
 
@@ -1359,4 +1127,201 @@ impl SessionManager {
     pub fn get_active_label(&self) -> Option<String> {
         self.active_label.lock().unwrap().clone()
     }
+
+    pub fn get_active_url(&self, app: &AppHandle) -> Option<String> {
+        let active_lock = self.active_label.lock().unwrap();
+        if let Some(ref label) = *active_lock {
+            if let Some(wv) = app.get_webview(label) {
+                if let Ok(url) = wv.url() {
+                    let u = url.to_string();
+                    if !u.starts_with("minibrowser-action:") && !u.starts_with("about:") {
+                        return Some(u);
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    pub fn handle_host_action(app: &AppHandle, partition: &str, label: &str, url: &url::Url) {
+        let action = url.host_str().unwrap_or("");
+        let mut params = std::collections::HashMap::new();
+        for (k, v) in url.query_pairs() {
+            params.insert(k.to_string(), v.to_string());
+        }
+        match action {
+            "open-default-browser" => {
+                if let Some(target_url) = params.get("url") {
+                    use tauri_plugin_opener::OpenerExt;
+                    let _ = app.opener().open_url(target_url, None::<&str>);
+                }
+            }
+            "open-new-session" => {
+                if let Some(target_url) = params.get("url") {
+                    let _ = app.emit("open-new-session-url", target_url);
+                }
+            }
+            "open-downloads-folder" => {
+                let download_dir = dirs::download_dir().unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
+                use tauri_plugin_opener::OpenerExt;
+                let _ = app.opener().open_path(download_dir.to_string_lossy().to_string(), None::<&str>);
+            }
+            "sleep-tab" => {
+                let _ = app.emit("sleep-current-tab", ());
+            }
+            "toggle-tab-prevent-sleep" => {
+                let _ = app.emit("toggle-tab-prevent-sleep", ());
+            }
+            "blob-download-ready" => {
+                if let Some(wv) = app.get_webview(label) {
+                    let id = params.get("id").cloned().unwrap_or_default();
+                    let fallback_filename = params.get("filename").cloned().unwrap_or_else(|| "download".to_string());
+                    let app_handle_save = app.clone();
+                    let eval_code = format!(
+                        r#"(function() {{
+                            if (window.__minibrowser_pending_downloads && window.__minibrowser_pending_downloads['{}']) {{
+                                var item = window.__minibrowser_pending_downloads['{}'];
+                                delete window.__minibrowser_pending_downloads['{}'];
+                                return JSON.stringify(item);
+                            }}
+                            return null;
+                        }})()"#,
+                        id, id, id
+                    );
+                    let _ = wv.eval_with_callback(eval_code, move |res| {
+                        let parsed_val: Option<serde_json::Value> = if let Ok(raw_json) = serde_json::from_str::<String>(&res) {
+                            serde_json::from_str::<serde_json::Value>(&raw_json).ok()
+                        } else {
+                            serde_json::from_str::<serde_json::Value>(&res).ok()
+                        };
+
+                        if let Some(val) = parsed_val {
+                            let fname = val["filename"].as_str().unwrap_or(&fallback_filename);
+                            let data_uri = val["data"].as_str().unwrap_or("");
+                            if !data_uri.is_empty() {
+                                match save_base64_file(fname, data_uri) {
+                                    Ok(saved_path) => {
+                                        notify_download_finished(&app_handle_save, &saved_path);
+                                    }
+                                    Err(e) => {
+                                        eprintln!("[DOWNLOAD] Error saving blob file: {}", e);
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            "download-file" => {
+                if let Some(target_url) = params.get("url") {
+                    let fallback_name = params.get("filename").cloned().unwrap_or_else(|| "download".to_string());
+                    let app_handle_save = app.clone();
+                    let target_url = target_url.clone();
+                    std::thread::spawn(move || {
+                        let filename = if fallback_name.trim().is_empty() || fallback_name == "download" {
+                            target_url.split('/').last().and_then(|s| s.split('?').next()).unwrap_or("download")
+                        } else {
+                            &fallback_name
+                        };
+                        let dest = get_unique_download_path(filename);
+                        #[cfg(not(target_os = "windows"))]
+                        {
+                            let status = std::process::Command::new("curl")
+                                .arg("-L")
+                                .arg("-s")
+                                .arg("-o")
+                                .arg(&dest)
+                                .arg(&target_url)
+                                .status();
+                            if let Ok(st) = status {
+                                if st.success() && dest.exists() {
+                                    notify_download_finished(&app_handle_save, &dest);
+                                }
+                            }
+                        }
+                        #[cfg(target_os = "windows")]
+                        {
+                            let status = std::process::Command::new("powershell")
+                                .arg("-Command")
+                                .arg(format!("Invoke-WebRequest -Uri '{}' -OutFile '{}'", target_url, dest.to_string_lossy()))
+                                .status();
+                            if let Ok(st) = status {
+                                if st.success() && dest.exists() {
+                                    notify_download_finished(&app_handle_save, &dest);
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            "shortcut" => {
+                let key = params.get("key").cloned().unwrap_or_default();
+                let alt = params.get("alt").map(|v| v == "true").unwrap_or(false);
+                let shift = params.get("shift").map(|v| v == "true").unwrap_or(false);
+                let _ = app.emit(
+                    "trigger-shortcut",
+                    serde_json::json!({
+                        "key": key,
+                        "alt": alt,
+                        "shift": shift,
+                    }),
+                );
+            }
+            "inspect" => {
+                if let Some(wv) = app.get_webview(label) {
+                    #[cfg(any(debug_assertions, feature = "devtools"))]
+                    {
+                        if wv.is_devtools_open() {
+                            wv.close_devtools();
+                        } else {
+                            wv.open_devtools();
+                        }
+                    }
+                }
+            }
+            "notify" => {
+                let partition_for_notif = partition.to_string();
+                let title = params.get("title").cloned().unwrap_or_else(|| partition_for_notif.clone());
+                let body = params.get("body").cloned().unwrap_or_default();
+
+                let notif_payload = serde_json::json!({
+                    "partition": partition_for_notif,
+                    "title": &title,
+                    "body": &body,
+                });
+
+                {
+                    let state: tauri::State<crate::AppStateWrapper> = app.state();
+                    let mut pending = state.pending_notification.lock().unwrap();
+                    *pending = Some(notif_payload.clone());
+                }
+
+                let _ = app.emit("notification-received", &notif_payload);
+
+                use tauri_plugin_notification::NotificationExt;
+                let _ = app
+                    .notification()
+                    .builder()
+                    .title(&title)
+                    .body(&body)
+                    .show();
+            }
+            "url-changed" => {
+                if let Some(target_url) = params.get("url") {
+                    if !target_url.starts_with("minibrowser-action:") && !target_url.starts_with("about:") {
+                        let _ = app.emit(
+                            "session-navigated",
+                            serde_json::json!({
+                                "partition": partition,
+                                "url": target_url.clone(),
+                            }),
+                        );
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
 }
+
+

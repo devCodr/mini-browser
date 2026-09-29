@@ -414,6 +414,14 @@ fn nav_to(
 }
 
 #[tauri::command]
+fn get_active_session_url(
+    app: AppHandle,
+    state: State<'_, AppStateWrapper>,
+) -> Result<Option<String>, String> {
+    Ok(state.sessions.get_active_url(&app))
+}
+
+#[tauri::command]
 fn set_zoom(app: AppHandle, state: State<'_, AppStateWrapper>, partition: String, factor: f64) {
     state.sessions.set_zoom(&app, &partition, factor);
 }
@@ -988,7 +996,8 @@ pub fn run() {
             get_pending_notification,
             get_app_version,
             hibernate_session,
-            toggle_tab_prevent_sleep
+            toggle_tab_prevent_sleep,
+            get_active_session_url
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

@@ -1979,6 +1979,24 @@ listen("session-navigated", (event) => {
   }
 });
 
+// Periodic sync of active session URL (keeps omnibox accurate on SPA client-side navigations)
+setInterval(async () => {
+  if (state.isLocked || !state.activePartition || document.activeElement === urlInput) return;
+  try {
+    const activeUrl = await invoke("get_active_session_url");
+    if (activeUrl && activeUrl.startsWith("http") && activeUrl !== urlInput.value) {
+      urlDomain.textContent = getDomain(activeUrl);
+      urlInput.value = activeUrl;
+      const bm = state.bookmarks.find((b) => b.partition === state.activePartition);
+      if (bm) {
+        bm.url = activeUrl;
+      }
+    }
+  } catch (_) {
+    // Ignore error if active webview is transitioning
+  }
+}, 1500);
+
 // Listen for opening new session from context menu
 listen("open-new-session-url", (event) => {
   if (state.isLocked) return;

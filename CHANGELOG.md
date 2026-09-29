@@ -10,6 +10,25 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.5.4] — 2026-09-29
+
+### Fixed
+- **"Open in Default Browser" and Context Menu Host Actions**:
+  - Resolved issue where clicking *"Open in Default Browser"*, *"Open in New Session Tab"*, or *"Download File"* in the in-page context menu failed to execute.
+  - Eliminated the detached `<iframe>` bridge which WebKit blocked from navigating to unregistered custom URI schemes (`minibrowser-action://`).
+  - Switched `sendHostAction` to direct top-level navigation (`window.location.href = actionUrl`), which is cleanly intercepted by the native Rust backend via `.on_navigation` and `.on_new_window`, returning `false` to prevent any real page navigation while guaranteeing 100% action dispatch reliability.
+  - Unified host action handling into `SessionManager::handle_host_action`.
+- **Right-Click Context Menu in Gmail & Web Mail Clients**:
+  - Resolved crash where right-clicking inside emails (such as invitation buttons or message text) failed to display the context menu.
+  - WebKit event hit-testing returned a `TextNode` (`nodeType === 3`) when right-clicking on text, causing `e.target.closest('a[href]')` to throw an uncaught `TypeError: e.target.closest is not a function`, terminating script execution. Added safe node resolution (`getRealElement`) across all event handlers.
+  - Fixed synthetic `blur` and `scroll` events fired by Gmail's scrollable containers instantly dismissing the context menu by adding a 250ms debounce threshold.
+  - Added URL extraction and unwrapping for Google redirects (`data-saferedirecturl` and `google.com/url?q=...`) to ensure direct destination links are opened in default browsers or new session tabs.
+  - Injected context menu scripts across all child frames (`initialization_script_for_all_frames`) to support email body iframes.
+- **Dynamic Address Bar URL Tracking**:
+  - Implemented `get_active_session_url` backend command that queries the native WebKit engine directly, keeping the address bar and bookmark URL perfectly synchronized on Single Page App (SPA) transitions without DOM-level polling.
+
+---
+
 ## [1.5.3] — 2026-09-22
 
 ### Fixed
