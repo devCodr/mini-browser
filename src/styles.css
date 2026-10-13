@@ -2166,3 +2166,582 @@ kbd {
   color: #fbbf24;
 }
 
+/* ==========================================================
+   VERTICAL TABS BUTTON & HAMBURGER BUTTON
+   ========================================================== */
+.vertical-tabs-btn {
+  flex-shrink: 0;
+  margin-left: 2px;
+  display: flex;
+}
+
+.hamburger-btn {
+  display: none;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.hamburger-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+  pointer-events: none;
+}
+
+.hamburger-badge.hidden {
+  display: none !important;
+}
+
+/* Micro badge dot on compact tabs */
+.tab-badge-dot {
+  display: none;
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  box-shadow: 0 0 4px currentColor;
+}
+
+/* ==========================================================
+   HAMBURGER DROPDOWN MENU
+   ========================================================== */
+.hamburger-dropdown {
+  position: fixed;
+  z-index: 9999;
+  top: 46px;
+  right: 12px;
+  min-width: 236px;
+  background: #18181f;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  user-select: none;
+  animation: dropdownFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hamburger-dropdown.hidden {
+  display: none !important;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: all 0.1s ease;
+}
+
+.dropdown-item svg {
+  flex-shrink: 0;
+}
+
+.dropdown-item span {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdown-item kbd {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-family: inherit;
+  flex-shrink: 0;
+}
+
+.dropdown-item:hover {
+  background: var(--accent-primary);
+  color: #fff;
+}
+
+.dropdown-item:hover kbd {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 4px 6px;
+}
+
+.menu-count-badge {
+  font-size: 10px;
+  font-weight: 700;
+  background: #22c55e;
+  color: #000;
+  border-radius: 10px;
+  padding: 1px 6px;
+  margin-right: 4px;
+}
+
+.menu-count-badge.hidden {
+  display: none !important;
+}
+
+/* ==========================================================
+   VERTICAL TABS DRAWER / PANEL
+   ========================================================== */
+.vertical-tabs-panel {
+  position: fixed;
+  z-index: 9998;
+  top: 46px;
+  left: 12px;
+  width: 320px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 60px);
+  display: flex;
+  flex-direction: column;
+  background: rgba(20, 20, 26, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.75);
+  overflow: hidden;
+  user-select: none;
+  animation: panelFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.vertical-tabs-panel.hidden {
+  display: none !important;
+}
+
+@keyframes panelFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.vertical-tabs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.vertical-tabs-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.vertical-tabs-title-group svg {
+  color: var(--accent-text);
+}
+
+.close-panel-btn {
+  width: 24px;
+  height: 24px;
+}
+
+.vertical-tabs-search-box {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.vertical-tabs-search-box input {
+  width: 100%;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-full);
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--text-primary);
+  outline: none;
+  transition: all 0.15s;
+  box-sizing: border-box;
+}
+
+.vertical-tabs-search-box input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.vertical-tabs-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 48vh;
+}
+
+.vertical-tab-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  position: relative;
+}
+
+.vertical-tab-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.vertical-tab-row.active {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.15);
+}
+
+.vertical-tab-indicator {
+  width: 3px;
+  height: 16px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.vertical-tab-row.active .vertical-tab-indicator {
+  background: var(--accent-primary);
+}
+
+.vertical-tab-icon-wrap {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.vertical-tab-icon-wrap .tab-favicon {
+  width: 18px;
+  height: 18px;
+}
+
+.vertical-tab-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.vertical-tab-title-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vertical-tab-title {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vertical-tab-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.vertical-tab-url {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vertical-tab-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+.vertical-tab-kbd {
+  font-size: 10px;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.vertical-tab-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all 0.15s;
+}
+
+.vertical-tab-close-btn:hover {
+  opacity: 1;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.vertical-tabs-footer {
+  padding: 8px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.vertical-new-btn {
+  width: 100%;
+  height: 32px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 8px;
+  color: var(--accent-text);
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.vertical-new-btn:hover {
+  background: rgba(99, 102, 241, 0.22);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #fff;
+}
+
+/* ==========================================================
+   FLOATING TAB TOOLTIP (FOR ICON-ONLY TABS)
+   ========================================================== */
+.tab-floating-tooltip {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  background: rgba(24, 24, 30, 0.95);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  padding: 4px 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  user-select: none;
+  transition: opacity 0.1s ease;
+}
+
+.tab-floating-tooltip.hidden {
+  display: none !important;
+}
+
+.tooltip-title {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #fff;
+}
+
+.tooltip-shortcut {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent-text);
+  background: rgba(99, 102, 241, 0.15);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+/* ==========================================================
+   RESPONSIVE DESIGN (SMALL WINDOW & ADAPTIVE COMPACT HEADER)
+   ========================================================== */
+@media (max-width: 1040px) {
+  /* Secondary icons collapse into hamburger menu */
+  .extra-action-btn {
+    display: none !important;
+  }
+
+  .hamburger-btn {
+    display: flex !important;
+  }
+
+  .vertical-tabs-btn {
+    display: flex !important;
+  }
+
+  /* Compact + Session button */
+  .new-session-btn .btn-text {
+    display: none !important;
+  }
+
+  .new-session-btn {
+    padding: 0 8px;
+  }
+
+  /* Compact Session Unlocked badge */
+  .session-pause-badge .session-pause-text {
+    display: none !important;
+  }
+
+  .session-pause-badge {
+    padding: 0 8px;
+  }
+
+  /* URL pill gracefully scales down */
+  .url-container {
+    width: 170px;
+    min-width: 120px;
+  }
+}
+
+@media (max-width: 880px) {
+  /* Tabs collapse into sleek icon-only mode */
+  .tabs-bar .tab-item {
+    padding: 0 8px;
+    width: 34px;
+    min-width: 34px;
+    max-width: 34px;
+    justify-content: center;
+    position: relative;
+  }
+
+  .tabs-bar .tab-item .tab-title {
+    display: none !important;
+  }
+
+  .tabs-bar .tab-item .tab-badge {
+    display: none !important;
+  }
+
+  .tabs-bar .tab-item .tab-badge-dot {
+    display: block !important;
+  }
+
+  .tabs-bar .tab-item .tab-close-btn {
+    display: none;
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    font-size: 10px;
+    background: #ef4444;
+    color: #fff;
+    margin: 0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+  }
+
+  .tabs-bar .tab-item:hover .tab-close-btn {
+    display: flex !important;
+    opacity: 1;
+  }
+
+  .url-container {
+    width: 140px;
+    min-width: 110px;
+  }
+}
+
+@media (max-width: 700px) {
+  .traffic-spacer {
+    width: 68px;
+  }
+
+  .nav-group {
+    padding: 1px 2px;
+    gap: 0;
+  }
+
+  .nav-group .icon-btn {
+    width: 24px;
+    height: 24px;
+  }
+
+  .url-container {
+    width: 110px;
+    min-width: 90px;
+  }
+
+  .url-pill {
+    padding: 0 6px;
+    font-size: 11px;
+  }
+
+  /* In ultra-narrow window, Lock and New Session live in hamburger & vertical tabs */
+  .lock-btn {
+    display: none !important;
+  }
+
+  .new-session-btn {
+    display: none !important;
+  }
+}
+

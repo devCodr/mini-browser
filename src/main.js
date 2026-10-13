@@ -144,6 +144,50 @@ const ctxManage = document.getElementById("ctx-manage");
 const ctxClose = document.getElementById("ctx-close");
 let contextTargetPartition = null;
 
+// Vertical Tabs & Hamburger Menu Elements
+const btnVerticalTabs = document.getElementById("btn-vertical-tabs");
+const btnHamburger = document.getElementById("btn-hamburger");
+const hamburgerBadge = document.getElementById("hamburger-badge");
+const hamburgerMenu = document.getElementById("hamburger-menu");
+const verticalTabsPanel = document.getElementById("vertical-tabs-panel");
+const btnCloseVerticalTabs = document.getElementById("btn-close-vertical-tabs");
+const verticalTabsSearch = document.getElementById("vertical-tabs-search");
+const verticalTabsList = document.getElementById("vertical-tabs-list");
+const btnVerticalNewSession = document.getElementById("btn-vertical-new-session");
+
+// Floating Tab Tooltip Elements
+const tabFloatingTooltip = document.getElementById("tab-floating-tooltip");
+const tabTooltipTitle = document.getElementById("tab-tooltip-title");
+const tabTooltipShortcut = document.getElementById("tab-tooltip-shortcut");
+
+// Hamburger Menu Item Elements
+const menuNewSession = document.getElementById("menu-new-session");
+const menuVerticalTabs = document.getElementById("menu-vertical-tabs");
+const menuManageSessions = document.getElementById("menu-manage-sessions");
+const menuLock = document.getElementById("menu-lock");
+const menuSessionPause = document.getElementById("menu-session-pause");
+const menuSessionPauseLabel = document.getElementById("menu-session-pause-label");
+const menuDownloads = document.getElementById("menu-downloads");
+const menuDownloadCount = document.getElementById("menu-download-count");
+const menuShortcuts = document.getElementById("menu-shortcuts");
+const menuSettings = document.getElementById("menu-settings");
+const menuAbout = document.getElementById("menu-about");
+
+function isAnyOverlayOpen() {
+  return (
+    (modalNewSession && !modalNewSession.classList.contains("hidden")) ||
+    (modalManageSessions && !modalManageSessions.classList.contains("hidden")) ||
+    (modalShortcuts && !modalShortcuts.classList.contains("hidden")) ||
+    (modalAbout && !modalAbout.classList.contains("hidden")) ||
+    (modalSettings && !modalSettings.classList.contains("hidden")) ||
+    (modalRecovery && !modalRecovery.classList.contains("hidden")) ||
+    (tabContextMenu && !tabContextMenu.classList.contains("hidden")) ||
+    (hamburgerMenu && !hamburgerMenu.classList.contains("hidden")) ||
+    (verticalTabsPanel && !verticalTabsPanel.classList.contains("hidden")) ||
+    state.isLocked
+  );
+}
+
 async function showTabContextMenu(x, y, partition, idx) {
   contextTargetPartition = partition;
   ctxMoveLeft.style.display = idx > 0 ? "flex" : "none";
@@ -186,16 +230,7 @@ async function hideTabContextMenu() {
     tabContextMenu.classList.add("hidden");
     contextTargetPartition = null;
 
-    const anyModalOpen =
-      !modalNewSession.classList.contains("hidden") ||
-      !modalManageSessions.classList.contains("hidden") ||
-      !modalShortcuts.classList.contains("hidden") ||
-      !modalAbout.classList.contains("hidden") ||
-      !modalSettings.classList.contains("hidden") ||
-      (modalRecovery && !modalRecovery.classList.contains("hidden")) ||
-      state.isLocked;
-
-    if (!anyModalOpen && state.activePartition) {
+    if (!isAnyOverlayOpen() && state.activePartition) {
       try {
         await invoke("show_active_session");
       } catch (_) {}
@@ -203,9 +238,193 @@ async function hideTabContextMenu() {
   }
 }
 
+// Hamburger Menu Controller
+async function toggleHamburgerMenu() {
+  if (state.isLocked) return;
+  if (!hamburgerMenu.classList.contains("hidden")) {
+    hideHamburgerMenu();
+  } else {
+    hideTabContextMenu();
+    hideVerticalTabsPanel();
+
+    if (btnHamburger) {
+      const rect = btnHamburger.getBoundingClientRect();
+      hamburgerMenu.style.top = `${rect.bottom + 6}px`;
+      hamburgerMenu.style.right = `${Math.max(10, window.innerWidth - rect.right)}px`;
+    }
+    hamburgerMenu.classList.remove("hidden");
+
+    if (state.activePartition) {
+      try {
+        await invoke("hide_active_session");
+      } catch (_) {}
+    }
+  }
+}
+
+async function hideHamburgerMenu() {
+  if (hamburgerMenu && !hamburgerMenu.classList.contains("hidden")) {
+    hamburgerMenu.classList.add("hidden");
+    if (!isAnyOverlayOpen() && state.activePartition) {
+      try {
+        await invoke("show_active_session");
+      } catch (_) {}
+    }
+  }
+}
+
+// Vertical Tabs Panel Controller
+async function openVerticalTabsPanel() {
+  if (state.isLocked) return;
+  hideHamburgerMenu();
+  hideTabContextMenu();
+
+  renderVerticalTabsList();
+  verticalTabsPanel.classList.remove("hidden");
+
+  if (verticalTabsSearch) {
+    verticalTabsSearch.value = "";
+    setTimeout(() => verticalTabsSearch.focus(), 60);
+  }
+
+  if (state.activePartition) {
+    try {
+      await invoke("hide_active_session");
+    } catch (_) {}
+  }
+}
+
+async function hideVerticalTabsPanel() {
+  if (verticalTabsPanel && !verticalTabsPanel.classList.contains("hidden")) {
+    verticalTabsPanel.classList.add("hidden");
+    if (!isAnyOverlayOpen() && state.activePartition) {
+      try {
+        await invoke("show_active_session");
+      } catch (_) {}
+    }
+  }
+}
+
+function toggleVerticalTabsPanel() {
+  if (verticalTabsPanel.classList.contains("hidden")) {
+    openVerticalTabsPanel();
+  } else {
+    hideVerticalTabsPanel();
+  }
+}
+
+function renderVerticalTabsList(query = "") {
+  if (!verticalTabsList) return;
+  verticalTabsList.innerHTML = "";
+
+  const filter = (query || "").toLowerCase().trim();
+  const filtered = state.bookmarks.filter((bm) => {
+    if (!filter) return true;
+    const title = (bm.title || "").toLowerCase();
+    const url = (bm.url || "").toLowerCase();
+    const badge = (bm.badge || "").toLowerCase();
+    return title.includes(filter) || url.includes(filter) || badge.includes(filter);
+  });
+
+  if (filtered.length === 0) {
+    verticalTabsList.innerHTML = `<div style="text-align:center; padding: 24px 12px; color: var(--text-muted); font-size: 12px;">No matching sessions found</div>`;
+    return;
+  }
+
+  filtered.forEach((bm) => {
+    const idx = state.bookmarks.findIndex((b) => b.partition === bm.partition);
+    const row = document.createElement("div");
+    row.className = `vertical-tab-row ${bm.partition === state.activePartition ? "active" : ""}`;
+    row.dataset.partition = bm.partition;
+
+    const domain = getDomain(bm.url);
+    const displayTitle = (bm.title !== undefined && bm.title !== null && bm.title.trim() !== "")
+      ? bm.title
+      : domain;
+
+    const isHibernated = hibernatedPartitions.has(bm.partition);
+
+    row.innerHTML = `
+      <span class="vertical-tab-indicator"></span>
+      <div class="vertical-tab-icon-wrap"></div>
+      <div class="vertical-tab-details">
+        <div class="vertical-tab-title-line">
+          <span class="vertical-tab-title">${displayTitle}</span>
+          ${bm.badge ? `<span class="vertical-tab-badge" style="background:${bm.color ? bm.color + '22' : 'rgba(99,102,241,0.18)'}; color:${bm.color || 'var(--accent-text)'};">${bm.badge}</span>` : ""}
+        </div>
+        <span class="vertical-tab-url">${bm.url}</span>
+      </div>
+      <div class="vertical-tab-meta">
+        ${isHibernated ? `<span class="tab-sleep-badge" title="Sleeping (RAM saved)">💤</span>` : ""}
+        ${bm.preventSleep ? `<span class="tab-prevent-sleep-indicator" title="Always Awake"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>` : ""}
+        <kbd class="vertical-tab-kbd">⌘${idx + 1}</kbd>
+        <button class="vertical-tab-close-btn" title="Close Session">&times;</button>
+      </div>
+    `;
+
+    const iconWrap = row.querySelector(".vertical-tab-icon-wrap");
+    const favicon = createBookmarkIconElement(bm, "tab-favicon");
+    iconWrap.appendChild(favicon);
+
+    row.addEventListener("click", (e) => {
+      if (e.target.closest(".vertical-tab-close-btn")) return;
+      activateSession(bm.partition, bm.url);
+      hideVerticalTabsPanel();
+    });
+
+    const closeBtn = row.querySelector(".vertical-tab-close-btn");
+    closeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      removeSession(bm.partition);
+      renderVerticalTabsList(verticalTabsSearch ? verticalTabsSearch.value : "");
+    });
+
+    verticalTabsList.appendChild(row);
+  });
+}
+
+// Floating Tab Tooltip Helpers
+function showTabTooltip(tabEl, bm, idx) {
+  if (!tabFloatingTooltip) return;
+  const rect = tabEl.getBoundingClientRect();
+  const domain = getDomain(bm.url);
+  const displayTitle = (bm.title !== undefined && bm.title !== null && bm.title.trim() !== "")
+    ? bm.title
+    : domain;
+
+  tabTooltipTitle.textContent = displayTitle;
+  tabTooltipShortcut.textContent = `⌘${idx + 1}${bm.badge ? ` • [${bm.badge}]` : ""}`;
+
+  tabFloatingTooltip.classList.remove("hidden");
+
+  const tipWidth = tabFloatingTooltip.offsetWidth || 140;
+  let left = rect.left + rect.width / 2 - tipWidth / 2;
+  left = Math.max(8, Math.min(window.innerWidth - tipWidth - 8, left));
+  const top = rect.bottom + 6;
+
+  tabFloatingTooltip.style.left = `${left}px`;
+  tabFloatingTooltip.style.top = `${top}px`;
+}
+
+function hideTabTooltip() {
+  if (tabFloatingTooltip) {
+    tabFloatingTooltip.classList.add("hidden");
+  }
+}
+
 window.addEventListener("click", (e) => {
   if (tabContextMenu && !tabContextMenu.contains(e.target)) {
     hideTabContextMenu();
+  }
+  if (hamburgerMenu && !hamburgerMenu.classList.contains("hidden")) {
+    if (!hamburgerMenu.contains(e.target) && (!btnHamburger || !btnHamburger.contains(e.target))) {
+      hideHamburgerMenu();
+    }
+  }
+  if (verticalTabsPanel && !verticalTabsPanel.classList.contains("hidden")) {
+    if (!verticalTabsPanel.contains(e.target) && (!btnVerticalTabs || !btnVerticalTabs.contains(e.target))) {
+      hideVerticalTabsPanel();
+    }
   }
 });
 
@@ -323,16 +542,7 @@ async function showModal(modalEl) {
 
 async function hideModal(modalEl) {
   modalEl.classList.add("hidden");
-  const anyModalOpen =
-    !modalNewSession.classList.contains("hidden") ||
-    !modalManageSessions.classList.contains("hidden") ||
-    !modalShortcuts.classList.contains("hidden") ||
-    !modalAbout.classList.contains("hidden") ||
-    !modalSettings.classList.contains("hidden") ||
-    (modalRecovery && !modalRecovery.classList.contains("hidden")) ||
-    state.isLocked;
-
-  if (!anyModalOpen && state.activePartition) {
+  if (!isAnyOverlayOpen() && state.activePartition) {
     try {
       await invoke("show_active_session");
     } catch (_) {}
@@ -522,6 +732,15 @@ function renderTabs() {
         badgeSpan.style.color = bm.color;
       }
       tab.appendChild(badgeSpan);
+
+      // Micro badge dot for icon-only / compact mode
+      const badgeDot = document.createElement("span");
+      badgeDot.className = "tab-badge-dot";
+      if (bm.color) {
+        badgeDot.style.background = bm.color;
+        badgeDot.style.boxShadow = `0 0 6px ${bm.color}`;
+      }
+      tab.appendChild(badgeDot);
     }
 
     // Tab standby / hibernation indicator (💤)
@@ -556,6 +775,10 @@ function renderTabs() {
       removeSession(bm.partition);
     });
     tab.appendChild(closeBtn);
+
+    // Floating Tooltip on Hover (for icon-only and compact tabs)
+    tab.addEventListener("mouseenter", () => showTabTooltip(tab, bm, idx));
+    tab.addEventListener("mouseleave", () => hideTabTooltip());
 
     // Right-Click Context Menu on Tab
     tab.addEventListener("contextmenu", (e) => {
@@ -627,6 +850,10 @@ function renderTabs() {
 
     tabsBar.appendChild(tab);
   });
+
+  if (verticalTabsPanel && !verticalTabsPanel.classList.contains("hidden")) {
+    renderVerticalTabsList(verticalTabsSearch ? verticalTabsSearch.value : "");
+  }
 }
 
 // === Render Manage Sessions List with Up/Down and Drag & Drop ===
@@ -1202,6 +1429,10 @@ function updateSessionLockUI() {
   if (checkUnlockSession) {
     checkUnlockSession.checked = isPaused;
   }
+
+  if (menuSessionPauseLabel) {
+    menuSessionPauseLabel.textContent = isPaused ? "Resume Auto-Lock" : "Pause Auto-Lock";
+  }
 }
 
 async function setSessionInactivityPause(paused, showToast = true) {
@@ -1372,14 +1603,115 @@ btnManageAdd.addEventListener("click", () => {
 btnShortcuts.addEventListener("click", toggleShortcutsModal);
 btnCloseShortcuts.addEventListener("click", () => hideModal(modalShortcuts));
 
+async function openDownloads() {
+  if (state.isLocked) return;
+  if (downloadBadge) downloadBadge.classList.add("hidden");
+  if (hamburgerBadge) hamburgerBadge.classList.add("hidden");
+  if (menuDownloadCount) menuDownloadCount.classList.add("hidden");
+  try {
+    await invoke("open_downloads_folder");
+  } catch (err) {
+    console.error("Failed to open downloads folder:", err);
+  }
+}
+
 if (btnDownloads) {
-  btnDownloads.addEventListener("click", async () => {
-    if (state.isLocked) return;
-    try {
-      await invoke("open_downloads_folder");
-    } catch (err) {
-      console.error("Failed to open downloads folder:", err);
-    }
+  btnDownloads.addEventListener("click", openDownloads);
+}
+
+// Vertical Tabs Panel Listeners
+if (btnVerticalTabs) {
+  btnVerticalTabs.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleVerticalTabsPanel();
+  });
+}
+
+if (btnCloseVerticalTabs) {
+  btnCloseVerticalTabs.addEventListener("click", () => hideVerticalTabsPanel());
+}
+
+if (btnVerticalNewSession) {
+  btnVerticalNewSession.addEventListener("click", () => {
+    hideVerticalTabsPanel();
+    openNewSessionModal();
+  });
+}
+
+if (verticalTabsSearch) {
+  verticalTabsSearch.addEventListener("input", (e) => {
+    renderVerticalTabsList(e.target.value);
+  });
+}
+
+// Hamburger Menu Listeners
+if (btnHamburger) {
+  btnHamburger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleHamburgerMenu();
+  });
+}
+
+if (menuNewSession) {
+  menuNewSession.addEventListener("click", () => {
+    hideHamburgerMenu();
+    openNewSessionModal();
+  });
+}
+
+if (menuVerticalTabs) {
+  menuVerticalTabs.addEventListener("click", () => {
+    hideHamburgerMenu();
+    openVerticalTabsPanel();
+  });
+}
+
+if (menuManageSessions) {
+  menuManageSessions.addEventListener("click", () => {
+    hideHamburgerMenu();
+    openManageSessionsModal();
+  });
+}
+
+if (menuLock) {
+  menuLock.addEventListener("click", () => {
+    hideHamburgerMenu();
+    lockApp();
+  });
+}
+
+if (menuSessionPause) {
+  menuSessionPause.addEventListener("click", () => {
+    hideHamburgerMenu();
+    toggleSessionInactivityPause();
+  });
+}
+
+if (menuDownloads) {
+  menuDownloads.addEventListener("click", () => {
+    hideHamburgerMenu();
+    openDownloads();
+  });
+}
+
+if (menuShortcuts) {
+  menuShortcuts.addEventListener("click", () => {
+    hideHamburgerMenu();
+    toggleShortcutsModal();
+  });
+}
+
+if (menuSettings) {
+  menuSettings.addEventListener("click", () => {
+    hideHamburgerMenu();
+    btnSettings.click();
+  });
+}
+
+if (menuAbout) {
+  menuAbout.addEventListener("click", () => {
+    hideHamburgerMenu();
+    openAboutModal();
   });
 }
 
@@ -1765,6 +2097,10 @@ function executeShortcut(key, { alt = false, shift = false } = {}) {
   else if (k === "/") {
     toggleShortcutsModal();
   }
+  // Vertical Tabs Panel: Cmd + Shift + V
+  else if (k === "v" && shift) {
+    toggleVerticalTabsPanel();
+  }
   // Toggle DevTools: Cmd + Opt + I / Ctrl + Shift + I
   else if (k === "i" && (alt || shift)) {
     invoke("toggle_devtools").catch(console.error);
@@ -1846,8 +2182,17 @@ window.addEventListener("keydown", (e) => {
     return;
   }
 
-  // Escape closes any open modal
+  // Escape closes any open modal, dropdown, or panel
   if (e.key === "Escape") {
+    hideTabTooltip();
+    if (hamburgerMenu && !hamburgerMenu.classList.contains("hidden")) {
+      hideHamburgerMenu();
+      return;
+    }
+    if (verticalTabsPanel && !verticalTabsPanel.classList.contains("hidden")) {
+      hideVerticalTabsPanel();
+      return;
+    }
     hideModal(modalNewSession);
     hideModal(modalManageSessions);
     hideModal(modalShortcuts);
@@ -2020,6 +2365,14 @@ function showDownloadToast(filename, path) {
     }, 4000);
   }
 
+  if (hamburgerBadge) {
+    hamburgerBadge.classList.remove("hidden");
+  }
+  if (menuDownloadCount) {
+    menuDownloadCount.textContent = "New";
+    menuDownloadCount.classList.remove("hidden");
+  }
+
   const toast = document.createElement("div");
   toast.className = "download-toast";
   toast.innerHTML = `
@@ -2081,6 +2434,9 @@ listen("download-started", (event) => {
   if (downloadBadge) {
     downloadBadge.classList.remove("hidden");
     downloadBadge.classList.add("active-pulse");
+  }
+  if (hamburgerBadge) {
+    hamburgerBadge.classList.remove("hidden");
   }
 });
 

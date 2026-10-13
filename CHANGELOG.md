@@ -10,6 +10,37 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.6.0] — 2026-10-13
+
+### Added
+- **Adaptive Compact Header & Responsive Small Window Mode**:
+  - Automatically collapses tabs into icon-only mode when window width is constrained (<= 880px), preventing horizontal clipping, overlapping, or hiding under "+ Session".
+  - Sleek micro-badge indicator dots preserved on compact tabs matching custom account colors.
+  - Close button elegantly revealed on tab hover in compact mode.
+  - Floating tooltip label (`#tab-floating-tooltip`) dynamically displayed under each tab on hover, showing the full session title, shortcut (`⌘1..9`), and badge.
+  - URL pill gracefully adapts width down to 110px.
+- **Vertical Tabs Drawer & Quick Session Switcher (`⌘⇧V` / `Ctrl+Shift+V`)**:
+  - Dedicated Vertical Tabs button (`#btn-vertical-tabs`) in the header and native shortcut.
+  - Glassmorphic slide-down drawer panel listing all open sessions with large favicons, full titles, domain URLs, status indicators (💤 sleeping, ⚡ awake), and 1-click tab switching.
+  - Live real-time search input for quickly filtering tabs by title, domain, or badge.
+  - Dedicated "Add New Private Session" action button at drawer footer.
+  - Full overlay management: hides native WKWebViews on open and restores them on close.
+- **Unified Hamburger Menu (`☰`) for Secondary Utilities**:
+  - When header space is constrained (<= 1040px), secondary toolbar buttons (`?`, Downloads, `i`, Settings, Manage Sessions, Lock) cleanly collapse into an elegant Hamburger button.
+  - Glassmorphic dropdown menu featuring:
+    - New Private Session (`⌘T`)
+    - Vertical Tabs View (`⌘⇧V`)
+    - Manage Sessions (`⌘M`)
+    - Lock Browser Now (`⌥⌘L`)
+    - Session Inactivity Auto-Lock toggle (`⌥⌘P`)
+    - Downloads folder with active notification badge
+    - Keyboard Shortcuts & User Guide (`⌘/`)
+    - Preferences / Settings (`⌘,`)
+    - About MiniBrowser dialog
+  - Integrated notification badge on Hamburger icon for background downloads and auto-lock status.
+
+---
+
 ## [1.5.4] — 2026-09-29
 
 ### Fixed
