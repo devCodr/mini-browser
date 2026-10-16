@@ -118,12 +118,30 @@ pub fn notify_download_finished(app: &AppHandle, file_path: &std::path::Path) {
         }),
     );
 
+    let is_locked = {
+        let state_opt = app.try_state::<crate::AppStateWrapper>();
+        if let Some(state) = state_opt {
+            let locked = *state.is_locked.lock().unwrap();
+            let store = state.store.lock().unwrap();
+            let mask = store.load_settings().mask_notifications_on_lock;
+            locked && mask
+        } else {
+            false
+        }
+    };
+
+    let (notif_title, notif_body) = if is_locked {
+        ("Download completed".to_string(), "🔒 Saved to Downloads (Private)".to_string())
+    } else {
+        ("Download completed".to_string(), format!("Saved to Downloads: {}", file_name))
+    };
+
     use tauri_plugin_notification::NotificationExt;
     let _ = app
         .notification()
         .builder()
-        .title("Download completed")
-        .body(format!("Saved to Downloads: {}", file_name))
+        .title(&notif_title)
+        .body(&notif_body)
         .show();
 }
 
@@ -1290,20 +1308,32 @@ impl SessionManager {
                     "body": &body,
                 });
 
-                {
+                let (is_locked, mask_enabled, tab_title) = {
                     let state: tauri::State<crate::AppStateWrapper> = app.state();
                     let mut pending = state.pending_notification.lock().unwrap();
                     *pending = Some(notif_payload.clone());
-                }
+                    let locked = *state.is_locked.lock().unwrap();
+                    let store = state.store.lock().unwrap();
+                    let settings = store.load_settings();
+                    let bookmarks = store.load_bookmarks();
+                    let bm_title = bookmarks.iter().find(|b| b.partition == partition_for_notif).map(|b| b.title.clone());
+                    (locked, settings.mask_notifications_on_lock, bm_title)
+                };
 
                 let _ = app.emit("notification-received", &notif_payload);
+
+                let (display_title, display_body) = if is_locked && mask_enabled {
+                    mask_notification(&title, tab_title.as_deref(), &partition_for_notif)
+                } else {
+                    (title, body)
+                };
 
                 use tauri_plugin_notification::NotificationExt;
                 let _ = app
                     .notification()
                     .builder()
-                    .title(&title)
-                    .body(&body)
+                    .title(&display_title)
+                    .body(&display_body)
                     .show();
             }
             "url-changed" => {
@@ -1323,5 +1353,104 @@ impl SessionManager {
         }
     }
 }
+
+/// Masks sensitive notification contents when the browser is locked.
+/// Generates privacy-preserving title and body:
+/// - If raw_title matches the tab/site name, shows: "🔒 {Tab} (Privado)"
+/// - If raw_title represents a sender name (e.g. "Carlos Santana"), derives initials: "🔒 {Tab} • C. S. (Privado)"
+/// - If raw_title is an alert or long sentence, suppresses it and uses tab name: "🔒 {Tab} (Privado)"
+/// - Body is replaced with a privacy banner: "🔒 Contenido protegido • Desbloquea para ver"
+pub fn mask_notification(raw_title: &str, tab_title: Option<&str>, partition: &str) -> (String, String) {
+    let base_tab = tab_title
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string())
+        .or_else(|| {
+            let p = partition.trim();
+            if !p.is_empty() && p != "default" {
+                let mut chars = p.chars();
+                match chars.next() {
+                    None => None,
+                    Some(first) => Some(first.to_uppercase().collect::<String>() + chars.as_str()),
+                }
+            } else {
+                None
+            }
+        })
+        .unwrap_or_else(|| "MiniBrowser".to_string());
+
+    let clean_title = raw_title.trim();
+
+    // Check if raw_title is distinct from base_tab and represents a personal/sender name
+    let is_sender_name = !clean_title.is_empty()
+        && !clean_title.eq_ignore_ascii_case(&base_tab)
+        && clean_title.len() <= 35
+        && !clean_title.contains(':')
+        && !clean_title.contains('/')
+        && !clean_title.contains('?')
+        && !clean_title.contains('!')
+        && !clean_title.contains('[')
+        && !clean_title.contains(']')
+        && !clean_title.contains("http")
+        && clean_title.split_whitespace().count() <= 3;
+
+    let display_title = if is_sender_name {
+        let initials: Vec<String> = clean_title
+            .split_whitespace()
+            .filter_map(|w| w.chars().next().map(|c| format!("{}.", c.to_uppercase())))
+            .collect();
+        if !initials.is_empty() {
+            format!("🔒 {} • {} (Privado)", base_tab, initials.join(" "))
+        } else {
+            format!("🔒 {} (Privado)", base_tab)
+        }
+    } else {
+        format!("🔒 {} (Privado)", base_tab)
+    };
+
+    let display_body = "🔒 Contenido protegido • Desbloquea para ver".to_string();
+
+    (display_title, display_body)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_mask_notification_site_name() {
+        let (title, body) = mask_notification("Elfsight", Some("Elfsight"), "elfsight");
+        assert_eq!(title, "🔒 Elfsight (Privado)");
+        assert_eq!(body, "🔒 Contenido protegido • Desbloquea para ver");
+    }
+
+    #[test]
+    fn test_mask_notification_sender_initials() {
+        let (title, body) = mask_notification("Carlos Santana", Some("WhatsApp"), "whatsapp");
+        assert_eq!(title, "🔒 WhatsApp • C. S. (Privado)");
+        assert_eq!(body, "🔒 Contenido protegido • Desbloquea para ver");
+    }
+
+    #[test]
+    fn test_mask_notification_single_name() {
+        let (title, _) = mask_notification("Alice", Some("Slack"), "slack");
+        assert_eq!(title, "🔒 Slack • A. (Privado)");
+    }
+
+    #[test]
+    fn test_mask_notification_long_alert_message() {
+        let raw = "⚠️ [Attention] Your Google Reviews has reached 70% of view limit";
+        let (title, body) = mask_notification(raw, Some("Elfsight"), "elfsight");
+        assert_eq!(title, "🔒 Elfsight (Privado)");
+        assert_eq!(body, "🔒 Contenido protegido • Desbloquea para ver");
+    }
+
+    #[test]
+    fn test_mask_notification_partition_fallback() {
+        let (title, _) = mask_notification("Telegram", None, "telegram");
+        assert_eq!(title, "🔒 Telegram (Privado)");
+    }
+}
+
 
 

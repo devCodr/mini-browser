@@ -37,7 +37,7 @@ Standard web browsers share cookies and session caches across all tabs and windo
   - **macOS**: Seamless traffic lights integrated directly into the glassmorphic header.
   - **Windows & Linux**: Custom frameless title bar with native-style Minimize, Maximize/Restore, and Close controls.
 - 📌 **System Tray Icon**: MiniBrowser lives in your macOS menu bar. Click the tray icon to show/hide the window even when running in the background. Right-click for Show / Lock / Quit.
-- 🔔 **Smart Notification Routing**: When a notification arrives from WhatsApp W1, WhatsApp W2, Gmail, etc., clicking it automatically navigates to the exact tab that sent it — even after a PIN lock.
+- 🔔 **Smart Notification Routing & Privacy Masking**: When a notification arrives from WhatsApp W1, WhatsApp W2, Gmail, Elfsight, etc., message bodies and sensitive previews are automatically shielded while MiniBrowser is locked (`🔒 Contenido protegido • Desbloquea para ver` and sender initials). Clicking it brings the window forward, and upon entering your PIN, it automatically navigates to the exact tab that sent it.
 - 🎯 **4 Flexible Ways to Reorder Tabs**:
   - **Right-click context menu** on any tab (*Move Left / Move Right / Manage / Close*).
   - **Global shortcuts**: `Cmd + Option + ← / →` (macOS) or `Ctrl + Alt + ← / →` (Windows/Linux).

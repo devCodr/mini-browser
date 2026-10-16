@@ -541,6 +541,7 @@ fn update_settings(
     auto_launch: Option<bool>,
     hibernate_enabled: Option<bool>,
     hibernate_timeout_ms: Option<u64>,
+    mask_notifications_on_lock: Option<bool>,
 ) -> Result<store::Settings, String> {
     let store = state.store.lock().unwrap();
     let mut settings = store.load_settings();
@@ -559,6 +560,9 @@ fn update_settings(
     }
     if let Some(ht) = hibernate_timeout_ms {
         settings.hibernate_timeout_ms = ht.max(60000);
+    }
+    if let Some(mn) = mask_notifications_on_lock {
+        settings.mask_notifications_on_lock = mn;
     }
     store.save_settings(&settings);
     Ok(settings)

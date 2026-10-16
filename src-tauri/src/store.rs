@@ -61,6 +61,8 @@ pub struct Settings {
     pub hibernate_enabled: bool,
     #[serde(rename = "hibernateTimeoutMs", default = "default_hibernate_timeout")]
     pub hibernate_timeout_ms: u64,
+    #[serde(rename = "maskNotificationsOnLock", default = "default_true")]
+    pub mask_notifications_on_lock: bool,
 }
 
 impl Default for Settings {
@@ -79,6 +81,7 @@ impl Default for Settings {
             security_answer_salt: None,
             hibernate_enabled: true,
             hibernate_timeout_ms: default_hibernate_timeout(),
+            mask_notifications_on_lock: true,
         };
         s.set_pin("123456");
         s

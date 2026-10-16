@@ -16,6 +16,7 @@ let state = {
     autoLaunch: false,
     hibernateEnabled: true,
     hibernateTimeoutMs: 900000,
+    maskNotificationsOnLock: true,
   },
   bookmarks: [],
   activePartition: null,
@@ -75,6 +76,7 @@ const modalSettings = document.getElementById("modal-settings");
 const btnCloseSettings = document.getElementById("btn-close-settings");
 const settingLockToggle = document.getElementById("setting-lock-toggle");
 const settingLockOnLaunch = document.getElementById("setting-lock-on-launch");
+const settingMaskNotifications = document.getElementById("setting-mask-notifications");
 const settingStartMinimized = document.getElementById("setting-start-minimized");
 const settingAutoLaunch = document.getElementById("setting-auto-launch");
 const settingTimeout = document.getElementById("setting-timeout");
@@ -1748,6 +1750,9 @@ btnSettings.addEventListener("click", () => {
   if (state.isLocked) return;
   settingLockToggle.checked = state.settings.lockEnabled;
   settingLockOnLaunch.checked = state.settings.lockOnLaunch !== false;
+  if (settingMaskNotifications) {
+    settingMaskNotifications.checked = state.settings.maskNotificationsOnLock !== false;
+  }
   settingStartMinimized.checked = !!state.settings.startMinimized;
   if (settingAutoLaunch) settingAutoLaunch.checked = !!state.settings.autoLaunch;
   settingTimeout.value = state.settings.inactivityMs;
@@ -1786,6 +1791,7 @@ async function saveUpdatedSettings() {
       autoLaunch: settingAutoLaunch ? settingAutoLaunch.checked : false,
       hibernateEnabled: settingHibernateToggle ? settingHibernateToggle.checked : true,
       hibernateTimeoutMs: settingHibernateTimeout ? parseInt(settingHibernateTimeout.value, 10) : 900000,
+      maskNotificationsOnLock: settingMaskNotifications ? settingMaskNotifications.checked : true,
     });
     if (updated) state.settings = updated;
     if (!state.settings.lockEnabled) {
@@ -1800,6 +1806,7 @@ async function saveUpdatedSettings() {
 
 settingLockToggle.addEventListener("change", saveUpdatedSettings);
 settingLockOnLaunch.addEventListener("change", saveUpdatedSettings);
+if (settingMaskNotifications) settingMaskNotifications.addEventListener("change", saveUpdatedSettings);
 settingStartMinimized.addEventListener("change", saveUpdatedSettings);
 if (settingAutoLaunch) settingAutoLaunch.addEventListener("change", saveUpdatedSettings);
 

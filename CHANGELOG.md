@@ -10,6 +10,19 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.7.0] — 2026-10-16
+
+### Added
+- **Notification Privacy Masking When Locked**:
+  - Automatically hides sensitive message bodies and message previews in system notifications whenever MiniBrowser is locked with PIN.
+  - Implemented privacy-preserving attribution: displays tab/source name, masks personal sender names into initials (e.g. `🔒 WhatsApp • C. S. (Privado)`), and replaces message bodies with `🔒 Contenido protegido • Desbloquea para ver`.
+  - Suppresses long alert sentences or confidential notification subjects while locked, preventing lock screen data leakage.
+  - Download completion notifications are now also shielded while locked, concealing private file names (e.g. `🔒 Saved to Downloads (Private)`).
+  - Preserves the full payload in memory so that unlocking the browser immediately navigates to the origin tab.
+  - New user preference toggle in Settings modal: **"Notification Privacy when Locked"** (enabled by default).
+
+---
+
 ## [1.6.0] — 2026-10-13
 
 ### Added
