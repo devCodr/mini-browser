@@ -10,6 +10,32 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.8.0] — 2026-10-22
+
+### Added
+- **Arc & Edge Style Lateral Icon Sidebar Dock (`⌘⇧V` / `Ctrl+Shift+V`)**:
+  - Replaced the floating dropdown panel with a persistent/toggleable native lateral sidebar docked to the left edge of the window.
+  - Native WKWebView bounds offset in Rust: child webviews dynamically resize and shift to `x = 56px` when the sidebar is active, leaving the web page fully visible and interactive alongside the sidebar.
+  - Vertically stacked icon buttons for each session displaying custom favicons, SVG icons, partition badges (`W1`, `G1`, `N1`), and custom theme colors.
+  - Active tab indicator: Glowing accent pill bar on the left edge with high-contrast active background.
+  - Unread notification badges and pulsing dots on sidebar tab icons for instant awareness.
+  - Tab standby / memory saver indicators (`💤`) for sleeping tabs with 1-click wake on click.
+  - Vertical pointer drag-and-drop reordering with live visual feedback and auto-saved state.
+  - 1-click close button revealed on icon hover, plus middle-click (`auxclick`) instant tab closing.
+  - Floating hover tooltip positioned to the right of each icon showing session title, domain, keyboard shortcut (`⌘1..9`), and status.
+  - Top sidebar utilities:
+    - Sidebar toggle/collapse button (`sidebar-btn-toggle`)
+    - Workspaces & Manage Sessions button (`sidebar-btn-manage`)
+    - Quick Switcher flyout search button (`sidebar-btn-search`)
+  - Dedicated `+` button at the bottom of the sidebar to quickly add new private sessions (`⌘T`).
+- **Quick Switcher Search Flyout (`⌘⇧F` / `Ctrl+Shift+F`)**:
+  - Accessible from the sidebar search button or shortcut to instantly filter and jump between active sessions without losing context.
+- **Top Bar & Sidebar Synchronization**:
+  - Automatically hides horizontal tabs in the top header when the lateral sidebar is active, dedicating the full header width to navigation controls and the URL bar.
+  - Smooth toggle between lateral sidebar mode and classic horizontal tabs mode, persisting user preference in `localStorage`.
+
+---
+
 ## [1.7.0] — 2026-10-16
 
 ### Added

@@ -50,7 +50,7 @@ Standard web browsers share cookies and session caches across all tabs and windo
 - ⌨️ **Native Menu Bar & Global Accelerators**: Complete macOS app menu with tab switching shortcuts (`Cmd+1`–`Cmd+9`), Settings (`Cmd+,`), and About — all functioning even while focused inside external websites.
 - 📎 **Native Drag & Drop & File Attachments**: Drag photos, documents, and media straight from Finder/desktop into chat conversations (WhatsApp Web, Facebook, Telegram, Gmail), with reliable native file picker dialogs.
 - 📱 **Adaptive Compact Header & Responsive Mode**: Small or narrow windows automatically collapse tabs into icon-only mode with crisp hover tooltips, and secondary utilities collapse into an elegant Hamburger Menu (`☰`).
-- 📑 **Vertical Tabs Drawer (`Cmd + Shift + V` / `Ctrl + Shift + V`)**: Quick session switcher panel with real-time title/URL search, status badges, and 1-click navigation.
+- 📑 **Lateral Icon Sidebar Dock (`Cmd + Shift + V` / `Ctrl + Shift + V`)**: Arc & Edge style lateral vertical icon dock on the left with native webview offset, fast 1-click tab switching, micro badges, unread notification dots, and Quick Switcher search (`Cmd + Shift + F`).
 - 🎨 **Custom Sessions & Badges**: Assign unique labels, colored badges, and custom icons to each account.
 
 ---
@@ -126,7 +126,8 @@ The compiled release packages will be created in `src-tauri/target/release/bundl
 | **`Cmd + T`** | **`Ctrl + T`** | New Session | Launch a new isolated private session |
 | **`Cmd + W`** | **`Ctrl + W`** | Close Session | Close the active tab immediately |
 | **`Cmd + M`** | **`Ctrl + M`** | Manage Sessions | Open reordering, editing & badge modal |
-| **`Cmd + Shift + V`** | **`Ctrl + Shift + V`** | Vertical Tabs | Open vertical tabs drawer with search |
+| **`Cmd + Shift + V`** | **`Ctrl + Shift + V`** | Lateral Sidebar | Toggle lateral icon dock on left edge |
+| **`Cmd + Shift + F`** | **`Ctrl + Shift + F`** | Quick Switcher | Open search flyout to filter and switch tabs |
 | **`Cmd + ,`** | **`Ctrl + ,`** | Settings | Open browser settings & preferences |
 | **`Cmd + R`** | **`Ctrl + R`** | Reload | Reload active webview partition |
 | **`Cmd + H`** | **`Ctrl + H`** | Home | Return to dashboard home |

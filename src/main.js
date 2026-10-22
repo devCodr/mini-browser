@@ -157,6 +157,17 @@ const verticalTabsSearch = document.getElementById("vertical-tabs-search");
 const verticalTabsList = document.getElementById("vertical-tabs-list");
 const btnVerticalNewSession = document.getElementById("btn-vertical-new-session");
 
+// Lateral Icon Sidebar Elements
+const sidebarDock = document.getElementById("sidebar-dock");
+const sidebarBtnToggle = document.getElementById("sidebar-btn-toggle");
+const sidebarBtnManage = document.getElementById("sidebar-btn-manage");
+const sidebarBtnSearch = document.getElementById("sidebar-btn-search");
+const sidebarTabsList = document.getElementById("sidebar-tabs-list");
+const sidebarBtnNewSession = document.getElementById("sidebar-btn-new-session");
+
+const SIDEBAR_STORAGE_KEY = "minibrowser_sidebar_active";
+let isSidebarActive = localStorage.getItem(SIDEBAR_STORAGE_KEY) !== "false";
+
 // Floating Tab Tooltip Elements
 const tabFloatingTooltip = document.getElementById("tab-floating-tooltip");
 const tabTooltipTitle = document.getElementById("tab-tooltip-title");
@@ -275,7 +286,34 @@ async function hideHamburgerMenu() {
   }
 }
 
-// Vertical Tabs Panel Controller
+// Lateral Sidebar Controller
+async function setSidebarActive(active) {
+  isSidebarActive = active;
+  localStorage.setItem(SIDEBAR_STORAGE_KEY, active ? "true" : "false");
+
+  if (active) {
+    document.body.classList.add("sidebar-active");
+    if (btnVerticalTabs) btnVerticalTabs.classList.add("active");
+  } else {
+    document.body.classList.remove("sidebar-active");
+    if (btnVerticalTabs) btnVerticalTabs.classList.remove("active");
+  }
+
+  try {
+    await invoke("set_sidebar_visible", { visible: active });
+  } catch (err) {
+    console.error("Error setting sidebar visibility:", err);
+  }
+
+  renderTabs();
+  renderSidebarTabs();
+}
+
+function toggleSidebar() {
+  setSidebarActive(!isSidebarActive);
+}
+
+// Vertical Tabs Panel / Search Flyout Controller
 async function openVerticalTabsPanel() {
   if (state.isLocked) return;
   hideHamburgerMenu();
@@ -398,6 +436,16 @@ function showTabTooltip(tabEl, bm, idx) {
   tabTooltipShortcut.textContent = `⌘${idx + 1}${bm.badge ? ` • [${bm.badge}]` : ""}`;
 
   tabFloatingTooltip.classList.remove("hidden");
+
+  // If tab is in lateral sidebar, display tooltip to the right of the icon
+  if (tabEl.closest(".sidebar-dock")) {
+    const left = rect.right + 10;
+    const tipHeight = tabFloatingTooltip.offsetHeight || 30;
+    const top = rect.top + rect.height / 2 - tipHeight / 2;
+    tabFloatingTooltip.style.left = `${left}px`;
+    tabFloatingTooltip.style.top = `${Math.max(46, top)}px`;
+    return;
+  }
 
   const tipWidth = tabFloatingTooltip.offsetWidth || 140;
   let left = rect.left + rect.width / 2 - tipWidth / 2;
@@ -692,6 +740,14 @@ function highlightNotificationTab(partition) {
     tabEl.classList.add("tab-notification-pulse");
     setTimeout(() => tabEl.classList.remove("tab-notification-pulse"), 3500);
   }
+
+  const sidebarTabEl = sidebarTabsList ? sidebarTabsList.querySelector(`[data-partition="${CSS.escape(partition)}"]`) : null;
+  if (sidebarTabEl) {
+    sidebarTabEl.classList.remove("sidebar-notification-pulse");
+    void sidebarTabEl.offsetWidth;
+    sidebarTabEl.classList.add("sidebar-notification-pulse");
+    setTimeout(() => sidebarTabEl.classList.remove("sidebar-notification-pulse"), 3500);
+  }
 }
 
 
@@ -853,9 +909,153 @@ function renderTabs() {
     tabsBar.appendChild(tab);
   });
 
+  renderSidebarTabs();
+
   if (verticalTabsPanel && !verticalTabsPanel.classList.contains("hidden")) {
     renderVerticalTabsList(verticalTabsSearch ? verticalTabsSearch.value : "");
   }
+}
+
+// === Render Lateral Icon Sidebar Tabs ===
+function renderSidebarTabs() {
+  if (!sidebarTabsList) return;
+  sidebarTabsList.innerHTML = "";
+
+  state.bookmarks.forEach((bm, idx) => {
+    const item = document.createElement("div");
+    const isActive = bm.partition === state.activePartition;
+    const isSleeping = hibernatedPartitions.has(bm.partition);
+
+    item.className = `sidebar-tab-item ${isActive ? "active" : ""} ${isSleeping ? "hibernated" : ""}`;
+    item.dataset.partition = bm.partition;
+    item.dataset.index = idx;
+
+    const domain = getDomain(bm.url || "");
+    const title = (bm.title !== undefined && bm.title !== null && bm.title.trim() !== "") ? bm.title : domain;
+    item.title = `${title} (Cmd+${idx + 1})`;
+
+    // Favicon Icon wrapper
+    const iconWrapper = document.createElement("div");
+    iconWrapper.className = "sidebar-tab-icon";
+    const iconEl = createBookmarkIconElement(bm, "sidebar-tab-img");
+    iconWrapper.appendChild(iconEl);
+    item.appendChild(iconWrapper);
+
+    // Micro Badge pill
+    if (bm.badge) {
+      const badgeEl = document.createElement("span");
+      badgeEl.className = "sidebar-tab-badge";
+      badgeEl.textContent = bm.badge;
+      if (bm.color) {
+        badgeEl.style.background = bm.color;
+        badgeEl.style.color = "#ffffff";
+      }
+      item.appendChild(badgeEl);
+    }
+
+    // Sleep Indicator
+    if (isSleeping) {
+      const sleepBadge = document.createElement("span");
+      sleepBadge.className = "sidebar-tab-sleep";
+      sleepBadge.textContent = "💤";
+      item.appendChild(sleepBadge);
+    }
+
+    // Close Button on hover
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "sidebar-tab-close";
+    closeBtn.innerHTML = "&times;";
+    closeBtn.title = "Close Session (Cmd+W)";
+    closeBtn.addEventListener("mousedown", (e) => e.stopPropagation());
+    closeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      removeSession(bm.partition);
+    });
+    item.appendChild(closeBtn);
+
+    // Floating Tooltip on Hover
+    item.addEventListener("mouseenter", () => showTabTooltip(item, bm, idx));
+    item.addEventListener("mouseleave", () => hideTabTooltip());
+
+    // Right-Click Context Menu
+    item.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showTabContextMenu(e.clientX, e.clientY, bm.partition, idx);
+    });
+
+    // Middle-click to close
+    item.addEventListener("auxclick", (e) => {
+      if (e.button === 1) {
+        e.preventDefault();
+        e.stopPropagation();
+        removeSession(bm.partition);
+      }
+    });
+
+    // Vertical Drag & Drop Reordering
+    let startY = 0;
+    let isDraggingTab = false;
+
+    item.addEventListener("pointerdown", (e) => {
+      if (e.target.closest(".sidebar-tab-close") || e.button !== 0) return;
+      startY = e.clientY;
+      isDraggingTab = false;
+
+      function onPointerMove(moveEvent) {
+        const dy = moveEvent.clientY - startY;
+        if (!isDraggingTab && Math.abs(dy) > 6) {
+          isDraggingTab = true;
+          item.classList.add("dragging");
+        }
+
+        if (isDraggingTab) {
+          const otherItems = Array.from(sidebarTabsList.querySelectorAll(".sidebar-tab-item:not(.dragging)"));
+          for (const other of otherItems) {
+            const rect = other.getBoundingClientRect();
+            if (moveEvent.clientY >= rect.top && moveEvent.clientY <= rect.bottom) {
+              const isAfter = moveEvent.clientY > rect.top + rect.height / 2;
+              sidebarTabsList.insertBefore(item, isAfter ? other.nextSibling : other);
+              break;
+            }
+          }
+        }
+      }
+
+      async function onPointerUp() {
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerup", onPointerUp);
+
+        if (isDraggingTab) {
+          item.classList.remove("dragging");
+          const tabElements = Array.from(sidebarTabsList.querySelectorAll(".sidebar-tab-item"));
+          const newOrder = tabElements
+            .map((el) => state.bookmarks.find((b) => b.partition === el.dataset.partition))
+            .filter(Boolean);
+
+          state.bookmarks = newOrder;
+          try {
+            await invoke("reorder_bookmarks", { newOrder });
+          } catch (err) {
+            console.error("Error saving tab order:", err);
+          }
+
+          renderTabs();
+          if (!modalManageSessions.classList.contains("hidden")) {
+            renderManageSessionsList();
+          }
+        } else {
+          activateSession(bm.partition, bm.url);
+        }
+      }
+
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", onPointerUp);
+    });
+
+    sidebarTabsList.appendChild(item);
+  });
 }
 
 // === Render Manage Sessions List with Up/Down and Drag & Drop ===
@@ -1621,11 +1821,40 @@ if (btnDownloads) {
   btnDownloads.addEventListener("click", openDownloads);
 }
 
-// Vertical Tabs Panel Listeners
+// Vertical Tabs / Sidebar Listeners
 if (btnVerticalTabs) {
   btnVerticalTabs.addEventListener("click", (e) => {
     e.stopPropagation();
+    toggleSidebar();
+  });
+}
+
+// Lateral Sidebar Utility Listeners
+if (sidebarBtnToggle) {
+  sidebarBtnToggle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleSidebar();
+  });
+}
+
+if (sidebarBtnManage) {
+  sidebarBtnManage.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openManageSessionsModal();
+  });
+}
+
+if (sidebarBtnSearch) {
+  sidebarBtnSearch.addEventListener("click", (e) => {
+    e.stopPropagation();
     toggleVerticalTabsPanel();
+  });
+}
+
+if (sidebarBtnNewSession) {
+  sidebarBtnNewSession.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openNewSessionModal();
   });
 }
 
@@ -1664,7 +1893,7 @@ if (menuNewSession) {
 if (menuVerticalTabs) {
   menuVerticalTabs.addEventListener("click", () => {
     hideHamburgerMenu();
-    openVerticalTabsPanel();
+    toggleSidebar();
   });
 }
 
@@ -2104,8 +2333,12 @@ function executeShortcut(key, { alt = false, shift = false } = {}) {
   else if (k === "/") {
     toggleShortcutsModal();
   }
-  // Vertical Tabs Panel: Cmd + Shift + V
+  // Lateral Sidebar Toggle: Cmd + Shift + V
   else if (k === "v" && shift) {
+    toggleSidebar();
+  }
+  // Quick Switcher Flyout: Cmd + Shift + F
+  else if (k === "f" && shift) {
     toggleVerticalTabsPanel();
   }
   // Toggle DevTools: Cmd + Opt + I / Ctrl + Shift + I
@@ -2549,6 +2782,7 @@ async function init() {
       state.bookmarks = rawState.bookmarks || [];
     }
 
+    await setSidebarActive(isSidebarActive);
     renderTabs();
 
     // Start minimized if enabled

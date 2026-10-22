@@ -725,6 +725,26 @@ fn open_downloads_folder(app: AppHandle) -> Result<(), String> {
         .map_err(|e| format!("Failed to open downloads folder: {}", e))
 }
 
+#[tauri::command]
+fn set_sidebar_visible(
+    app: AppHandle,
+    state: State<'_, AppStateWrapper>,
+    visible: bool,
+) -> Result<(), String> {
+    let width = if visible {
+        crate::session::SIDEBAR_WIDTH
+    } else {
+        0.0
+    };
+    state.sessions.set_sidebar_width(&app, width);
+    Ok(())
+}
+
+#[tauri::command]
+fn get_sidebar_visible(state: State<'_, AppStateWrapper>) -> bool {
+    state.sessions.get_sidebar_width() > 0.0
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -1001,7 +1021,9 @@ pub fn run() {
             get_app_version,
             hibernate_session,
             toggle_tab_prevent_sleep,
-            get_active_session_url
+            get_active_session_url,
+            set_sidebar_visible,
+            get_sidebar_visible
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

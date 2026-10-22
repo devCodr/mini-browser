@@ -6,6 +6,7 @@ use tauri::{
 };
 
 pub const HEADER_HEIGHT: f64 = 42.0;
+pub const SIDEBAR_WIDTH: f64 = 56.0;
 
 #[cfg(target_os = "macos")]
 pub const CHROME_USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
@@ -148,6 +149,7 @@ pub fn notify_download_finished(app: &AppHandle, file_path: &std::path::Path) {
 pub struct SessionManager {
     active_label: Mutex<Option<String>>,
     sessions: Mutex<HashMap<String, String>>, // partition -> webview label
+    sidebar_width: Mutex<f64>,
 }
 
 impl Default for SessionManager {
@@ -155,6 +157,7 @@ impl Default for SessionManager {
         Self {
             active_label: Mutex::new(None),
             sessions: Mutex::new(HashMap::new()),
+            sidebar_width: Mutex::new(SIDEBAR_WIDTH),
         }
     }
 }
@@ -162,6 +165,24 @@ impl Default for SessionManager {
 impl SessionManager {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn get_sidebar_width(&self) -> f64 {
+        *self.sidebar_width.lock().unwrap()
+    }
+
+    pub fn set_sidebar_width(&self, app: &AppHandle, width: f64) {
+        {
+            let mut sw = self.sidebar_width.lock().unwrap();
+            *sw = width;
+        }
+        if let Some(w) = app.get_window("main") {
+            if let (Ok(size), Ok(scale)) = (w.inner_size(), w.scale_factor()) {
+                let logical_w = size.width as f64 / scale;
+                let logical_h = size.height as f64 / scale;
+                self.sync_bounds(app, logical_w, logical_h);
+            }
+        }
     }
 
     pub fn clean_label(partition: &str) -> String {
@@ -208,10 +229,12 @@ impl SessionManager {
         let logical_w = win_size.width as f64 / scale;
         let logical_h = win_size.height as f64 / scale;
 
+        let sidebar_w = *self.sidebar_width.lock().unwrap();
+        let content_w = (logical_w - sidebar_w).max(100.0);
         let content_h = (logical_h - HEADER_HEIGHT).max(100.0);
         let bounds = Rect {
-            position: LogicalPosition::new(0.0, HEADER_HEIGHT).into(),
-            size: LogicalSize::new(logical_w, content_h).into(),
+            position: LogicalPosition::new(sidebar_w, HEADER_HEIGHT).into(),
+            size: LogicalSize::new(content_w, content_h).into(),
         };
 
         // Check if webview already exists
@@ -999,11 +1022,13 @@ impl SessionManager {
                 tauri::webview::NewWindowResponse::Deny
             });
 
+        let sidebar_w = *self.sidebar_width.lock().unwrap();
+        let content_w = (logical_w - sidebar_w).max(100.0);
         let webview = window
             .add_child(
                 builder,
-                LogicalPosition::new(0.0, HEADER_HEIGHT),
-                LogicalSize::new(logical_w, content_h),
+                LogicalPosition::new(sidebar_w, HEADER_HEIGHT),
+                LogicalSize::new(content_w, content_h),
             )
             .map_err(|e| format!("Failed to add child webview: {}", e))?;
 
@@ -1050,12 +1075,14 @@ impl SessionManager {
 
     pub fn sync_bounds(&self, app: &AppHandle, width: f64, height: f64) {
         let active_lock = self.active_label.lock().unwrap();
+        let sidebar_w = *self.sidebar_width.lock().unwrap();
         if let Some(ref label) = *active_lock {
             if let Some(wv) = app.get_webview(label) {
+                let content_w = (width - sidebar_w).max(100.0);
                 let content_h = (height - HEADER_HEIGHT).max(100.0);
                 let _ = wv.set_bounds(Rect {
-                    position: LogicalPosition::new(0.0, HEADER_HEIGHT).into(),
-                    size: LogicalSize::new(width, content_h).into(),
+                    position: LogicalPosition::new(sidebar_w, HEADER_HEIGHT).into(),
+                    size: LogicalSize::new(content_w, content_h).into(),
                 });
             }
         }
