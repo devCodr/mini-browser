@@ -28,6 +28,7 @@ let state = {
 };
 
 const hibernatedPartitions = new Set();
+const pendingNotifications = new Set();
 const lastActiveMap = new Map();
 
 let draggedTabIndex = null;
@@ -383,6 +384,7 @@ function renderVerticalTabsList(query = "") {
       : domain;
 
     const isHibernated = hibernatedPartitions.has(bm.partition);
+    const hasNotif = pendingNotifications.has(bm.partition);
 
     row.innerHTML = `
       <span class="vertical-tab-indicator"></span>
@@ -391,11 +393,12 @@ function renderVerticalTabsList(query = "") {
         <div class="vertical-tab-title-line">
           <span class="vertical-tab-title">${displayTitle}</span>
           ${bm.badge ? `<span class="vertical-tab-badge" style="background:${bm.color ? bm.color + '22' : 'rgba(99,102,241,0.18)'}; color:${bm.color || 'var(--accent-text)'};">${bm.badge}</span>` : ""}
+          ${hasNotif ? `<span class="vertical-tab-notif-badge" title="Pending notification">● Alerta</span>` : ""}
         </div>
         <span class="vertical-tab-url">${bm.url}</span>
       </div>
       <div class="vertical-tab-meta">
-        ${isHibernated ? `<span class="tab-sleep-badge" title="Sleeping (RAM saved)">💤</span>` : ""}
+        ${isHibernated ? `<span class="tab-sleep-badge" title="Sleeping (RAM saved)"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span>zZ</span></span>` : ""}
         ${bm.preventSleep ? `<span class="tab-prevent-sleep-indicator" title="Always Awake"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>` : ""}
         <kbd class="vertical-tab-kbd">⌘${idx + 1}</kbd>
         <button class="vertical-tab-close-btn" title="Close Session">&times;</button>
@@ -729,9 +732,14 @@ function createBookmarkIconElement(bm, className) {
 }
 
 // === Notification Tab Highlight ===
-// Resalta visualmente el tab que originó una notificación del sistema.
+// Resalta visualmente el tab que originó una notificación del sistema y mantiene la alerta persistente.
 function highlightNotificationTab(partition) {
   if (!partition) return;
+
+  if (partition !== state.activePartition) {
+    pendingNotifications.add(partition);
+  }
+
   const tabEl = tabsBar.querySelector(`[data-partition="${CSS.escape(partition)}"]`);
   if (tabEl) {
     tabEl.classList.remove("tab-notification-pulse");
@@ -748,6 +756,8 @@ function highlightNotificationTab(partition) {
     sidebarTabEl.classList.add("sidebar-notification-pulse");
     setTimeout(() => sidebarTabEl.classList.remove("sidebar-notification-pulse"), 3500);
   }
+
+  renderTabs();
 }
 
 
@@ -801,13 +811,13 @@ function renderTabs() {
       tab.appendChild(badgeDot);
     }
 
-    // Tab standby / hibernation indicator (💤)
+    // Tab standby / hibernation indicator (zZ)
     if (hibernatedPartitions.has(bm.partition)) {
       tab.classList.add("hibernated");
       tab.title = `${bm.title || bm.url} (Sleeping — click to wake)`;
       const sleepBadge = document.createElement("span");
       sleepBadge.className = "tab-sleep-badge";
-      sleepBadge.textContent = "💤";
+      sleepBadge.innerHTML = `<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span>zZ</span>`;
       sleepBadge.title = "Sleeping (RAM freed — click to wake)";
       tab.appendChild(sleepBadge);
     }
@@ -820,19 +830,6 @@ function renderTabs() {
       awakeSpan.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`;
       tab.appendChild(awakeSpan);
     }
-
-    // Close Button (Immediate removal on click without drag conflict)
-    const closeBtn = document.createElement("button");
-    closeBtn.className = "tab-close-btn";
-    closeBtn.innerHTML = "&times;";
-    closeBtn.title = "Close Session (Cmd+W)";
-    closeBtn.addEventListener("mousedown", (e) => e.stopPropagation());
-    closeBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      removeSession(bm.partition);
-    });
-    tab.appendChild(closeBtn);
 
     // Floating Tooltip on Hover (for icon-only and compact tabs)
     tab.addEventListener("mouseenter", () => showTabTooltip(tab, bm, idx));
@@ -850,7 +847,7 @@ function renderTabs() {
     let isDraggingTab = false;
 
     tab.addEventListener("pointerdown", (e) => {
-      if (e.target.closest(".tab-close-btn") || e.button !== 0) return;
+      if (e.button !== 0) return;
       startX = e.clientX;
       isDraggingTab = false;
 
@@ -941,6 +938,15 @@ function renderSidebarTabs() {
     iconWrapper.appendChild(iconEl);
     item.appendChild(iconWrapper);
 
+    // Notification Beacon Dot (High-visibility alert indicator)
+    if (pendingNotifications.has(bm.partition)) {
+      item.classList.add("has-notification");
+      const notifDot = document.createElement("span");
+      notifDot.className = "sidebar-tab-notif-dot";
+      notifDot.title = "Pending notifications";
+      item.appendChild(notifDot);
+    }
+
     // Micro Badge pill
     if (bm.badge) {
       const badgeEl = document.createElement("span");
@@ -953,26 +959,14 @@ function renderSidebarTabs() {
       item.appendChild(badgeEl);
     }
 
-    // Sleep Indicator
+    // Sleep Indicator (Noticeable high-contrast moon+zZ pill)
     if (isSleeping) {
       const sleepBadge = document.createElement("span");
       sleepBadge.className = "sidebar-tab-sleep";
-      sleepBadge.textContent = "💤";
+      sleepBadge.title = "Sleeping session (RAM saved — click to wake)";
+      sleepBadge.innerHTML = `<svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span>zZ</span>`;
       item.appendChild(sleepBadge);
     }
-
-    // Close Button on hover
-    const closeBtn = document.createElement("button");
-    closeBtn.className = "sidebar-tab-close";
-    closeBtn.innerHTML = "&times;";
-    closeBtn.title = "Close Session (Cmd+W)";
-    closeBtn.addEventListener("mousedown", (e) => e.stopPropagation());
-    closeBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      removeSession(bm.partition);
-    });
-    item.appendChild(closeBtn);
 
     // Floating Tooltip on Hover
     item.addEventListener("mouseenter", () => showTabTooltip(item, bm, idx));
@@ -999,7 +993,7 @@ function renderSidebarTabs() {
     let isDraggingTab = false;
 
     item.addEventListener("pointerdown", (e) => {
-      if (e.target.closest(".sidebar-tab-close") || e.button !== 0) return;
+      if (e.button !== 0) return;
       startY = e.clientY;
       isDraggingTab = false;
 
@@ -1335,6 +1329,7 @@ async function activateSession(partition, url) {
   state.activePartition = partition;
   lastActiveMap.set(partition, Date.now());
   hibernatedPartitions.delete(partition);
+  pendingNotifications.delete(partition);
 
   welcomeView.style.display = "none";
 
@@ -1441,6 +1436,7 @@ async function removeSession(partition) {
     return;
   }
   const isCurrent = state.activePartition === partition;
+  pendingNotifications.delete(partition);
   try {
     const list = await invoke("remove_bookmark", { partition });
     state.bookmarks = list;

@@ -10,6 +10,18 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.8.1] — 2026-10-23
+
+### Changed
+- **Accidental Tab Closure Prevention**: Removed the hover close button `(x)` from sidebar dock icons and top bar tabs to eliminate the risk of accidental session loss while switching tabs. Tab closing is now reserved for the dedicated Tabs & Sessions Manager (`⌘⇧V` / header grid button), the Manage Sessions modal (`⌘M`), right-click context menu ("Close Session"), and `⌘W`.
+- **Prominent Sleeping / Hibernation Indicator**: Redesigned the sleep status indicator from a faint emoji into a high-contrast, prominent badge featuring a crisp crescent moon icon and `zZ` typography (`#0f172a` pill with `#6366f1` violet border, `#c7d2fe` text, and subtle glow). The tab container stays at full opacity while only the website favicon receives subtle dimming and grayscale, making both the website identity and sleep state crystal clear.
+
+### Added
+- **Persistent High-Visibility Notification Beacon**: Added a vibrant, pulsating crimson alert beacon dot (`#ef4444`) with radar wave animation positioned at the top-left of sidebar tab icons and top tabs. The alert stays visible until the user switches to that session, ensuring pending messages in background sessions are never missed.
+- **Notification Indicators in Tabs Manager**: The "Tabs & Sessions" panel now displays a bright `● Alerta` badge next to sessions that have pending notifications.
+
+---
+
 ## [1.8.0] — 2026-10-22
 
 ### Added

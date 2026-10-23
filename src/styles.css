@@ -444,20 +444,59 @@ kbd {
 
 /* Hibernated / Sleeping Tab Styles */
 .tab-item.hibernated {
-  opacity: 0.65;
   border-style: dashed;
 }
 
-.tab-item.hibernated:hover {
-  opacity: 0.95;
+.tab-item.hibernated .tab-favicon {
+  opacity: 0.55;
+  filter: grayscale(40%);
+  transition: all 0.2s ease;
+}
+
+.tab-item.hibernated:hover .tab-favicon {
+  opacity: 0.85;
+  filter: grayscale(15%);
 }
 
 .tab-sleep-badge {
-  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2.5px;
+  background: #0f172a;
+  border: 1.5px solid #6366f1;
+  color: #c7d2fe;
+  font-size: 8.5px;
+  font-weight: 800;
   line-height: 1;
-  opacity: 0.9;
-  margin-left: 2px;
+  padding: 1.5px 4.5px;
+  border-radius: 5px;
+  margin-left: 3px;
   user-select: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4), 0 0 6px rgba(99, 102, 241, 0.3);
+}
+
+.tab-sleep-badge svg {
+  width: 9px;
+  height: 9px;
+  color: #a5b4fc;
+}
+
+/* Notification Beacon on Tab */
+.tab-item.has-notification {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 1.5px rgba(239, 68, 68, 0.9), 0 0 12px rgba(239, 68, 68, 0.45) !important;
+  animation: tabBorderGlow 2s infinite ease-in-out;
+}
+
+.tab-notif-beacon {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+  margin-right: 4px;
+  animation: notifBeaconPulse 1.3s infinite ease-in-out;
+  flex-shrink: 0;
 }
 
 .tab-prevent-sleep-indicator {
@@ -2509,68 +2548,114 @@ body.sidebar-active .welcome-view {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
-/* Notification pulse dot */
-.sidebar-tab-notif-dot,
+/* High-visibility Notification Beacon Dot */
+.sidebar-tab-notif-dot {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid #141419;
+  box-shadow: 0 0 10px #ef4444, 0 0 4px #f87171;
+  z-index: 10;
+  pointer-events: none;
+  animation: notifBeaconPulse 1.3s infinite ease-in-out;
+}
+
+@keyframes notifBeaconPulse {
+  0% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.85), 0 0 8px #ef4444;
+  }
+  60% {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 7px rgba(239, 68, 68, 0), 0 0 14px #ef4444;
+  }
+  100% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0), 0 0 8px #ef4444;
+  }
+}
+
+.sidebar-tab-item.has-notification {
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.9), 0 0 14px rgba(239, 68, 68, 0.45) !important;
+  animation: tabBorderGlow 2s infinite ease-in-out;
+}
+
+@keyframes tabBorderGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.85), 0 0 12px rgba(239, 68, 68, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 2.5px rgba(239, 68, 68, 1), 0 0 20px rgba(239, 68, 68, 0.7);
+  }
+}
+
 .sidebar-notification-pulse::after {
   content: "";
   position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 8px;
-  height: 8px;
+  top: -2px;
+  left: -2px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 8px #22c55e;
+  background: #ef4444;
+  border: 2px solid #141419;
+  box-shadow: 0 0 10px #ef4444;
   pointer-events: none;
-  animation: notifPulse 1.4s infinite;
+  animation: notifBeaconPulse 1.3s infinite;
 }
 
-/* Sleep / Hibernation indicator */
+/* Sleep / Hibernation indicator: Prominent Moon + zZ Badge */
 .sidebar-tab-sleep {
   position: absolute;
-  bottom: 2px;
-  right: 2px;
-  font-size: 9px;
-  pointer-events: none;
-  opacity: 0.85;
-}
-
-.sidebar-tab-item.hibernated {
-  opacity: 0.65;
-}
-.sidebar-tab-item.hibernated:hover {
-  opacity: 0.9;
-}
-
-/* Close button on tab hover */
-.sidebar-tab-close {
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: rgba(30, 30, 36, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: var(--text-secondary);
-  font-size: 11px;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 5;
-  transition: all 0.12s;
-  line-height: 1;
-}
-
-.sidebar-tab-item:hover .sidebar-tab-close {
+  bottom: -1px;
+  right: -1px;
+  background: #0f172a;
+  border: 1.5px solid #6366f1;
+  color: #c7d2fe;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  padding: 1px 3.5px;
+  border-radius: 5px;
   display: flex;
+  align-items: center;
+  gap: 2px;
+  line-height: 1;
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6), 0 0 8px rgba(99, 102, 241, 0.4);
+  z-index: 6;
 }
 
-.sidebar-tab-close:hover {
-  background: #ef4444;
-  color: #fff;
-  border-color: #ef4444;
+.sidebar-tab-sleep svg {
+  width: 8px;
+  height: 8px;
+  color: #a5b4fc;
+}
+
+/* Only dim/grayscale the tab website icon, keeping badges crisp and readable */
+.sidebar-tab-item.hibernated {
+  opacity: 1;
+}
+
+.sidebar-tab-item.hibernated .sidebar-tab-icon {
+  opacity: 0.55;
+  filter: grayscale(40%);
+  transition: all 0.2s ease;
+}
+
+.sidebar-tab-item.hibernated:hover .sidebar-tab-icon {
+  opacity: 0.85;
+  filter: grayscale(15%);
+}
+
+/* Tab close button removed from sidebar & tabs bar to prevent accidental closures */
+.sidebar-tab-close,
+.tab-close-btn {
+  display: none !important;
 }
 
 /* Bottom New Session Button */
@@ -2800,6 +2885,21 @@ body.sidebar-active .welcome-view {
   margin-left: 4px;
 }
 
+.vertical-tab-notif-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1.5px 6px;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.6);
+  color: #f87171;
+  font-size: 10px;
+  font-weight: 700;
+  animation: notifBeaconPulse 1.8s infinite ease-in-out;
+  margin-left: 4px;
+}
+
 .vertical-tab-kbd {
   font-size: 10px;
   color: var(--text-muted);
@@ -2967,25 +3067,9 @@ body.sidebar-active .welcome-view {
     display: block !important;
   }
 
-  .tabs-bar .tab-item .tab-close-btn {
-    display: none;
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    font-size: 10px;
-    background: #ef4444;
-    color: #fff;
-    margin: 0;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
-    opacity: 0;
-  }
-
+  .tabs-bar .tab-item .tab-close-btn,
   .tabs-bar .tab-item:hover .tab-close-btn {
-    display: flex !important;
-    opacity: 1;
+    display: none !important;
   }
 
   .url-container {
